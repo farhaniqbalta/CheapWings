@@ -96,3 +96,51 @@ Both acceptances are personal-project-scoped. `provider_registry.permitted_to_ag
 
 - Ran one additional `sk_flights_search` call with `includeHiddenCity: true, includeVirtualInterlining: true, limit: 15` for MEL→DPS 2026-12-16 to pin the exact hidden-city `attributes` tag string. **Inconclusive**: the only tags observed across all 15 results were `"standard"`, `"nonstop"`, `"one-stop"` — no hidden-city or virtual-interlining fare happened to rank in the top 15 for this specific route/date, so the exact tag string for those classifications is still unconfirmed. Needs a route/date known to surface a cheap hidden-city fare (not guessed/fabricated here) before the adapter can safely map `attributes` to our `hidden_city` enum; until then, treat any Skiplagged result as `hidden_city=unknown` whenever `includeHiddenCity=true` is used, and only trust `hidden_city=no` when the query itself was sent with `includeHiddenCity=false` (as in the main probe above).
 - Manual browser-based price comparison against skiplagged.com and Google Flights for the same route/date — still not performed (no browser available to the agent in this session).
+
+---
+
+## P3 live canary (2026-11-09, addendum)
+
+Where the P0 section above called the SDKs/MCP server directly with ad hoc
+scripts, this canary runs the **actual production adapter classes**
+(`cheapwings.providers.skiplagged.SkiplaggedProvider`,
+`cheapwings.providers.swoop.SwoopProvider`) against live endpoints — the
+real normalization/error-handling code path the worker uses, not a probe
+shim. Same route/date as P0 (MEL→DPS, 2026-12-16) for comparability.
+`mcp`==2.3.0, `swoop-flights`==0.7.0, `airportsdata`==20261103 (the pinned
+`backend[live]` extra). One search call per provider, one `reprice()` call
+on swoop's top result — still low-volume, still a single run.
+
+**Command:** `python scripts/p3_live_canary.py` (script redacts nothing by
+itself — its raw JSON output contains swoop's opaque selector and was
+**not committed**; only this redacted summary is kept).
+
+**Skiplagged:** `SkiplaggedProvider.search()` returned 20 normalized offers,
+status `succeeded_results`, no adapter exceptions. Sample offer: original
+USD 272 → comparable IDR 4,925,566 via a preserved `FXSnapshot` (rate
+18108.7, matches the live rate at probe time), `hidden_city=no` (query sent
+`includeHiddenCity=false`), `checked_bag=unknown`, `price_status=indicative`,
+`is_estimate=True`, link correctly scoped to `generic_search` and validated
+`https://skiplagged.com/...`. No fabricated seller/fare-family — both
+`null` since the source never provides them, exactly per the P0 findings.
+
+**swoop:** `SwoopProvider.search()` returned 10 priced + **1 unpriced**
+candidate — the adapter's explicit `unpriced_candidate_count` correctly
+caught the same no-price/no-currency quirk documented in the P0 section,
+on a fresh live call, not just the frozen fixture. `SwoopProvider.reprice()`
+on the top result succeeded: real seller `"Jetstar"`, `is_estimate=False`,
+opaque `provider_quote_handle` populated (never a link — swoop reprice
+offers don't expose a direct URL). `exact_product_match=False` here because
+the *search*-stage offer never carries seller/fare_family (swoop doesn't
+expose that pre-reprice), so the adapter's independent-field match
+intentionally cannot succeed from a bare search→reprice chain with no
+in-between verification step — this is the conservative behavior
+`docs/03`'s matching rule requires, not a bug.
+
+**Verdict:** both adapters behave correctly against live data, consistent
+with the P0 findings and the existing offline test suite (which replays
+these same P0 fixtures through the identical adapter code in
+`backend/tests/integration/test_p3.py::test_recorded_real_adapters_api_summary_fx_and_expiry`).
+No new GO/NO-GO decision needed — this confirms the already-accepted
+personal-use GO for both providers extends to the real adapter
+implementation, not just the raw SDK.

@@ -17,8 +17,18 @@ class Settings:
     call_timeout_seconds: int = 30
     lease_seconds: int = 40
     max_attempts: int = 3
+    enabled_providers: tuple[str, ...] = ('fake',)
+    use_scope: str = 'personal'
+    reprice_budget: int = 20
+    live_retention_seconds: int = 3600
 
     def __post_init__(self):
+        if not self.enabled_providers or set(self.enabled_providers) - {'fake','skiplagged','swoop'}:
+            raise ValueError('Unknown or empty provider configuration')
+        if 'fake' in self.enabled_providers and len(self.enabled_providers) != 1:
+            raise ValueError('Synthetic and live providers cannot share a search')
+        if self.reprice_budget < 0 or not 60 <= self.live_retention_seconds <= 3600:
+            raise ValueError('Invalid verification budget or live retention (60..3600 seconds)')
         if self.bind_host not in ("127.0.0.1", "::1", "localhost") and not self.owner_token:
             raise ValueError("Non-loopback binding requires CHEAPWINGS_OWNER_TOKEN")
         if self.owner_token is not None and len(self.owner_token) < 32:
@@ -38,10 +48,11 @@ class Settings:
 
     @classmethod
     def from_env(cls):
-        enabled = os.getenv("ENABLED_PROVIDERS", "fake")
-        if enabled != "fake":
-            raise ValueError("P2 only implements fake; real adapters are P3")
         return cls(
+            enabled_providers=tuple(dict.fromkeys(filter(None, os.getenv('ENABLED_PROVIDERS','fake').split(',')))),
+            use_scope=os.getenv('CHEAPWINGS_USE_SCOPE','personal'),
+            reprice_budget=int(os.getenv('JOB_REPRICE_BUDGET','20')),
+            live_retention_seconds=int(os.getenv('LIVE_RETENTION_SECONDS','3600')),
             database_url=os.getenv("DATABASE_URL", cls.database_url),
             bind_host=os.getenv("API_BIND_HOST", cls.bind_host),
             owner_token=os.getenv("CHEAPWINGS_OWNER_TOKEN") or None,

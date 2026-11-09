@@ -39,7 +39,7 @@ def main():
             require_current_schema(engine)
             runner = JobRunner(
                 Repository(engine),
-                default_registry(),
+                default_registry(settings),
                 timeout_seconds=settings.call_timeout_seconds,
                 lease_seconds=settings.lease_seconds,
                 max_attempts=settings.max_attempts,

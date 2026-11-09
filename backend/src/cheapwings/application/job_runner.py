@@ -2,22 +2,14 @@
 
 import asyncio
 import logging
-from dataclasses import dataclass
 from datetime import date
 from time import monotonic
 
 from cheapwings.domain.coverage import WorkStatus
+from cheapwings.domain.evidence import ProviderFailure
 from cheapwings.providers.base import SingleDateRouteQuery
 
 log = logging.getLogger(__name__)
-
-
-@dataclass
-class ProviderFailure(Exception):
-    """Adapters may raise this normalized error, including parsed Retry-After seconds."""
-
-    code: str
-    retry_after_seconds: float = 0
 
 
 class JobRunner:
@@ -38,22 +30,27 @@ class JobRunner:
             query.include_basic_economy,
             query.include_hidden_city,
             query.display_currency,
+            query.point_of_sale_country,
         )
         started = monotonic()
         result = None
         error, retry_after = None, 0
         try:
             async with asyncio.timeout(self.timeout_seconds):
-                result = await registration.provider.search(request)
-            if result.provider_id != item.provider_id or result.requested != request:
-                raise ProviderFailure("schema_changed")
-            if result.status == WorkStatus.FAILED_TERMINAL:
-                raise ProviderFailure(result.error_code.value)
-            if result.status not in (WorkStatus.SUCCEEDED_EMPTY, WorkStatus.SUCCEEDED_RESULTS):
-                raise ProviderFailure("schema_changed")
-            for offers in result.offers_by_itinerary_index:
-                if any(o.provider_id != item.provider_id for o in offers):
+                if item.work_type == 'reprice':
+                    result = await registration.provider.reprice(self.repo.reprice_request(item))
+                else:
+                    result = await registration.provider.search(request)
+            if item.work_type != 'reprice':
+                if result.provider_id != item.provider_id or result.requested != request:
                     raise ProviderFailure("schema_changed")
+                if result.status == WorkStatus.FAILED_TERMINAL:
+                    raise ProviderFailure(result.error_code.value)
+                if result.status not in (WorkStatus.SUCCEEDED_EMPTY, WorkStatus.SUCCEEDED_RESULTS):
+                    raise ProviderFailure("schema_changed")
+                for offers in result.offers_by_itinerary_index:
+                    if any(o.provider_id != item.provider_id for o in offers):
+                        raise ProviderFailure("schema_changed")
         except TimeoutError:
             error = "network_timeout"
         except ProviderFailure as exc:
@@ -94,8 +91,10 @@ class JobRunner:
                 self.tasks.remove(task)
                 self.task_providers.pop(task)
                 task.result()  # surface database/programming errors; never silently drop them
+        self.repo.purge_expired()
         self.repo.reconcile_registry(self.registry)
         self.repo.sweep(max_attempts=self.max_attempts)
+        self.repo.schedule_verification()
         for registration in self.registry:
             active = sum(
                 p == registration.provider.provider_id for p in self.task_providers.values()
@@ -124,3 +123,7 @@ class JobRunner:
         await asyncio.gather(*self.tasks, return_exceptions=True)
         self.tasks.clear()
         self.task_providers.clear()
+        for registration in self.registry:
+            blocking = getattr(registration.provider, 'blocking', None)
+            if blocking:
+                blocking.close()

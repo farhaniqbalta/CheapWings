@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 
 from cheapwings.domain.segments import FlightSegment
@@ -15,6 +16,21 @@ class IdentityConfidence(str, Enum):
 
 
 @dataclass(frozen=True, slots=True)
+class ItinerarySummary:
+    """Observed routing summary when complete segment identity is unavailable.
+
+    Naive local timestamps are preserved as such; no UTC offset is fabricated.
+    """
+    origin: str
+    destination: str
+    depart_at: datetime
+    arrive_at: datetime
+    duration_minutes: int
+    stops: int
+    warnings: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class Itinerary:
     """A complete, ordered flight routing. Not interchangeable with 'route + date'."""
 
@@ -23,7 +39,14 @@ class Itinerary:
     identity_confidence: IdentityConfidence
     fingerprint: str | None = field(default=None)
 
+    summary: ItinerarySummary | None = None
+
     def __post_init__(self) -> None:
+        if self.summary is not None:
+            if (self.segments or self.identity_confidence != IdentityConfidence.INSUFFICIENT_IDENTITY
+                    or self.fingerprint is not None):
+                raise ValueError('Summary-only itineraries must remain unmatched without segments')
+            return
         if not self.segments:
             raise ValueError("Itinerary must have at least one segment")
         ordered = sorted(self.segments, key=lambda s: s.ordinal)
@@ -38,18 +61,20 @@ class Itinerary:
 
     @property
     def origin(self) -> str:
-        return self.segments[0].origin
+        return self.summary.origin if self.summary else self.segments[0].origin
 
     @property
     def destination(self) -> str:
-        return self.segments[-1].destination
+        return self.summary.destination if self.summary else self.segments[-1].destination
 
     @property
     def stops(self) -> int:
-        return len(self.segments) - 1
+        return self.summary.stops if self.summary else len(self.segments) - 1
 
     @property
     def duration_minutes(self) -> int:
+        if self.summary:
+            return self.summary.duration_minutes
         delta = self.segments[-1].arrive_at - self.segments[0].depart_at
         return int(delta.total_seconds() // 60)
 

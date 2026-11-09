@@ -22,11 +22,12 @@ from cheapwings.engine.expansion import expand_routes_and_dates
 from cheapwings.providers.registry import default_registry
 from cheapwings.storage.db import database, require_current_schema
 from cheapwings.storage.repository import CapacityExceeded, Repository
+from cheapwings.storage.verification import ResultsExpired
 
 
 def create_app(settings=None, registry=None, engine=None):
     settings = settings or Settings.from_env()
-    registry = registry if registry is not None else default_registry()
+    registry = registry if registry is not None else default_registry(settings)
     if len({r.provider.provider_id for r in registry}) != len(registry):
         raise ValueError("Duplicate provider IDs")
     owns_engine = engine is None
@@ -80,6 +81,10 @@ def create_app(settings=None, registry=None, engine=None):
                 401, "Owner bearer token required", headers={"WWW-Authenticate": "Bearer"}
             )
 
+    @app.exception_handler(ResultsExpired)
+    async def results_expired(request, exc):
+        return JSONResponse({'detail': str(exc)}, status_code=410)
+
     @app.exception_handler(KeyError)
     async def not_found(request, exc):
         return JSONResponse({"detail": "Search not found"}, status_code=404)
@@ -103,6 +108,10 @@ def create_app(settings=None, registry=None, engine=None):
                     enabled=r.unavailable_reason is None,
                     disabled_reason=r.unavailable_reason,
                     **asdict(r.provider.capabilities),
+                    permitted_to_aggregate=r.permitted_to_aggregate, can_cache=r.can_cache,
+                    attribution_required=r.attribution_required,
+                    retention_seconds=r.retention_seconds,
+                    usage_policy_reviewed_on=r.usage_policy_reviewed_on,
                 )
                 for r in registry
             ],
@@ -110,7 +119,7 @@ def create_app(settings=None, registry=None, engine=None):
             max_route_date_combinations=settings.max_combinations,
             max_active_jobs=settings.max_active_jobs,
             max_hourly_jobs=settings.max_hourly_jobs,
-            synthetic_mode=True,
+            synthetic_mode=not any(r.live_data for r in registry if r.unavailable_reason is None),
         )
 
     @secured.post(
@@ -133,7 +142,11 @@ def create_app(settings=None, registry=None, engine=None):
                 registry,
                 max_active=settings.max_active_jobs,
                 max_hourly=settings.max_hourly_jobs,
-                budget_seconds=settings.job_budget_seconds,
+                budget_seconds=min(settings.job_budget_seconds, settings.live_retention_seconds)
+                               if any(r.live_data for r in registry) else settings.job_budget_seconds,
+                reprice_budget=settings.reprice_budget,
+                retention_seconds=settings.live_retention_seconds if any(r.live_data for r in registry)
+                                  else None,
             )
         except CapacityExceeded as exc:
             raise HTTPException(429, str(exc)) from None

@@ -24,8 +24,8 @@ This file is the source of truth for current phase status, implementation decisi
 |---|---|---|---|---|
 | P0 Provider feasibility | Done (owner-accepted personal-use GO both providers) | `docs/PROVIDER_POC_REPORT.md`; redacted fixtures in `contracts/fixtures/provider/`; `scripts/provider_probe_skiplagged.py`, `scripts/provider_probe_swoop.py` | None for accepted personal scope; revisit before public/commercial use | P3 adapter integration |
 | P1 Domain + fake provider | Done | `backend/src/cheapwings/{domain,engine,providers}`, 42 passing tests, `python -m cheapwings.cli_demo` offline demo | None | Start P2 — SQLite persistence, durable scheduler, REST API |
-| P2 Durable jobs + API | Implemented; final process acceptance pending | 72 passing tests, migrations/no schema drift, OpenAPI, runbook | Sandbox denies localhost socket bind and .git writes | Run process smoke and commit in unrestricted terminal; then P3 |
-| P3 Real providers + repricing | Not started | | | |
+| P2 Durable jobs + API | Implemented; final process acceptance pending | 72 passing tests, migrations/no schema drift, OpenAPI, runbook | Pushed by owner as 9d5a904; process smoke still unverified here | Carry process-smoke evidence gap; P3 authorized by owner |
+| P3 Real providers + repricing | In progress | Baseline 72 tests; P0 fixtures and pinned SDK source inspected | None for offline implementation | Canonical evidence/partial identity, adapters, repricing/retention, canary |
 | P4 React web | Not started | | | |
 | P5 SwiftUI native iOS | Not started | | | Full Xcode required, only CLT present |
 | P6 Release acceptance | Not started | | | |
@@ -37,17 +37,16 @@ This file is the source of truth for current phase status, implementation decisi
 | swoop | **GO (personal/low-volume use)** — owner accepted 2026-11-09 | MIT-licensed library, but calls Google's undocumented internal RPC with browser TLS impersonation — standard Google ToS risk for unauthorized automated access (contract-violation risk, not verified-quote; realistic consequence is blocking/breakage, not legal action, at hobby volume). Owner explicitly accepted this risk for a personal project. Revisit if this ever scales/commercializes. | `swoop-flights` 0.7.0, probed 2026-11-09 | No hidden-city signal at all (`hidden_city` must always be `unknown` for swoop offers). `price_selector()` returned `is_estimate=True` on the one live call — can't assume `repriced_exact` without further testing on more itineraries. Top-level `is_basic_economy` can disagree with individual `booking_options[].is_basic` — must key offers off `booking_options`, not the top-level flag. |
 
 ## Latest checkpoint summary
-- Phase: P2 implementation complete; gate remains **pending process-level acceptance and commits** because of sandbox restrictions. Do not repeat P0/P1 or assume process smoke passed.
-- Files: SQLAlchemy storage/models/repository, two versioned Alembic migrations/config; application worker/projections/typed contracts; REST routes/main/settings; adapter registry; separate worker executable; 30 integration tests; OpenAPI contract/exporter; `.env.example`, root README, P2 implementation decisions consolidated in this work log, process smoke script.
-- Tests/commands: `.venv/bin/python -m pytest backend/tests -q` → **72 passed** (42 original + 30 P2), one upstream Starlette/httpx deprecation warning. Ruff check on all new P2 Python passes. `alembic upgrade head` and `alembic check` → no schema drift. Original `python -m cheapwings.cli_demo` runs unchanged, 27 combinations/54 items/partial source failure with visibly synthetic prices.
-- Functional evidence: API → SQLite → worker → partial results; accurate unique coverage; distinct offers; decimal strings; pagination snapshot remains stable even as more work completes; restart preserves completed work; lease fencing rejects stale completions; transaction rollback preserves queue consistency; Retry-After survives restart; shared concurrency holds even during cancellation; removed sources become explicit skipped entries; bearer auth and atomic owner quotas enforced.
-- P1 domain/engine/fake adapter files unchanged (confirmed with git diff). Provider approvals remain accepted for personal scope. No real provider calls made or live adapters enabled.
-- Environment restrictions: `git add`/`git commit` failed creating `.git/index.lock` (Operation not permitted). `scripts/p2_smoke.py` failed at localhost socket bind (PermissionError). No commits created; changes are in the working tree, including new untracked files. These are sandbox denials, not application test failures. Do not claim full process acceptance.
-- Next smallest task: in an unrestricted terminal, run `.venv/bin/python scripts/p2_smoke.py`, then stage/commit the P2 work (proposed messages below), update this tracker to P2 Done if smoke passes, then begin P3 per docs/06. Do not delete/reinitialize .git or repeat provider permissions.
+- Phase: P3 started on owner instruction. Owner pushed P2; local HEAD `9d5a904`, clean starting tree. P2 process smoke has no new passing evidence; do not assume it passed.
+- Baseline: `.venv/bin/python -m pytest backend/tests -q` → 72 passed, existing upstream TestClient warning.
+- Plan: (1) represent incomplete itinerary summaries and source/FX evidence without fabrication; (2) fixture-backed Skiplagged MCP and bounded swoop adapters with policy gating; (3) durable candidate repricing/revisions/retention and contract tests; (4) opt-in low-volume canary and final tests.
+- Provider permissions remain owner-accepted for personal/non-redistributed use. No re-approval needed. Calendar optimization is optional and deferred; full detailed matrix remains required.
+- Next smallest task: implement canonical partial-identity/evidence extension, with documented P1 deviation below, then normalize pinned P0 fixtures.
 
 ## Explicit deviation log
 | Date | Approved design changed | Reason/evidence | Owner decision needed? |
 |---|---|---|---|
+| 2026-11-09 | Extend canonical itinerary with an explicit incomplete summary; add nullable offer metadata and source/FX evidence | P0 Skiplagged connecting flights lack segments; swoop local segment times need validated timezone reference. Existing P1 nonempty complete-segment-only representation cannot preserve these candidates honestly. Keep complete-segment behavior unchanged; never fabricate legs, timezones or fare fields. | No — within approved canonical unknown/insufficient-identity requirements |
 
 ## P2 implementation decisions
 
@@ -144,3 +143,18 @@ here. Equivalent durable recovery/fencing/commit invariants run in pytest.
 ### Push retry after documentation consolidation (2026-11-09)
 - Owner requested push and next-task report. Retried staging the consolidated P2 implementation and WORK_LOG.md; `.git/index.lock` creation is still denied (Operation not permitted), so no local commit or push was possible. Local HEAD remains `a3809e5`; all changes remain intact.
 - Next task remains P2 process acceptance: `.venv/bin/python scripts/p2_smoke.py` in an unrestricted terminal, then commit/push and mark P2 Done on success. Next implementation phase is P3: fixture-backed Skiplagged/swoop adapters, conservative normalization, live-data retention policy, and exact-offer repricing where supported. P0 personal-use approvals are already resolved.
+
+## P3 kickoff (2026-11-09)
+- Read WORK_LOG and P3 checkpoints; inspected P0 fixture schemas, SDK 0.7.0 source in throwaway venv, existing queue/storage/API. Checked current official provider documentation as supporting reference; versioned P0 schemas remain integration baseline.
+- Implementation worker must keep this file updated with actual file/test evidence and exact resume action. No separate implementation-notes document.
+
+### P3 checkpoint 1 — adapter normalization and canonical evidence
+- Added canonical `ItinerarySummary`, `SourceEvidence`, normalized provider errors, optional basic-economy metadata, and reprice request/result types. P1 complete-segment behavior unchanged; extension justified in deviation log.
+- Added Skiplagged adapter normalization of original USD + per-quote Decimal FX, upstream hidden-city/virtual-interlining exclusion, unknown seller/fees/basic economy, unmatched summaries. Even nonstop cards remain conservatively unmatched because operating-carrier identity is not provided.
+- Added swoop adapter with bounded one-thread execution retaining its actual slot after await cancellation, per-request TransportConfig (20s HTTP timeout, SDK retries=0), unknown hidden-city classification, seller-option-level basic fare handling, estimate-aware pricing, and explicit airport-reference/DST ambiguity handling.
+- P0 fixture discovery: swoop's 11 returned candidates include **one with no price/currency**. Count unpriced candidates explicitly; never invent a price or silently treat the response as no flights.
+- Added exact MCP JSON/SSE capture before SDK Any fields become binary floats; ephemeral bounded capture only, no payload persistence/logging. Added optional pinned live dependencies: mcp==2.3.0, swoop-flights==0.7.0, airportsdata==20261103 (reference package release verified on PyPI).
+- Added migration `1cf9a06e0e54` for summaries/evidence/provenance, verification state, retention deadline and unpriced counters. Uses nullable inline SQLite REFERENCES and defaults to preserve populated P2 databases.
+- Tests at this checkpoint: `.venv/bin/python -m pytest backend/tests -q` → **80 passed**, existing upstream warning. Eight adapter tests use P0 recorded evidence/injected transports; no external provider calls.
+- Network: `curl https://pypi.org/pypi/airportsdata/json` failed DNS resolution in sandbox. Live dependency installation and live adapter canary not validated. Official docs browsed via web tool for SDK/reference context only, not a successful provider call.
+- Next smallest task: wire summary/evidence projections, policy-gated registry, durable reprice shortlist/revision snapshots and live-data expiration; add integration tests before enabling live configuration.

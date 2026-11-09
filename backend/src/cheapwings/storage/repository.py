@@ -11,6 +11,7 @@ from cheapwings.domain.query import SearchQuery
 from cheapwings.engine.expansion import expand_routes_and_dates
 from cheapwings.storage.db import write_session
 from cheapwings.storage.models import SearchJob, WorkItem
+from cheapwings.storage.verification import VerificationRepository
 
 ACTIVE = ("pending", "retry_wait", "running")
 SUCCESS = ("succeeded_results", "succeeded_empty")
@@ -25,12 +26,12 @@ class CapacityExceeded(Exception):
     pass
 
 
-class Repository:
+class Repository(VerificationRepository):
     def __init__(self, engine):
         self.engine = engine
 
     def create_job(
-        self, query: SearchQuery, registry, *, max_active=2, max_hourly=20, budget_seconds=1800
+        self, query: SearchQuery, registry, *, max_active=2, max_hourly=20, budget_seconds=1800, reprice_budget=0, retention_seconds=None
     ):
         now = now_ms()
         with write_session(self.engine) as s:
@@ -49,6 +50,10 @@ class Repository:
                 created_at=now,
                 updated_at=now,
                 deadline_at=now + budget_seconds * 1000,
+                data_expires_at=now + retention_seconds * 1000 if retention_seconds else None,
+                reprice_budget=reprice_budget,
+                reprice_providers=[r.provider.provider_id for r in registry if
+                                   not r.unavailable_reason and r.provider.capabilities.exact_reprice],
             )
             s.add(job)
             s.flush()
@@ -96,6 +101,13 @@ class Repository:
         items = s.scalars(select(WorkItem).where(WorkItem.job_id == job.id)).all()
         job.updated_at = now
         if any(i.status in ACTIVE for i in items):
+            return
+        if job.deadline_at <= now:
+            job.verification_planned = True
+        if (not job.cancel_requested and job.reprice_budget and job.reprice_providers
+                and not job.verification_planned):
+            job.status = 'running'
+            job.phase = 'verifying'
             return
         counts = Counter(i.status for i in items)
         successes = sum(counts[k] for k in SUCCESS)
@@ -276,11 +288,19 @@ class Repository:
                     state = s.get(ProviderState, item.provider_id)
                     state.next_request_at = max(state.next_request_at, now + delay_ms)
                 attempt.error_code = error_code
+                if item.work_type == 'reprice' and item.status == 'failed_terminal':
+                    job.verification_planned = False
             else:
-                self._store_results(s, job, item, result, now)
-                item.status = result.status.value
-                item.provider_complete = result.provider_complete
-                item.result_count = sum(len(o) for o in result.offers_by_itinerary_index)
+                if item.work_type == 'reprice':
+                    self._store_reprice(s, job, item, result, now)
+                    item.status = 'succeeded_results' if result.available else 'succeeded_empty'
+                else:
+                    self._store_results(s, job, item, result, now)
+                    item.status = result.status.value
+                item.provider_complete = getattr(result, 'provider_complete', None)
+                item.result_count = (len(result.offers) if item.work_type == 'reprice' else
+                                    sum(len(o) for o in result.offers_by_itinerary_index))
+                item.unpriced_candidate_count = getattr(result, 'unpriced_candidate_count', 0)
                 item.last_error_code = None
                 item.last_error_detail = None
             attempt.outcome = item.status
@@ -298,13 +318,22 @@ class Repository:
 
         from pydantic import TypeAdapter
 
+        from cheapwings.domain.itinerary import IdentityConfidence, Itinerary, ItinerarySummary
         from cheapwings.domain.offer import ComparisonStatus, Offer, ThreeValued
         from cheapwings.domain.segments import FlightSegment
         from cheapwings.engine.matching import build_itinerary
-        from cheapwings.storage.models import FareQuote, ItineraryRow, QuoteRevision, SegmentRow
+        from cheapwings.storage.models import (
+            FareQuote,
+            FXRow,
+            ItineraryRow,
+            QuoteRevision,
+            SegmentRow,
+        )
 
-        for segments, offers in zip(result.itineraries, result.offers_by_itinerary_index):
-            itin = build_itinerary(segments, str(uuid4()))
+        for index, (segments, offers) in enumerate(zip(result.itineraries, result.offers_by_itinerary_index)):
+            summary = result.itinerary_summaries[index] if result.itinerary_summaries else None
+            itin = (Itinerary(str(uuid4()), (), IdentityConfidence.INSUFFICIENT_IDENTITY,
+                              summary=summary) if summary else build_itinerary(segments, str(uuid4())))
             row = (
                 s.scalar(
                     select(ItineraryRow).where(
@@ -320,6 +349,8 @@ class Repository:
                     job_id=job.id,
                     fingerprint=itin.fingerprint,
                     identity_confidence=itin.identity_confidence.value,
+                    summary_json=TypeAdapter(ItinerarySummary).dump_python(summary, mode='json')
+                                 if summary else None,
                 )
                 s.add(row)
                 s.flush()
@@ -357,7 +388,18 @@ class Repository:
                 )
                 data = TypeAdapter(Offer).dump_python(public_offer, mode="json")
                 data.pop("provider_quote_handle")
+                fx_row = None
+                if offer.evidence and offer.evidence.fx_snapshot:
+                    fx = offer.evidence.fx_snapshot
+                    from datetime import datetime
+                    fx_row = FXRow(base=fx.base_currency, quote=fx.quote_currency,
+                                   rate_decimal_text=str(fx.rate), source=fx.source,
+                                   observed_at=int(datetime.fromisoformat(fx.retrieved_at).timestamp()*1000))
+                    s.add(fx_row)
+                    s.flush()
                 quote = FareQuote(
+                    work_item_id=item.id,
+                    fx_snapshot_id=fx_row.id if fx_row else None,
                     job_id=job.id,
                     itinerary_id=row.id,
                     provider_id=item.provider_id,
@@ -382,6 +424,7 @@ class Repository:
                         amount_decimal_text=quote.raw_amount_decimal_text,
                         currency=quote.raw_currency,
                         reason="initial_search",
+                        canonical_json=data,
                     )
                 )
 

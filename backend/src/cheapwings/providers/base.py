@@ -12,6 +12,7 @@ from datetime import date, datetime
 from typing import Protocol
 
 from cheapwings.domain.coverage import WorkStatus
+from cheapwings.domain.itinerary import ItinerarySummary
 from cheapwings.domain.offer import Offer, ProviderErrorCode
 from cheapwings.domain.segments import FlightSegment
 
@@ -34,6 +35,7 @@ class SingleDateRouteQuery:
     include_basic_economy: bool
     include_hidden_city: bool
     display_currency: str
+    point_of_sale_country: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -48,7 +50,12 @@ class ProviderSearchResult:
     itineraries: tuple[tuple[FlightSegment, ...], ...]
     offers_by_itinerary_index: tuple[tuple[Offer, ...], ...]
 
+    itinerary_summaries: tuple[ItinerarySummary | None, ...] = ()
+    unpriced_candidate_count: int = 0
+
     def __post_init__(self) -> None:
+        if self.itinerary_summaries and len(self.itinerary_summaries) != len(self.itineraries):
+            raise ValueError("summaries must align with itineraries")
         if len(self.itineraries) != len(self.offers_by_itinerary_index):
             raise ValueError("itineraries and offers_by_itinerary_index must be parallel")
         if self.status == WorkStatus.SUCCEEDED_EMPTY and self.itineraries:
@@ -62,3 +69,19 @@ class SearchProvider(Protocol):
     capabilities: ProviderCapabilities
 
     async def search(self, query: SingleDateRouteQuery) -> ProviderSearchResult: ...
+
+
+@dataclass(frozen=True, slots=True)
+class RepriceRequest:
+    offer: Offer
+    segments: tuple[FlightSegment, ...]
+    query: SingleDateRouteQuery
+
+
+@dataclass(frozen=True, slots=True)
+class ProviderRepriceResult:
+    offers: tuple[Offer, ...]
+    segments: tuple[FlightSegment, ...]
+    available: bool
+    exact_product_match: bool
+    warnings: tuple[str, ...] = ()

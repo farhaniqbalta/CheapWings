@@ -74,6 +74,11 @@ class ProviderCapability(DTO):
     has_booking_link: bool
     has_hidden_city_flag: bool
     has_baggage_details: bool
+    permitted_to_aggregate: bool = True
+    can_cache: bool = True
+    attribution_required: bool = False
+    retention_seconds: int | None = None
+    usage_policy_reviewed_on: str | None = None
 
 
 class Capabilities(DTO):
@@ -93,6 +98,8 @@ class Health(DTO):
 
 class Coverage(DTO):
     work_item_id: str
+    work_type: str = "detailed"
+    unpriced_candidate_count: int = 0
     provider_id: str
     origin: str
     destination: str
@@ -120,7 +127,7 @@ class Job(DTO):
     job_id: str
     query: SearchRequest
     status: JobStatus
-    phase: Literal["searching", "done"]
+    phase: Literal["searching", "verifying", "done"]
     cancel_requested: bool
     created_at: datetime
     updated_at: datetime
@@ -133,6 +140,9 @@ class Job(DTO):
     skipped_unsupported: int
     cancelled_provider_work_items: int
     inventory_completeness: Literal["unknown"] = "unknown"
+    exact_reprice_attempted: int = 0
+    exact_reprice_succeeded: int = 0
+    data_expires_at: datetime | None = None
     provider_status: list[ProviderProgress]
     coverage: list[Coverage]
     warnings: list[str]
@@ -155,7 +165,7 @@ class PublicOffer(DTO):
     seller: str | None
     fare_family: str | None
     cabin: str
-    basic_economy: bool
+    basic_economy: bool | None
     amount_original: str
     currency_original: str
     comparable_amount: str | None
@@ -170,6 +180,12 @@ class PublicOffer(DTO):
     repriced_at: datetime | None
     link: str | None
     link_scope: LinkScope
+    fee_completeness: str = 'unknown'
+    source_checked_at: datetime | None = None
+    point_of_sale_country: str | None = None
+    attribution: str | None = None
+    fx_rate: str | None = None
+    fx_as_of: str | None = None
     warnings: list[str]
 
 
@@ -185,6 +201,7 @@ class PublicItinerary(DTO):
     segments: list[Segment]
     offers: list[PublicOffer]
     ranked_quote_id: str
+    warnings: list[str] = Field(default_factory=list)
 
 
 class Results(DTO):

@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 
+from cheapwings.domain.evidence import SourceEvidence
 from cheapwings.domain.money import Money
 
 
@@ -67,7 +68,7 @@ class Offer:
     seller: str | None
     fare_family: str | None
     cabin: str
-    basic_economy: bool
+    basic_economy: bool | None
 
     amount_original: Money
     comparable_amount: Money | None
@@ -88,6 +89,7 @@ class Offer:
 
     provider_quote_handle: str | None  # opaque, server-only; never serialize to clients
     warnings: tuple[str, ...] = ()
+    evidence: SourceEvidence | None = None
 
     def __post_init__(self) -> None:
         if self.price_status == PriceStatus.REPRICED_EXACT and self.is_estimate:

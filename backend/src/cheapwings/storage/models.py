@@ -19,6 +19,10 @@ class SearchJob(Base):
     updated_at: Mapped[int] = mapped_column(Integer)
     completed_at: Mapped[int | None] = mapped_column(Integer)
     deadline_at: Mapped[int] = mapped_column(Integer)
+    data_expires_at: Mapped[int | None] = mapped_column(Integer)
+    reprice_budget: Mapped[int] = mapped_column(Integer, default=0)
+    reprice_providers: Mapped[list] = mapped_column(JSON, default=list)
+    verification_planned: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class WorkItem(Base):
@@ -51,6 +55,7 @@ class WorkItem(Base):
     last_error_detail: Mapped[str | None] = mapped_column(Text)
     provider_complete: Mapped[bool | None] = mapped_column(Boolean)
     result_count: Mapped[int | None] = mapped_column(Integer)
+    unpriced_candidate_count: Mapped[int] = mapped_column(Integer, default=0)
     started_at: Mapped[int | None] = mapped_column(Integer)
     finished_at: Mapped[int | None] = mapped_column(Integer)
 
@@ -74,6 +79,7 @@ class ItineraryRow(Base):
     job_id: Mapped[str] = mapped_column(ForeignKey("search_jobs.id"), index=True)
     fingerprint: Mapped[str | None] = mapped_column(String)
     identity_confidence: Mapped[str] = mapped_column(String)
+    summary_json: Mapped[dict | None] = mapped_column(JSON)
 
 
 class SegmentRow(Base):
@@ -109,6 +115,7 @@ class FareQuote(Base):
     comparable_currency: Mapped[str | None] = mapped_column(String)
     canonical_json: Mapped[dict] = mapped_column(JSON)
     provider_quote_handle_server_side: Mapped[str | None] = mapped_column(Text)
+    work_item_id: Mapped[str | None] = mapped_column(ForeignKey("work_items.id"), index=True)
     fx_snapshot_id: Mapped[int | None] = mapped_column(ForeignKey("fx_snapshots.id"))
 
 
@@ -120,6 +127,7 @@ class QuoteRevision(Base):
     amount_decimal_text: Mapped[str] = mapped_column(Text)
     currency: Mapped[str] = mapped_column(String)
     reason: Mapped[str] = mapped_column(String)
+    canonical_json: Mapped[dict | None] = mapped_column(JSON)
 
 
 class ProviderState(Base):

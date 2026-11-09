@@ -11,15 +11,16 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from cheapwings.application import contracts as dto
-from cheapwings.domain.itinerary import IdentityConfidence, Itinerary
+from cheapwings.domain.itinerary import IdentityConfidence, Itinerary, ItinerarySummary
 from cheapwings.domain.offer import ComparisonStatus, LinkScope, Offer, PriceStatus
 from cheapwings.domain.query import SearchQuery
 from cheapwings.domain.segments import FlightSegment
 from cheapwings.engine.expansion import expand_routes_and_dates
 from cheapwings.engine.matching import ItineraryGroup
 from cheapwings.engine.ranking import best_checked_deal, lowest_advertised
-from cheapwings.storage.models import FareQuote, ItineraryRow, SegmentRow
+from cheapwings.storage.models import FareQuote, ItineraryRow, QuoteRevision, SegmentRow
 from cheapwings.storage.repository import SUCCESS, now_ms
+from cheapwings.storage.verification import ResultsExpired
 
 
 def instant(ms):
@@ -37,10 +38,12 @@ def request_snapshot(data):
 
 def status_projection(repo, job_id):
     job, items = repo.get_job(job_id)
-    counts = Counter(i.status for i in items)
+    detailed = [i for i in items if i.work_type == 'detailed']
+    reprices = [i for i in items if i.work_type == 'reprice']
+    counts = Counter(i.status for i in detailed)
     providers = []
-    for provider_id in sorted({i.provider_id for i in items}):
-        entries = [i for i in items if i.provider_id == provider_id]
+    for provider_id in sorted({i.provider_id for i in detailed}):
+        entries = [i for i in detailed if i.provider_id == provider_id]
         pc = Counter(i.status for i in entries)
         providers.append(
             dto.ProviderProgress(
@@ -58,7 +61,14 @@ def status_projection(repo, job_id):
     warnings = ["Inventory completeness is unknown; coverage counts provider queries only."]
     if job.status in ("partial", "failed", "cancelled"):
         warnings.append("Search is incomplete; inspect provider coverage and errors.")
+    if job.data_expires_at and job.data_expires_at <= now_ms():
+        warnings.append('Live fare data expired and is no longer available; start a new search.')
+    if any(i.unpriced_candidate_count for i in detailed):
+        warnings.append('Some source candidates had no price; see unpriced_candidate_count in coverage.')
     return dto.Job(
+        exact_reprice_attempted=sum(i.attempts for i in reprices),
+        exact_reprice_succeeded=_exact_reprice_count(repo, job_id),
+        data_expires_at=instant(job.data_expires_at),
         job_id=job.id,
         query=request_snapshot(job.query_json),
         status=job.status,
@@ -70,9 +80,9 @@ def status_projection(repo, job_id):
             expand_routes_and_dates(SearchQuery.model_validate(job.query_json))
         ),
         covered_route_date_combinations=len(
-            {(i.origin, i.destination, i.departure_date) for i in items if i.status in SUCCESS}
+            {(i.origin, i.destination, i.departure_date) for i in detailed if i.status in SUCCESS}
         ),
-        total_provider_work_items=len(items),
+        total_provider_work_items=len(detailed),
         succeeded_provider_work_items=sum(counts[k] for k in SUCCESS),
         succeeded_empty=counts["succeeded_empty"],
         failed_provider_work_items=counts["failed_terminal"],
@@ -82,6 +92,8 @@ def status_projection(repo, job_id):
         coverage=[
             dto.Coverage(
                 work_item_id=i.id,
+                work_type=i.work_type,
+                unpriced_candidate_count=i.unpriced_candidate_count,
                 provider_id=i.provider_id,
                 origin=i.origin,
                 destination=i.destination,
@@ -101,11 +113,19 @@ def status_projection(repo, job_id):
     )
 
 
+def _exact_reprice_count(repo, job_id):
+    with Session(repo.engine) as s:
+        return s.scalar(select(func.count()).select_from(QuoteRevision).join(FareQuote).where(
+            FareQuote.job_id == job_id, QuoteRevision.reason == 'repriced_exact')) or 0
+
+
 def public_offer(offer, row_id):
+    evidence_fields = {'fee_completeness', 'source_checked_at', 'point_of_sale_country',
+                       'attribution', 'fx_rate', 'fx_as_of'}
     data = {
         name: getattr(offer, name)
         for name in dto.PublicOffer.model_fields
-        if name
+        if name not in evidence_fields and name
         not in (
             "quote_id",
             "amount_original",
@@ -114,6 +134,13 @@ def public_offer(offer, row_id):
             "comparable_currency",
         )
     }
+    evidence = offer.evidence
+    fx = evidence.fx_snapshot if evidence else None
+    data.update(fee_completeness=evidence.fee_completeness if evidence else 'unknown',
+                source_checked_at=evidence.source_checked_at if evidence else None,
+                point_of_sale_country=evidence.point_of_sale_country if evidence else None,
+                attribution=evidence.attribution if evidence else None,
+                fx_rate=str(fx.rate) if fx else None, fx_as_of=fx.retrieved_at if fx else None)
     # Only HTTP(S) external navigation is supported; userinfo and unsafe schemes rejected.
     try:
         link = urlsplit(offer.link or "")
@@ -136,17 +163,21 @@ def public_offer(offer, row_id):
 
 def results_projection(repo, job_id, sort, cursor=None, limit=50):
     job, _ = repo.get_job(job_id)
+    if job.data_expires_at and job.data_expires_at <= now_ms():
+        repo.purge_expired()
+        raise ResultsExpired('Live fare data expired; start a new search')
     with Session(repo.engine) as s:
         maximum = s.scalar(select(func.max(FareQuote.id)).where(FareQuote.job_id == job_id)) or 0
+        revision_cutoff = s.scalar(select(func.max(QuoteRevision.id))) or 0
         cutoff, offset, as_of = maximum, 0, now_ms()
         if cursor:
             try:
                 payload = json.loads(base64.urlsafe_b64decode(cursor))
-                cursor_job, cursor_sort, cutoff, offset, as_of = payload
+                cursor_job, cursor_sort, cutoff, offset, as_of, revision_cutoff = payload
                 if (
                     cursor_job != job_id
                     or cursor_sort != sort
-                    or any(type(x) is not int or x < 0 for x in (cutoff, offset, as_of))
+                    or any(type(x) is not int or x < 0 for x in (cutoff, offset, as_of, revision_cutoff))
                     or cutoff > maximum
                 ):
                     raise ValueError()
@@ -175,11 +206,15 @@ def results_projection(repo, job_id, sort, cursor=None, limit=50):
                         ),
                         identity_confidence=IdentityConfidence(itin.identity_confidence),
                         fingerprint=itin.fingerprint,
+                        summary=TypeAdapter(ItinerarySummary).validate_python(itin.summary_json)
+                                if itin.summary_json else None,
                     )
                 )
-            offer = TypeAdapter(Offer).validate_python(
-                dict(row.canonical_json, provider_quote_handle=None)
-            )
+            revision = s.scalar(select(QuoteRevision).where(
+                QuoteRevision.quote_id == row.id, QuoteRevision.id <= revision_cutoff
+            ).order_by(QuoteRevision.id.desc()).limit(1))
+            data = revision.canonical_json if revision and revision.canonical_json else row.canonical_json
+            offer = TypeAdapter(Offer).validate_python(dict(data, provider_quote_handle=None))
             # Internal DB key disambiguates quote identifiers shared by different adapters.
             from dataclasses import replace
 
@@ -213,11 +248,12 @@ def results_projection(repo, job_id, sort, cursor=None, limit=50):
             ordered.append(
                 dto.PublicItinerary(
                     itinerary_id=key,
+                    warnings=list(itin.summary.warnings) if itin.summary else [],
                     identity_confidence=itin.identity_confidence,
                     origin=itin.origin,
                     destination=itin.destination,
-                    departure_local=itin.segments[0].depart_at,
-                    arrival_local=itin.segments[-1].arrive_at,
+                    departure_local=itin.summary.depart_at if itin.summary else itin.segments[0].depart_at,
+                    arrival_local=itin.summary.arrive_at if itin.summary else itin.segments[-1].arrive_at,
                     duration_minutes=itin.duration_minutes,
                     stops=itin.stops,
                     segments=[
@@ -231,7 +267,7 @@ def results_projection(repo, job_id, sort, cursor=None, limit=50):
         next_cursor = None
         if offset + limit < len(ordered):
             next_cursor = base64.urlsafe_b64encode(
-                json.dumps([job_id, sort, cutoff, offset + limit, as_of]).encode()
+                json.dumps([job_id, sort, cutoff, offset + limit, as_of, revision_cutoff]).encode()
             ).decode()
         return dto.Results(
             job_id=job_id,

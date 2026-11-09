@@ -331,6 +331,16 @@
             "type": "string",
             "title": "Work Item Id"
           },
+          "work_type": {
+            "type": "string",
+            "title": "Work Type",
+            "default": "detailed"
+          },
+          "unpriced_candidate_count": {
+            "type": "integer",
+            "title": "Unpriced Candidate Count",
+            "default": 0
+          },
           "provider_id": {
             "type": "string",
             "title": "Provider Id"
@@ -558,6 +568,7 @@
             "type": "string",
             "enum": [
               "searching",
+              "verifying",
               "done"
             ],
             "title": "Phase"
@@ -613,6 +624,28 @@
             "const": "unknown",
             "title": "Inventory Completeness",
             "default": "unknown"
+          },
+          "exact_reprice_attempted": {
+            "type": "integer",
+            "title": "Exact Reprice Attempted",
+            "default": 0
+          },
+          "exact_reprice_succeeded": {
+            "type": "integer",
+            "title": "Exact Reprice Succeeded",
+            "default": 0
+          },
+          "data_expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Expires At"
           },
           "provider_status": {
             "items": {
@@ -737,6 +770,43 @@
           "has_baggage_details": {
             "type": "boolean",
             "title": "Has Baggage Details"
+          },
+          "permitted_to_aggregate": {
+            "type": "boolean",
+            "title": "Permitted To Aggregate",
+            "default": true
+          },
+          "can_cache": {
+            "type": "boolean",
+            "title": "Can Cache",
+            "default": true
+          },
+          "attribution_required": {
+            "type": "boolean",
+            "title": "Attribution Required",
+            "default": false
+          },
+          "retention_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retention Seconds"
+          },
+          "usage_policy_reviewed_on": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usage Policy Reviewed On"
           }
         },
         "additionalProperties": false,
@@ -871,6 +941,13 @@
           "ranked_quote_id": {
             "type": "string",
             "title": "Ranked Quote Id"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
           }
         },
         "additionalProperties": false,
@@ -927,7 +1004,14 @@
             "title": "Cabin"
           },
           "basic_economy": {
-            "type": "boolean",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Basic Economy"
           },
           "amount_original": {
@@ -1009,6 +1093,67 @@
           },
           "link_scope": {
             "$ref": "#/components/schemas/LinkScope"
+          },
+          "fee_completeness": {
+            "type": "string",
+            "title": "Fee Completeness",
+            "default": "unknown"
+          },
+          "source_checked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Checked At"
+          },
+          "point_of_sale_country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Point Of Sale Country"
+          },
+          "attribution": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attribution"
+          },
+          "fx_rate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fx Rate"
+          },
+          "fx_as_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fx As Of"
           },
           "warnings": {
             "items": {

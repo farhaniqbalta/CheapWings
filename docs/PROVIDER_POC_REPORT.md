@@ -78,17 +78,19 @@ Functionally the stronger provider — full segment identity, basic-economy togg
 
 **At least one provider (both, conditionally) exposes a usable, real, low-volume-compliant one-way search for the target route/date class.** Gate passed — proceed to P1 (domain + fake-provider slice) is unblocked. Neither provider reaches an unconditional GO:
 
-| Provider | Verdict | Blocking condition before wider/public use |
+| Provider | Verdict | Condition for wider/public use |
 |---|---|---|
-| Skiplagged MCP | CONDITIONAL GO | Site terms ban commercial use/redistribution/scraping; no MCP-specific permission found. Personal single-owner use only. |
-| swoop | CONDITIONAL GO | Legal status of unauthorized Google RPC access unresolved; owner risk acceptance needed for anything beyond personal/low-volume use. |
+| Skiplagged MCP | **GO** — personal/single-owner use (owner-accepted 2026-11-09) | Site terms ban commercial use/redistribution/scraping; no MCP-specific permission found. Must revisit (seek written permission) before any public/multi-user launch. |
+| swoop | **GO** — personal/low-volume use (owner-accepted 2026-11-09) | Legal status of unauthorized Google RPC access remains unresolved in the abstract; owner explicitly accepted this risk for a personal project. Must revisit if this ever scales or becomes commercial. |
 
-### Decisions NOT made here (owner-level, per `docs/06` stop/escalation rule)
+### Owner decisions (resolved 2026-11-09, per `docs/06` stop/escalation rule)
 
-1. Whether personal, non-redistributed, single-owner use of Skiplagged MCP is acceptable despite the site-wide commercial/redistribution ban (the MCP server's own design suggests Skiplagged intends this, but nothing in writing says so).
-2. Whether swoop's reliance on undocumented Google RPC access is an acceptable ongoing legal risk for this project, even at low volume.
+These were flagged as fundamental-incompatibility-style questions rather than resolved unilaterally. Owner's answers:
 
-Both are exactly the kind of **"a proposed feature changes non-negotiable scope" / fundamental incompatibility** case `docs/06_IMPLEMENTATION_CHECKPOINTS.md` says to stop and flag rather than resolve unilaterally — they're flagged here, not decided.
+1. **Skiplagged, personal/non-redistributed use despite the site-wide commercial/redistribution ban:** accepted, conditioned on the project staying personal/non-redistributed. Confirmed understanding: fine to run for yourself (and people you personally let use it), not fine to turn into a public signup product without separately asking Skiplagged.
+2. **swoop's reliance on undocumented Google RPC access:** accepted for a personal, low-volume project after the legal-risk tradeoff was explained (contract-violation / blocking risk, not realistic legal-action risk at hobby scale). Revisit before any scale-up or commercialization.
+
+Both acceptances are personal-project-scoped. `provider_registry.permitted_to_aggregate` and `can_cache` should still default to the conservative personal-use settings described per-provider above — the owner's acceptance is not a blanket "treat as a licensed commercial API."
 
 ### Follow-up probe items
 

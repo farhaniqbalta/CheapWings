@@ -1,6 +1,6 @@
 # WORK_LOG.md — Worker Progress Tracker
 
-This file is the source of truth for current phase status, implementation decisions, provider approvals, validation evidence, blockers, and the exact next task. Checkpoint entries below are historical; use the phase tracker and latest checkpoint summary for current status.
+This file is the source of truth for current phase status, implementation decisions, provider approvals, validation evidence, blockers, and the exact next task. **All provider reports, live-result assessments, UI/UX handoff reports, test summaries, and release reports belong in this file. Do not create separate report files.** Static specifications/prompts, code, contracts, fixtures, and screenshots can remain separate artifacts linked from here. Checkpoint entries below are historical; use the phase tracker and latest checkpoint summary for current status.
 
 ## Project baseline
 - Date: 2026-11-09
@@ -22,7 +22,7 @@ This file is the source of truth for current phase status, implementation decisi
 ## Phase tracker
 | Phase | Status | Evidence | Blocking issue | Next action |
 |---|---|---|---|---|
-| P0 Provider feasibility | Done (owner-accepted personal-use GO both providers) | `docs/PROVIDER_POC_REPORT.md`; redacted fixtures in `contracts/fixtures/provider/`; `scripts/provider_probe_skiplagged.py`, `scripts/provider_probe_swoop.py` | None for accepted personal scope; revisit before public/commercial use | P3 adapter integration |
+| P0 Provider feasibility | Done (owner-accepted personal-use GO both providers) | [provider feasibility evidence](#provider-feasibility-evidence); redacted fixtures in `contracts/fixtures/provider/`; `scripts/provider_probe_skiplagged.py`, `scripts/provider_probe_swoop.py` | None for accepted personal scope; revisit before public/commercial use | P3 adapter integration |
 | P1 Domain + fake provider | Done | `backend/src/cheapwings/{domain,engine,providers}`, 42 passing tests, `python -m cheapwings.cli_demo` offline demo | None | Start P2 — SQLite persistence, durable scheduler, REST API |
 | P2 Durable jobs + API | Done | 72 passing tests at P2, migrations/no schema drift, OpenAPI, runbook. `python scripts/p2_smoke.py` now actually run (see below) — real process launch, worker kill/restart mid-job, 3/3 covered, 6 distinct offers, no duplicate attempts | None | — |
 | P3 Real providers + repricing | Done (offline + live canary); real-world usage still opt-in | 85 passing tests incl. an integration test that replays real redacted P0 fixtures through the production adapters end-to-end; live canary run through the actual adapter classes (not raw SDK) in this session | None blocking; `ENABLED_PROVIDERS` still defaults to `fake` | Owner can flip `ENABLED_PROVIDERS=skiplagged,swoop` for real personal use whenever ready; otherwise start P4 |
@@ -38,13 +38,16 @@ This file is the source of truth for current phase status, implementation decisi
 | swoop | **GO (personal/low-volume use)** — owner accepted 2026-11-09 | MIT-licensed library, but calls Google's undocumented internal RPC with browser TLS impersonation — standard Google ToS risk for unauthorized automated access (contract-violation risk, not verified-quote; realistic consequence is blocking/breakage, not legal action, at hobby volume). Owner explicitly accepted this risk for a personal project. Revisit if this ever scales/commercializes. | `swoop-flights` 0.7.0, probed 2026-11-09 | No hidden-city signal at all (`hidden_city` must always be `unknown` for swoop offers). `price_selector()` returned `is_estimate=True` on the one live call — can't assume `repriced_exact` without further testing on more itineraries. Top-level `is_basic_economy` can disagree with individual `booking_options[].is_basic` — must key offers off `booking_options`, not the top-level flag. |
 
 ## Latest checkpoint summary
+- **P4.5 handover branch:** `p4.5-ui-ux-handoff`, created from main at `532f080` on owner instruction. This branch contains consolidated reporting and the UI/UX handoff; no P4.5 redesign code has been implemented. Read the P4.5 handover task section below before editing.
+- Reporting rule updated by owner: all provider evidence, test/release reports and UI/UX handoff findings live here. Complete P0/P3 provider evidence has been merged under Provider feasibility evidence; standalone report removed. Active specs/prompts no longer instruct agents to create report files.
+- Latest owner review: inspected the saved CGK → CTS real search in Chromium and read-only storage. It was cancelled at 36/78 covered dates with 954 advertised offers, 14 swoop schema failures and zero reprice work. Safe ranking is correctly empty; review priorities and returned-price examples are recorded in the owner live-results review section. No new upstream calls or application changes were made.
 - Phase: P4 implemented and follow-up browser acceptance passed; P4.5 UI/UX handoff requested by owner and prepared. Web follow-up pushed to `origin/main` as `339307d` (git push succeeded). Earlier sandbox-blocker entries below are historical; escalated operations now allow Git/browser/server execution in this session.
 - Validation: 85 backend tests, 3 frontend tests and TypeScript/production build passed in the follow-up. `npm run test:browser` now actually passed **all four scenarios**: empty-safe → advertised + pagination/reload, runtime auth, expiry, and cancellation with retained fares. Current browser suite viewport is 375px; earlier base-P4 visual checks at 375/768/1440 remain recorded. No new wider-viewport screenshot claim.
 - Launched fake API+worker+web first as requested; actual HTTP/CORS + 2-combination synthetic worker search passed. Then owner explicitly requested real data: stopped fake API/worker, migrated isolated `data/webtest-live.db`, updated ignored local `.env` to `ENABLED_PROVIDERS=skiplagged,swoop`, `CHEAPWINGS_USE_SCOPE=personal`, and restarted both services. Existing secrets preserved; `.env` is mode 0600 and must never be committed. Tracked env examples still default to fake.
 - Live wiring verified over HTTP: web 200; capabilities `synthetic_mode=false`; both Skiplagged and swoop enabled with pinned dependencies present. No additional live provider probe submitted by this agent during the switch; actual live fare outcomes depend on the owner's searches. Use Lowest advertised for indicative/risk-unknown fares; never relax safe ranking to populate a screen.
 - Running services: web `http://localhost:5173/` (session 70252, PID 81275); live API `http://127.0.0.1:8000` (session 35644, PID 81757); live worker session 6239. Leave these running for the owner's test. Old fake sessions 69133/80467 were stopped. Original fake DB `data/webtest.db` preserved separately. Browser opened on fresh root search page, not a fake job URL.
 - P4.5 artifacts: `docs/P4_5_UI_UX_AGENT_PROMPT.md` is the copy-ready designer prompt; `docs/P4_5_UI_UX_INTEGRATION.md` defines file/behavior boundaries, acceptance cases and designer-return template. WORK_LOG.md remains the sole progress/decision source. Webview work refines React; native SwiftUI P5 remains required.
-- Next smallest task: owner tests live web app and hands the prompt to the UI/UX agent. That agent returns focused React/CSS branch/patch and `docs/design/P4_5_RETURN.md`; implementation agent integrates into existing app, runs stated checks, and records P4.5 acceptance. Avoid competing edits to `apps/web` while design work is in progress. Full Xcode is still required before P5 build/simulator acceptance.
+- Next smallest task: UI/UX agent uses `p4.5-ui-ux-handoff` and the P4.5 prompt/integration guide, implements the presentation task checklist below in an isolated checkout, and appends its return evidence here. Implementation agent reviews/integrates and validates before P4.5 acceptance. Keep the owner's running live test unchanged; use fake/intercepted data for design QA. Full Xcode remains required for P5 build/simulator acceptance.
 
 ## Explicit deviation log
 | Date | Approved design changed | Reason/evidence | Owner decision needed? |
@@ -181,7 +184,7 @@ here. Equivalent durable recovery/fencing/commit invariants run in pytest.
 ### P3 completion record (historical)
 - Phase: P3 complete (offline implementation + live canary). This session resumed in a *writable* sandbox (unlike the prior agent's read-only `.git`): committed the P3 checkpoint-1 work that was sitting uncommitted (adapters, evidence, reprice, registry, migration — commit `9c05a20`), then closed the two gaps the WORK_LOG flagged as unverified.
 - **P2 process smoke, finally run:** `python scripts/p2_smoke.py` → `{"status": "completed", "worker_restarted": true, "completed_before_restart": 1, "covered_after_restart": 3, "distinct_offers": 6, "all_prices": "SYNTHETIC-FIXTURE-NOT-A-REAL-FARE"}`. Real Uvicorn + separate worker process, killed and restarted mid-job, no duplicate attempts on already-completed work. P2's previously-unverified process-level gate is now closed.
-- **P3 live canary, through the real adapter classes:** installed pinned `backend[live]` deps (`mcp`==2.3.0, `swoop-flights`==0.7.0, `airportsdata`==20261103) and ran `scripts/p3_live_canary.py` (new, not a raw-SDK probe like the P0 scripts — calls `SkiplaggedProvider.search()` / `SwoopProvider.search()` / `SwoopProvider.reprice()` directly). Both adapters parsed live responses cleanly with no exceptions; swoop's live call reproduced the exact "1 unpriced candidate" quirk found in the P0 fixture, confirming the adapter's `unpriced_candidate_count` handling is correct on fresh data, not just the frozen fixture. Full detail and redacted evidence in `docs/PROVIDER_POC_REPORT.md`'s new "P3 live canary" section. Raw script output (contains swoop's opaque selector) was not committed, per evidence-retention rules.
+- **P3 live canary, through the real adapter classes:** installed pinned `backend[live]` deps (`mcp`==2.3.0, `swoop-flights`==0.7.0, `airportsdata`==20261103) and ran `scripts/p3_live_canary.py` (new, not a raw-SDK probe like the P0 scripts — calls `SkiplaggedProvider.search()` / `SwoopProvider.search()` / `SwoopProvider.reprice()` directly). Both adapters parsed live responses cleanly with no exceptions; swoop's live call reproduced the exact "1 unpriced candidate" quirk found in the P0 fixture, confirming the adapter's `unpriced_candidate_count` handling is correct on fresh data, not just the frozen fixture. Full detail and redacted evidence in [provider feasibility evidence](#provider-feasibility-evidence)'s new "P3 live canary" section. Raw script output (contains swoop's opaque selector) was not committed, per evidence-retention rules.
 - On inspection, the code already uncommitted from the other agent's session covered **far more of P3 than its own "next smallest task" note suggested**: durable reprice shortlist (`storage/verification.py::schedule_verification`), append-only quote revisions, live-data retention/expiry+purge, policy-gated registry (`permitted_to_aggregate` tied to `CHEAPWINGS_USE_SCOPE`), and full API/evidence projection wiring were all already implemented and wired into `JobRunner.tick()`. The "next smallest task" text in the prior checkpoint was stale relative to the actual diff; don't trust a "next task" line over reading the code when picking up another agent's unfinished session.
 - Baseline/final: `.venv/bin/python -m pytest backend/tests -q` → **85 passed** (same as inherited, confirmed stable through this session's changes). `ruff check` → 8 pre-existing cosmetic nits (unsafe-fix-only), no correctness issues.
 - `ENABLED_PROVIDERS` still defaults to `fake` in `.env.example` — real personal use requires the owner to explicitly set `ENABLED_PROVIDERS=skiplagged,swoop` (and `CHEAPWINGS_USE_SCOPE=personal`, already the default) when ready; nothing in this session changed that default.
@@ -205,3 +208,201 @@ here. Equivalent durable recovery/fencing/commit invariants run in pytest.
 - Owner then requested real data. Verified `mcp==2.3.0`, `swoop-flights==0.7.0`, `airportsdata==20261103`; both registry sources enabled. Local `.env` now selects personal live sources and `sqlite:///./data/webtest-live.db`, with 20 reprice budget and 3600s live retention; never expose or commit this file. Started real worker/API and verified non-synthetic capabilities; reopened browser at root search page. Fake data remains isolated in its old database.
 - Added two P4.5 handoff documents: copy-ready UI/UX prompt, integration boundaries/checklist and return template. The designer must deliver edits to existing React components/CSS, preserve backend ranking/money/unknown semantics and tested auth/recovery/pagination, use synthetic design evidence, and leave backend/contracts/provider configuration intact. No redesign implementation or P4.5 acceptance is claimed yet.
 - Updated documentation references and current phase tracker. Next: owner live test and designer output, then implementation-agent integration/validation. Keep the running local services available; do not restart them in fake mode while the owner is testing live.
+
+### Owner live-results review — CGK → CTS (2026-11-09)
+- Owner requested assessment only; inspected saved live job `7bdc5913-67a1-43df-9aee-f77037cd1f06` in read-only SQLite and rendered that same job in an isolated Chromium page at 1440px and 375px. Did not change owner's tab, submit searches, call upstream sources, alter ranking, or expose private handles. Review screenshots/text are ephemeral `/tmp/cheapwings-review-*`; do not commit live fare payloads/screenshots as design fixtures.
+- Request: CGK → CTS, 2026-12-13 through 2027-02-28 inclusive (78 dates), one adult/economy/IDR, include-basic-economy=true, checked bag not required, include-hidden-city=true. Job cancelled after 541s; 36/78 unique dates covered, spanning Dec 13–Jan 17. Remaining dates are unsearched, not proven expensive/unavailable.
+- Detailed work: Skiplagged 35 results + 1 successful empty + 42 cancelled; swoop 21 results + 14 schema_changed failures + 43 cancelled. Swoop recorded 18 unpriced candidates. Full provider inventory remains unknown; all 35 Skiplagged result lists were marked truncated. No new live requests used to diagnose the schema failures; exact parser cause remains unproven.
+- Retained data: 954 separate quotes/itineraries (700 Skiplagged indicative, 254 swoop recent_search); 253 exact-segment itineraries and 701 insufficient-identity summaries. Every quote has extra_cost_unknown, seller/fare/baggage unknown; all swoop hidden_city=unknown, Skiplagged hidden_city=no from forced upstream exclusions. Zero repricing work items and zero exact-repriced offers. Safe-ranked view is correctly empty under current evidence requirements.
+- Observed leads (returned snapshots only, no booking/total guarantee): Skiplagged Jan 1 at IDR 5,511,960 (original USD 305 × quoted rate 18,072; 23h40m, one stop, missing full legs). Swoop Jan 5 at IDR 5,751,400 (CGK–TPE–CTS, CI2764/CI130, 10h20m); Jan 6 same amount/duration with CI764/CI130. Jan 5 is IDR 239,440 above the lower indicative number, with a materially shorter observed itinerary, but taxes/fees/bags/seller confirmation still absent. Do not interpret this partial job as cheapest across the entire Dec–Feb range.
+- UI findings: no browser page errors or 375px horizontal overflow; cancelled safe-empty view has no explanation/CTA despite retained advertised leads. Desktop header repeats price once unformatted (`5511960 IDR`) and again formatted. On mobile, no fare appears above the first 850px because cancellation, coverage and repeated warnings dominate. Job route/date/filter summary is missing; source errors/unpriced count are not exposed usefully (copy leaks `unpriced_candidate_count` implementation name). Airline/connection context is secondary or absent, and warnings repeat across cards.
+- Suggested engineering priorities, not implemented by this assessment: (1) diagnose the 14 source-schema failures with sanitized targeted fixtures; (2) allow budgeted candidate checks during long scans and/or a server-owned user-triggered check so cancelled large jobs can still expose seller evidence; currently detailed scanning precedes verification; (3) preserve source airline names as non-identity summary metadata when supplied, without inventing legs/merging uncertain itineraries; (4) remove/disable/explain hidden-city inclusion control because this Skiplagged adapter always requests includeHiddenCity=false regardless of the query toggle, while swoop cannot classify it.
+- Suggested P4.5 presentation priorities: explicit "954 advertised offers; 0 meet safe comparable criteria" state with advertised CTA; compact route/date/filter + 36/78 coverage summary; collapsible error details showing 14 swoop failures and 18 unpriced candidates in plain language; compact price/date/duration/connection/source rows; expandable repeated evidence; consistently formatted currency; distinguish retrieved time from actual price-checked time. A date-level cheapest summary should use backend Decimal/coverage semantics if added, not frontend money calculations or query pruning.
+- No application code changed for this review. Do not weaken hidden-city/unknown-cost exclusions to populate the default view. Owner can use a narrow date window for faster end-to-end checking while engineering work is planned. P4.5 design brief remains the active handoff; changes above require implementation/validation before any completion claim.
+
+## Provider feasibility evidence
+
+Consolidated in full from the former standalone provider report at the owner's
+request. P0 findings below are historical observations from 2026-11-09, followed
+by the P3 production-adapter canary. The provider decision ledger above governs
+current owner-accepted personal-use scope; earlier conditional/unresolved wording
+is retained as historical evidence and does not reopen those decisions.
+
+Evidence corrections already established during implementation: the P0 swoop
+search contained 11 candidates, **10 priced and 1 unpriced**, despite the original
+"11 priced" wording below. Production Skiplagged normalization conservatively
+keeps even nonstop cards unmatched because operating-carrier identity is absent.
+
+**Date:** 2026-11-09
+**Route/date used for all live probes:** MEL → DPS, departing 2026-12-16, one-way, 1 adult, economy (the same non-live example fixture route named in `docs/README.md`). All prices below are real numbers returned by the providers at probe time — they are **not fabricated**, but they are a snapshot and must not be treated as current or bookable.
+**Environment:** macOS, Python 3.12.16 (installed via Homebrew for this probe), `mcp` SDK 2.3.0, `swoop-flights` 0.7.0 (installed from PyPI into a throwaway venv `.venv_probe/`, not committed).
+**Redacted fixtures:** `contracts/fixtures/provider/skiplagged_probe_*.json`, `contracts/fixtures/provider/swoop_probe_*.json`. Opaque `selector` and `booking_url` values were replaced with `<redacted-... len=N>` placeholders before committing, per `docs/07_TESTING_AND_OPERATIONS.md`'s evidence-retention rule. Raw unredacted responses were not persisted outside this session.
+**Exact probe commands:**
+```bash
+source .venv_probe/bin/activate
+python scripts/provider_probe_skiplagged.py            # tools/list only
+python scripts/provider_probe_skiplagged.py --search --faq   # + 1 search call + 4 FAQ queries
+python scripts/provider_probe_swoop.py                  # 1 search + 1 price_selector + 1 basic-economy search
+```
+Each probe script makes a small, fixed number of calls (no loops, no retries beyond library defaults) and was run once per variant in this session — low-volume by construction.
+
+**Not performed in this session:** manual side-by-side comparison against the Skiplagged website or Google Flights in a browser. This environment has no browser/display available to the agent. This is a real gap in the P0 checklist (`docs/03`'s "attempt a low-cost comparison with the supplier/airline website") and should be done manually by the owner before relying on either provider for real money decisions. Treat the manual-comparison item below as **unverified**, not passed.
+
+---
+
+### Skiplagged remote MCP
+
+**Endpoint:** `https://mcp.skiplagged.com/mcp` (no auth — confirmed, connected without credentials)
+**Source:** https://skiplagged.github.io/mcp/ (docs), `skiplagged.com/terms` (site-wide terms)
+
+#### Claims vs observed
+
+| Claim (docs) | Observed (this session) |
+|---|---|
+| No authentication required | Confirmed — `ClientSession.initialize()` succeeded with no credentials. |
+| Tools include flight/calendar/hotel/car search | `tools/list` returned exactly 10 tools: `sk_flights_search`, `sk_destinations_anywhere`, `sk_flex_departure_calendar`, `sk_flex_return_calendar`, `sk_hotels_search`, `sk_cars_search`, `sk_hotel_details`, `sk_faq_search`, `sk_resolve_location`, `sk_resolve_iata`. **No repricing/price-check/selector tool of any kind exists.** This is a hard fact, not an inference: repricing is not a Skiplagged MCP capability. `ProviderCapabilities.exact_reprice=False` for Skiplagged, confirmed. |
+| Prices are approximate in non-USD currencies | Confirmed in output: `pricing.approximate=true`, `pricing.rate`, `pricing.rateAsOf`, and each flight's `price.usdAmount` (source-of-truth) alongside `price.amount` in the requested currency. Our domain layer must store `usdAmount` as the authoritative source amount and treat the IDR figure as a converted display value — matches `docs/03`'s FX-preservation rule. |
+| Hidden-city fares included by default | Confirmed: `includeHiddenCity` input defaults to `true`. We can explicitly request `includeHiddenCity: false` (and `includeVirtualInterlining: false`) to exclude them at the query level — this is **better than assumed**: Skiplagged lets the caller opt out, so we don't have to post-filter unclassified candidates. Each `FlightCard.attributes` array also carries a classification tag (`"standard"`, `"nonstop"` observed, `"hidden-city"` not observed in this run because it was excluded by request — not confirmed what the exact string value is; needs one more probe call with `includeHiddenCity: true` before implementation, to pin the exact attribute string(s) used for hidden-city/self-transfer classification). |
+| Site terms prohibit scraping, commercial use, redistribution | Confirmed via `skiplagged.com/terms`: explicit bans on "robot, spider, scraper or other automated means," any "commercial or non-personal purpose," and "distribute, transmit, display, ... re-sell any information ... obtained from this Site." **The MCP docs page does not restate or override these terms, and `sk_faq_search` queried 4 times for caching/aggregation/commercial/redistribution policy returned zero matching FAQ articles for 3 of 4 queries** — i.e., no explicit MCP-specific permission was found anywhere reachable in this session. |
+
+#### Fields present / absent (for canonical domain mapping)
+
+- **Present per result:** `airlines` (string, may be multi-carrier comma-joined — not itemized per segment), `departure`/`arrival` (airport + local ISO datetime with offset — only first-origin/last-destination, not per-leg), `duration`, `layovers` (count only), `price.{amount,currency,usdAmount}`, `deepLink` (public search URL + `#trip=<carrier><flightnum>` fragment, not a signed URL), `attributes` (string tags).
+- **Absent:** no structured per-segment array (operating vs marketing carrier, individual flight numbers, intermediate airports) for itineraries with `layovers > 0`; no fare family/brand; no seller/OTA name; no baggage allowance; no `is_estimate`/`is_complete`/source-timestamp field in the output schema (only `pagination.totalAvailable/currentlyShowing` for truncation signal); no reprice/selector handle.
+- **Consequence for `docs/03`'s matching algorithm:** nonstop Skiplagged results have just enough identity (single flight number embedded only in the `deepLink` fragment, not a typed field) to be a usable but weak `exact_segments` candidate; any itinerary with `layovers ≥ 1` lacks typed per-segment identity and **must** be treated as `insufficient_identity` under the conservative-matching rule — we cannot safely dedupe/merge connecting Skiplagged itineraries against another provider's segments.
+
+#### Live sample (redacted selector/links kept short; full in fixture)
+
+MEL→DPS 2026-12-16, 5 cheapest-by-value, `includeHiddenCity=false`, IDR: nonstop fares from Garuda Indonesia (IDR 4,907,458 / USD 271), Jetstar (×2), Malindo Air, TransNusa — see `contracts/fixtures/provider/skiplagged_probe_20261109T123430Z.json` for the full structured payload (`search_structured_content`).
+
+#### Verdict: **CONDITIONAL GO**
+
+Usable for a personal, low-volume, single-operator deployment: the MCP server is explicitly built and marketed for exactly this kind of AI-agent/no-auth consumption (`utm_medium=ai` tracking params are a strong signal of intended use), it is reachable with zero friction, and it returns real, usable flight data with an explicit hidden-city opt-out. **It is NOT cleared for redisplaying results to other users, caching beyond the duration of a single job, or any commercial use** — the main site's written terms prohibit exactly that, and nothing MCP-specific grants an exception. Concretely: `permitted_to_aggregate=unknown→treat as false for multi-user/public deployment`, `can_cache=short-TTL-only (job lifetime)`, `attribution_required=yes (per their own utm/branding pattern, keep deep links intact)`. Enable only as `enabled=true` in a **single-owner, non-redistributed, personal-use** configuration; do not enable for a publicly shared instance without written permission from Skiplagged. No exact-repricing capability exists — all Skiplagged offers are `recent_search` or `indicative` at best, never `repriced_exact`.
+
+---
+
+### swoop (reverse-engineered Google Flights RPC)
+
+**Package:** `swoop-flights` 0.7.0 (PyPI), MIT license
+**Source:** https://github.com/saraswatayu/swoop
+
+#### Claims vs observed
+
+| Claim (README) | Observed (this session) |
+|---|---|
+| Real prices, no API key | Confirmed: `swoop.search("MEL","DPS","2026-12-16", cabin="economy", include_basic_economy=False)` returned 11 priced `TripOption`s with `is_complete=True`, no credentials needed. |
+| `price_selector()` gives exact fare + booking options | Confirmed: took the top result's `selector`, called `price_selector()`, got `PriceResult` with `price=7,764,811 IDR`, `is_estimate=True`, `is_basic_economy=False`, and 1+ `booking_options` entries with `seller_name="Jetabroad"`, `fare_family="basic"`, `is_basic=True`, `rebookability_signal="restricted"`, and a Google-redirect `booking_url`. **Important nuance confirmed live:** the top-level `PriceResult.is_basic_economy` can disagree with an individual `booking_options[i].is_basic` — the top-level field describes the priced itinerary/selector as requested, while each booking option is its own seller/fare combination. Our matching layer must key offers off `booking_options[]`, not assume the top-level flag applies to every seller shown. |
+| Full segment-level itinerary detail | Confirmed and **materially richer than Skiplagged**: each `TripOption.legs[].itinerary.segments[]` has `airline`, `flight_number`, `operator` (separate marketing/operating field, empty string observed = same-carrier operated), `aircraft`, per-segment local departure/arrival date+time, `travel_time`, amenities, `co2_grams`. This satisfies `docs/03`'s itinerary-identity requirement (ordered segments with flight numbers) for both nonstop and connecting itineraries — unlike Skiplagged. |
+| `include_basic_economy` toggle changes results | Confirmed: with the flag off, cheapest observed was ~7.76M IDR (from the selector probed); with it on, `cheapest_price=4,891,694 IDR` across the same 11-result response (`is_complete=True` both times) — a materially lower floor, as expected. |
+| Hidden-city detection | **Not present anywhere in the library.** No field, no flag, no mention in README or observed output. We cannot get a hidden-city signal from swoop; every swoop offer must be recorded `hidden_city=unknown` (not `no`) per the three-valued enum rule, unless we later add independent detection logic. In practice Google Flights itself does not typically sell overt hidden-city fares the way Skiplagged does, which lowers — but does not eliminate — the practical risk; this is an assumption, not a proof. |
+| Google rate-limits aggressively; use conservative retries | Not stress-tested (by design — no intentional rate-limit probing). 3 live calls (search ×2, price_selector ×1) in this session all succeeded on first attempt with no 429s. |
+
+#### Legal/compliance note (the real risk for swoop)
+
+The `swoop-flights` package itself is MIT-licensed with no usage restriction on the code. The risk is **not** the library's license — it's that the library calls Google's undocumented, internal `FlightsFrontendService` RPC with TLS fingerprint impersonation to look like a browser, which is the kind of automated access Google's general Terms of Service typically restrict for unauthorized clients (standard clause across Google products; this session did not fetch and quote Google's specific Flights ToS text, so treat this as a known category of risk, not a verified quote). This is a materially different risk profile than Skiplagged's MCP server, which is a product Skiplagged built and published *for* this kind of use. swoop's README itself only disclaims "not affiliated with Google" and warns the RPC "can change without notice" — it does not claim legal clearance.
+
+#### Verdict: **CONDITIONAL GO**
+
+Functionally the stronger provider — full segment identity, basic-economy toggle, seller-level booking options, and an actual (if estimate-flagged) repricing call via `price_selector()`/`check_price()`. Enable for low-volume personal use (`enabled=true`, bounded executor, 1–2 concurrent calls, generous backoff per the README's own guidance) with `exact_reprice` capability wired to `price_selector`, but mark **`price_status` from swoop as `repriced_exact` only when `is_estimate=False`** — the single live call in this session returned `is_estimate=True`, so even "repriced" swoop quotes default to a lower-confidence label until proven otherwise on a given itinerary. Legal risk (unauthorized automated access to Google's internal RPC) is real and unresolved by this probe; it is a judgment call for the owner whether to accept that risk for a personal/low-volume tool — flagging per `docs/06`'s escalation rule rather than deciding unilaterally that it's fine.
+
+---
+
+### Combined P0 gate outcome
+
+**At least one provider (both, conditionally) exposes a usable, real, low-volume-compliant one-way search for the target route/date class.** Gate passed — proceed to P1 (domain + fake-provider slice) is unblocked. Neither provider reaches an unconditional GO:
+
+| Provider | Verdict | Condition for wider/public use |
+|---|---|---|
+| Skiplagged MCP | **GO** — personal/single-owner use (owner-accepted 2026-11-09) | Site terms ban commercial use/redistribution/scraping; no MCP-specific permission found. Must revisit (seek written permission) before any public/multi-user launch. |
+| swoop | **GO** — personal/low-volume use (owner-accepted 2026-11-09) | Legal status of unauthorized Google RPC access remains unresolved in the abstract; owner explicitly accepted this risk for a personal project. Must revisit if this ever scales or becomes commercial. |
+
+#### Owner decisions (resolved 2026-11-09, per `docs/06` stop/escalation rule)
+
+These were flagged as fundamental-incompatibility-style questions rather than resolved unilaterally. Owner's answers:
+
+1. **Skiplagged, personal/non-redistributed use despite the site-wide commercial/redistribution ban:** accepted, conditioned on the project staying personal/non-redistributed. Confirmed understanding: fine to run for yourself (and people you personally let use it), not fine to turn into a public signup product without separately asking Skiplagged.
+2. **swoop's reliance on undocumented Google RPC access:** accepted for a personal, low-volume project after the legal-risk tradeoff was explained (contract-violation / blocking risk, not realistic legal-action risk at hobby scale). Revisit before any scale-up or commercialization.
+
+Both acceptances are personal-project-scoped. `provider_registry.permitted_to_aggregate` and `can_cache` should still default to the conservative personal-use settings described per-provider above — the owner's acceptance is not a blanket "treat as a licensed commercial API."
+
+#### Follow-up probe items
+
+- Ran one additional `sk_flights_search` call with `includeHiddenCity: true, includeVirtualInterlining: true, limit: 15` for MEL→DPS 2026-12-16 to pin the exact hidden-city `attributes` tag string. **Inconclusive**: the only tags observed across all 15 results were `"standard"`, `"nonstop"`, `"one-stop"` — no hidden-city or virtual-interlining fare happened to rank in the top 15 for this specific route/date, so the exact tag string for those classifications is still unconfirmed. Needs a route/date known to surface a cheap hidden-city fare (not guessed/fabricated here) before the adapter can safely map `attributes` to our `hidden_city` enum; until then, treat any Skiplagged result as `hidden_city=unknown` whenever `includeHiddenCity=true` is used, and only trust `hidden_city=no` when the query itself was sent with `includeHiddenCity=false` (as in the main probe above).
+- Manual browser-based price comparison against skiplagged.com and Google Flights for the same route/date — still not performed (no browser available to the agent in this session).
+
+---
+
+### P3 live canary (2026-11-09, addendum)
+
+Where the P0 section above called the SDKs/MCP server directly with ad hoc
+scripts, this canary runs the **actual production adapter classes**
+(`cheapwings.providers.skiplagged.SkiplaggedProvider`,
+`cheapwings.providers.swoop.SwoopProvider`) against live endpoints — the
+real normalization/error-handling code path the worker uses, not a probe
+shim. Same route/date as P0 (MEL→DPS, 2026-12-16) for comparability.
+`mcp`==2.3.0, `swoop-flights`==0.7.0, `airportsdata`==20261103 (the pinned
+`backend[live]` extra). One search call per provider, one `reprice()` call
+on swoop's top result — still low-volume, still a single run.
+
+**Command:** `python scripts/p3_live_canary.py` (script redacts nothing by
+itself — its raw JSON output contains swoop's opaque selector and was
+**not committed**; only this redacted summary is kept).
+
+**Skiplagged:** `SkiplaggedProvider.search()` returned 20 normalized offers,
+status `succeeded_results`, no adapter exceptions. Sample offer: original
+USD 272 → comparable IDR 4,925,566 via a preserved `FXSnapshot` (rate
+18108.7, matches the live rate at probe time), `hidden_city=no` (query sent
+`includeHiddenCity=false`), `checked_bag=unknown`, `price_status=indicative`,
+`is_estimate=True`, link correctly scoped to `generic_search` and validated
+`https://skiplagged.com/...`. No fabricated seller/fare-family — both
+`null` since the source never provides them, exactly per the P0 findings.
+
+**swoop:** `SwoopProvider.search()` returned 10 priced + **1 unpriced**
+candidate — the adapter's explicit `unpriced_candidate_count` correctly
+caught the same no-price/no-currency quirk documented in the P0 section,
+on a fresh live call, not just the frozen fixture. `SwoopProvider.reprice()`
+on the top result succeeded: real seller `"Jetstar"`, `is_estimate=False`,
+opaque `provider_quote_handle` populated (never a link — swoop reprice
+offers don't expose a direct URL). `exact_product_match=False` here because
+the *search*-stage offer never carries seller/fare_family (swoop doesn't
+expose that pre-reprice), so the adapter's independent-field match
+intentionally cannot succeed from a bare search→reprice chain with no
+in-between verification step — this is the conservative behavior
+`docs/03`'s matching rule requires, not a bug.
+
+**Verdict:** both adapters behave correctly against live data, consistent
+with the P0 findings and the existing offline test suite (which replays
+these same P0 fixtures through the identical adapter code in
+`backend/tests/integration/test_p3.py::test_recorded_real_adapters_api_summary_fx_and_expiry`).
+No new GO/NO-GO decision needed — this confirms the already-accepted
+personal-use GO for both providers extends to the real adapter
+implementation, not just the raw SDK.
+
+### Reporting consolidation (2026-11-09)
+- Owner explicitly required all reports to live in WORK_LOG.md. Merged the complete P0 provider evidence and P3 canary addendum here, removed the standalone report, and updated active specifications, bootstrap instructions, README links and the canary docstring. No provider calls or application behavior changes.
+- Updated P4.5 handoff instructions: the UI/UX agent must append its design-return findings here rather than create another report. Release and test summaries likewise belong here. Static UI/UX prompts/integration specifications remain separate assignment artifacts, as requested previously. Historical V4 reference left untouched.
+
+## P4.5 handover task — ready for UI/UX agent
+
+- Branch: `p4.5-ui-ux-handoff`; base main commit: `532f080`. Work only on the designated branch or a focused child branch, never directly on main. Prefer an isolated checkout so the owner's currently running live test is not hot-reloaded by design edits. Do not copy local `.env`, live DBs, credentials or raw live quote payloads into that checkout.
+- Read order: this WORK_LOG first, then `docs/P4_5_UI_UX_AGENT_PROMPT.md`, `docs/P4_5_UI_UX_INTEGRATION.md`, active product/UI specs, and actual React components/API types. All findings and design-return notes stay in WORK_LOG.md; no separate report files.
+- Deliver actual focused React/CSS changes with a component/prop migration map where needed. Retain existing request client/hooks, server ranking, monetary strings and source-local time helpers; no backend/API/provider policy changes. Static screenshots alone do not satisfy this assignment.
+
+Presentation task checklist, grounded in the owner's live-result review:
+
+- [ ] Show a compact route, inclusive date range and requested-filter summary when viewing an existing job.
+- [ ] Explain an empty safe-ranked view in every terminal state, including cancellation: no offer currently meets the safe/comparable criteria. Keep an explicit advertised-results CTA available without changing the default ranking or inventing eligibility.
+- [ ] Make progress/source coverage and cancellation concise on mobile; show plain-language source failures and unpriced counts. Move repeated technical detail behind accessible disclosure while keeping important price/risk/coverage caveats visible.
+- [ ] Improve comparison rows/cards: consistently formatted price, date/time with source offset, stops/duration, known connection/carrier codes, source/confidence and distinct seller offers. Never invent airline names, legs, baggage or sellers when metadata is absent.
+- [ ] Preserve attribution, original/converted currency and FX evidence. Distinguish retrieval time from an actual same-offer price check. Avoid implying that checked bags were requested when the user's filter says otherwise.
+- [ ] Retain responsive form, runtime auth input, URL job recovery, stale-response protection, pagination, retry, cancellation and safe external-link handling. Use existing synthetic browser fixtures or isolated fake services for QA.
+- [ ] Verify 375/768/1440, keyboard focus and enlarged text; run `npm test`, `npm run build`, and `npm run test:browser` from `apps/web`. Run backend tests from root before final integration. Append actual commands/results, screenshot paths, design rationale, changed files and remaining issues here.
+
+Explicitly outside the designer's scope: the 14 swoop schema failures, incremental repricing scheduling, exposing additional upstream airline summary fields, and provider-side hidden-city query behavior. These are engineering follow-ups requiring separate implementation/evidence; do not conceal them with UI labels or fabricated data.
+
+Acceptance/integration: implementation agent reviews the patch against the base SHA, preserves newer functional work, validates with fake/intercepted data, and records P4.5 acceptance here before merging. No public deployment, unrequested main push or native-iOS replacement. P5 starts after P4.5 integration and requires full Xcode for build/simulator acceptance.
+
+### P4.5 handover preparation validation (2026-11-09)
+- Confirmed the complete original provider-report body (including the P3 canary addendum) is preserved in WORK_LOG.md with nested headings. Removed standalone report and all active references/instructions to separate provider, release or design-return report files. Historical V4 untouched.
+- `.venv/bin/python -m pytest backend/tests -q` → **85 passed**. `git diff --check` passed. Documentation consolidation and canary docstring only; no application behavior changes or live provider calls.
+- Dedicated handover branch created from `532f080`; live services left running. Prepared focused commit for publication to `origin/p4.5-ui-ux-handoff`. Next agent starts with the P4.5 handover task checklist above and appends its actual return findings here.

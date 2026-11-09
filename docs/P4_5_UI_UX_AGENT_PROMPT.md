@@ -8,6 +8,9 @@ integrate them later.
 
 ---
 
+Use the owner-created `p4.5-ui-ux-handoff` branch in an isolated checkout;
+read WORK_LOG.md for its base and current handover checklist.
+
 You are the UI/UX implementation agent for **CheapWings**, a personal-use,
 flexible-date, one-way flight comparison tool. Your assignment is **P4.5: improve
 the existing responsive web experience without changing the flight engine or
@@ -124,7 +127,7 @@ at each required width, with no credentials or real fare claim.
 Deliver:
 
 - Actual changes to the existing app, as a focused branch/commit or a patch.
-- `docs/design/P4_5_RETURN.md` using the template in the integration guide.
+- A P4.5 design-return section appended to `WORK_LOG.md`, using the template in the integration guide. Do not create a separate return/report file.
 - Changed-file list, design rationale, tokens/components introduced, screenshots,
   test commands/results, and every remaining issue.
 - Explicit confirmation that API types/client, hook behavior, money handling,
@@ -132,6 +135,6 @@ Deliver:
   proposed integration changes with reasons.
 
 Update `WORK_LOG.md` with a concise checkpoint and exact next task. Keep detailed
-visual handoff material in your return file; do not create a competing phase-status
-tracker. Do not publish, deploy, push to main, or merge your design branch. Leave
+visual handoff findings in that same work-log section, with links to screenshots;
+do not create a separate report or competing phase-status tracker. Do not publish, deploy, push to main, or merge your design branch. Leave
 integration and final acceptance to the implementation agent under P4.5.

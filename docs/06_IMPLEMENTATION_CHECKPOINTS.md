@@ -32,7 +32,7 @@ Each phase must have: PR/commit, files changed, tests executed, screenshots if U
 - [ ] Manually compare at least a few quotes with the provider/airline booking/search page if offered. Document search date/time, route, seller and fare equivalence. Do not pretend checkout price is accessible if it is not.
 - [ ] Test failure conditions conservatively (synthetic mocks for most failures; no intentional hammering for rate-limit testing).
 - [ ] Document legal-use, quota and reuse/aggregation permission. **Do not enable disallowed provider.**
-- [ ] Deliver `docs/PROVIDER_POC_REPORT.md` (evidence/observed vs claimed/GO decision/mitigation).
+- [ ] Record provider evidence in [WORK_LOG.md](../WORK_LOG.md#provider-feasibility-evidence) (evidence/observed vs claimed/GO decision/mitigation).
 
 **Gate:** at least one provider exposes usable, acceptable-to-use detailed one-way search for target route/date. If not, stop real provider integration, keep fake-provider engine, and report viable fallback rather than inventing data. Second source is conditional on operational/legal feasibility.
 
@@ -108,8 +108,8 @@ Each phase must have: PR/commit, files changed, tests executed, screenshots if U
 - [ ] Re-run automated suite, one clean-room installation, migrations, restart and cancellation recovery.
 - [ ] Capture live low-volume provider canary results/date/permission/quote vs seller comparison; use no unsupported guarantees.
 - [ ] Validate default hidden-city exclusion, unknown baggage, partial sources, duplicate offers and source link behavior.
-- [ ] Deliver `README.md`, `.env.example`, `docs/PROVIDER_POC_REPORT.md`, `contracts/openapi.yaml`, test report, screenshots, known-risk list and `WORK_LOG.md`.
-- [ ] Produce `RELEASE_SUMMARY.md` with exact commands, what was validated, what was not validated, remaining work and GO/CONDITIONAL GO/NO-GO per provider.
+- [ ] Deliver `README.md`, `.env.example`, `contracts/openapi.yaml`, screenshots and `WORK_LOG.md` containing provider evidence, test results and known risks.
+- [ ] Append a release-summary section to `WORK_LOG.md` with exact commands, what was validated, what was not validated, remaining work and GO/CONDITIONAL GO/NO-GO per provider.
 
 **Gate:** user can run end-to-end from documented steps with fake provider even without external credentials, and with validated real provider(s) where permitted.
 
@@ -118,13 +118,13 @@ Each phase must have: PR/commit, files changed, tests executed, screenshots if U
 A lead worker may split work into these independently reviewable streams **after P0**:
 
 - **Backend/domain worker:** query expansion, Money, matching, ranker, tests; must not import external SDKs into domain.
-- **Provider worker:** SDK probe, adapters, fixtures, permission report; must not change canonical schema without an ADR.
+- **Provider worker:** SDK probe, adapters, fixtures, permission evidence in WORK_LOG.md; must not change canonical schema without an ADR.
 - **Backend/API worker:** durable jobs, OpenAPI, persistence, restart; must follow domain types.
 - **Frontend worker:** React UI after v1 contract stabilizes; native iOS only after web/API parity.
 
 Do not concurrently edit the same contract/schema files without coordination. QA remains a responsibility of each implementation worker; no separate QA agent required.
 
-## Required task report at every checkpoint
+## Required task report in WORK_LOG.md at every checkpoint
 
 ```text
 Phase:

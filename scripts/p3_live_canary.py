@@ -2,7 +2,7 @@
 classes (not raw SDK calls) against live endpoints. Low-volume, one-shot,
 same route/date as the P0 probes for comparability. Opt-in only; never run
 in CI or on a schedule. Owner has already accepted the personal-use risk
-conditions recorded in WORK_LOG.md / docs/PROVIDER_POC_REPORT.md.
+conditions recorded in WORK_LOG.md (provider decision ledger and feasibility evidence).
 
 Usage: python scripts/p3_live_canary.py
 """

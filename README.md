@@ -8,7 +8,7 @@ Native SwiftUI iOS is the next phase and requires full Xcode.
 
 [WORK_LOG.md](WORK_LOG.md) is the source of truth for phase status, decisions,
 validation evidence, and the exact next task. Provider observations are in
-[the provider report](docs/PROVIDER_POC_REPORT.md).
+[provider feasibility evidence](WORK_LOG.md#provider-feasibility-evidence).
 
 ## Local setup
 

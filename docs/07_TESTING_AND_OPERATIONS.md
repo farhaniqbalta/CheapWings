@@ -128,4 +128,4 @@ Use `fake` provider by default in development and tests. Enabled real sources re
 - [ ] Jobs survive worker restart, cancellation and client disconnect.
 - [ ] Web and iOS show matching results/caveats for same job.
 - [ ] Nothing advertises prices as guaranteed or globally cheapest.
-- [ ] Final `RELEASE_SUMMARY.md` gives test counts, sample coverage and price caveats, known limitations, setup and next steps.
+- [ ] The final release-summary section in `WORK_LOG.md` gives test counts, sample coverage and price caveats, known limitations, setup and next steps.

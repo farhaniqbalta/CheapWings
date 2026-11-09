@@ -70,7 +70,7 @@ SwiftUI iOS ──────┘                                  │
 - Configurable provider registry with at least one **validated usable** source; a second source **only if validated and permitted**.
 - End-to-end tests using fake providers and sanitized contract fixtures; manual live canary evidence separate.
 - API OpenAPI contract, migrations, `.env.example`, setup commands, and reproducible UX screenshots.
-- A completion report with what works, what remains unverified, measured coverage, how to run, test results, and known risks.
+- A completion-report section in `WORK_LOG.md` with what works, what remains unverified, measured coverage, how to run, test results, and known risks.
 
 **Definition of success:** a valid request produces an honest ranked set of fares (or an honest empty/partial state), with the exact coverage and price evidence behind each displayed result, and the same results are consumable from web and native iOS.
 
@@ -81,3 +81,10 @@ Use [the UI/UX agent prompt](P4_5_UI_UX_AGENT_PROMPT.md) and
 [the integration contract](P4_5_UI_UX_INTEGRATION.md). These are static assignment
 artifacts; `../WORK_LOG.md` remains the source of truth for progress and decisions.
 The existing REST/React behavior and native SwiftUI requirement remain in force.
+
+## Reporting location — owner instruction
+
+Record all provider evidence, implementation/test reports, UI/UX design-return
+findings, and release summaries in [WORK_LOG.md](../WORK_LOG.md). Do not create
+separate report files. Static requirements, design prompts, integration guides,
+code, OpenAPI contracts, fixtures and screenshot artifacts may remain separate.

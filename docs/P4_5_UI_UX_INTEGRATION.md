@@ -8,7 +8,7 @@ P4.5 refines the web client; it does not replace native iOS P5.
 ## Work area and merge boundaries
 
 Start from the latest committed web implementation after reading WORK_LOG.md.
-Record the base commit SHA in the return file. Prefer an isolated design branch
+Record the base commit SHA in the P4.5 design-return section of WORK_LOG.md. Prefer an isolated design branch
 or checkout; never overwrite another agent's uncommitted work.
 
 | Area | Design-agent scope | Integration requirement |
@@ -66,10 +66,10 @@ changes. Do not remove assertions merely to make a redesigned screen pass.
 
 ## Designer return template
 
-Create `docs/design/P4_5_RETURN.md` with these fields when delivering design work:
+Append a P4.5 design-return section to `WORK_LOG.md` with these fields when delivering design work. Do not create a separate report file:
 
 ```markdown
-# P4.5 design return
+## P4.5 design return
 
 Base commit:
 Design branch / commit / patch:
@@ -106,7 +106,7 @@ Concrete instruction for the implementation agent.
 
 ## Implementation-agent integration sequence
 
-1. Re-read WORK_LOG.md and compare the return's base SHA to current main. Inspect
+1. Re-read WORK_LOG.md and compare the design-return section's base SHA to current main. Inspect
    the changed-file list before applying the branch or patch; preserve newer
    functional fixes and local provider configuration.
 2. Apply focused presentation changes, resolve imports/props explicitly, and reject

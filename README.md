@@ -1,10 +1,14 @@
 # CheapWings
 
-Personal-use, flexible-date, one-way flight comparison. Python 3.12+ backend;
-React web and native SwiftUI iOS are later phases. P2 provides durable SQLite
-jobs, a separate worker, and REST v1 using **synthetic fake fares only**.
-Provider approvals and P0 evidence are in [WORK_LOG.md](WORK_LOG.md) and
-[the provider report](docs/PROVIDER_POC_REPORT.md). Real adapters are P3.
+Personal-use, flexible-date, one-way flight comparison with a Python 3.12+
+backend and React/TypeScript web client. Durable SQLite jobs, a separate worker,
+REST v1, and Skiplagged/swoop adapters are implemented. Development defaults to
+**synthetic fake fares**; live providers are opt-in for accepted personal use.
+Native SwiftUI iOS is the next phase and requires full Xcode.
+
+[WORK_LOG.md](WORK_LOG.md) is the source of truth for phase status, decisions,
+validation evidence, and the exact next task. Provider observations are in
+[the provider report](docs/PROVIDER_POC_REPORT.md).
 
 ## Local setup
 
@@ -36,6 +40,58 @@ Exactly one worker owns a database, enforced with a POSIX advisory file lock.
 The API does not execute provider work. Both commands reject missing/outdated
 migrations; neither silently creates tables. Use a local disk database, not a
 network filesystem. Relative database URLs resolve from the working directory.
+
+## Run the web client
+
+With the API and worker running, open a third terminal. Node 22.18+ is required
+(the existing project environment uses Node 26):
+
+```sh
+cd apps/web
+npm ci
+cp .env.example .env
+npm run dev -- --host localhost --port 5173 --strictPort
+```
+
+Open `http://localhost:5173`. `apps/web/.env` uses
+`VITE_API_BASE_URL=http://127.0.0.1:8000`; the default backend CORS allowlist permits
+`http://localhost:5173`. If changing the browser origin, update
+`CORS_ALLOWED_ORIGINS` in the backend environment and restart the API.
+
+The URL retains `?job=...` for recovery after refresh. Safe results and
+**Lowest advertised** remain separate views; pagination uses **Load more results**.
+Cancellation preserves discovered offers. Origin-local flight times retain their
+source offsets; unresolved timezones are labeled unknown.
+
+For a private authenticated backend, expand **Private server access** and enter
+the owner token at runtime. The token stays in tab memory, is never added to the
+URL or browser storage, and must be re-entered after refresh. Do not put tokens
+or upstream credentials in `VITE_*` variables: these become public build assets.
+Use HTTPS for remote private access; no public deployment is configured.
+
+## Optional real personal-use searches
+
+P3 adapters passed an actual low-volume canary in the prior session. To opt in,
+install the pinned extras and change the backend `.env` in both service shells:
+
+```sh
+.venv/bin/python -m pip install -e './backend[dev,live]'
+```
+
+```dotenv
+ENABLED_PROVIDERS=skiplagged,swoop
+CHEAPWINGS_USE_SCOPE=personal
+JOB_REPRICE_BUDGET=20
+LIVE_RETENTION_SECONDS=3600
+```
+
+Restart the API and worker after sourcing the updated environment. Fake and live
+providers cannot be mixed in one configuration. Registry metadata exposes missing
+dependencies, disabled sources, and terms restrictions. Live results expire after
+the configured job retention window; expired result requests return `410`.
+Skiplagged prices remain indicative; swoop's unknown hidden-city risk excludes
+its offers from the safe ranking. **Lowest advertised** exposes those candidates
+with their evidence and warnings. No provider price is guaranteed bookable.
 
 ## Try the API
 
@@ -83,11 +139,10 @@ view does not prove no flights: inspect coverage and the advertised view.
 - Cancellation invalidates outstanding leases immediately; late results are
   ignored. In-process provider slots remain occupied until calls finish.
   Stopping the worker leaves leases for restart. Closing a client has no effect.
-- P2 adapters are async. P3 must isolate synchronous providers in a bounded
-  executor: cancelling an await cannot force-kill a blocking thread. An adapter
+- The swoop adapter uses a bounded one-thread executor: cancelling an await cannot force-kill a blocking thread. An adapter
   needs its own network timeout; do not release its actual execution slot early.
 - Registry changes produce explicit skipped entries for removed/disabled
-  adapters. Real provider flags cannot be enabled in P2 by environment typo.
+  adapters; unknown provider IDs are rejected.
 
 ## Access and budgets
 
@@ -96,7 +151,7 @@ Host headers are accepted. For LAN, proxy, or private-tunnel use, set a random
 owner token of at least 32 characters **in both shells**, use HTTPS at the
 boundary, and send `Authorization: Bearer <token>` on capabilities/search/job/
 results/cancel requests. All jobs belong to this one owner; there is no multi-user
-service or public deployment in P2. Do not log or commit the token. Set
+service or public deployment. Do not log or commit the token. Set
 `API_BIND_HOST` consistently with Uvicorn's `--host`; request checks also reject
 external unauthenticated clients if the CLI binding was accidentally overridden.
 Only the documented CORS origins are allowed. Health and OpenAPI carry no secrets.
@@ -109,13 +164,13 @@ Airport codes currently validate by shape; an airport reference and origin-local
 expiry validation need to accompany later real-provider integration. P2 expiry
 uses the server calendar date. Current display currencies: IDR/USD/AUD/JPY.
 
-Only normalized synthetic data is stored in P2; no raw provider payloads or PII.
-Fake jobs persist until the owner removes the local DB with both services stopped.
-Real-source cache/evidence TTL and selector retention must be implemented in P3
-before storing live responses under the accepted personal-use terms.
+No raw provider payloads or passenger PII are stored. Live normalized fares, FX
+evidence, selectors, and revisions expire after the configured retention window
+and are purged by the worker or on an expired results request. Fake jobs persist
+until the owner removes the local DB with both services stopped.
 Back up SQLite with its backup API or with both services stopped; copying only
-the main file while WAL writes are active is unsafe. No network/paid services
-are required for P2.
+the main file while WAL writes are active is unsafe. No upstream network calls or paid services
+are required in fake mode.
 
 ## Validation and contract
 
@@ -132,8 +187,15 @@ are required for P2.
 and roundtrip typed responses. Integration tests use temporary migrated SQLite
 DBs and fake providers, including failures, leases, restart, cancellation,
 transaction rollback, auth, quotas and pagination. No default test calls an
-external provider. This managed session forbids localhost socket binding, so
-process smoke must run in an unrestricted terminal; in-process acceptance passes.
+external provider. P2 process smoke and the P3 production-adapter canary passed
+in the prior session; their evidence is recorded in WORK_LOG.md. Current managed
+sandbox restrictions can still prevent starting servers or browsers.
+
+Web validation (from `apps/web`): `npm test` and `npm run build`. Browser
+regressions: `npm run test:browser` after Chromium is installed with
+`npx playwright install chromium`. This suite uses synthetic intercepted responses
+and makes no provider calls. The current sandbox denies Chromium startup; run the
+new browser regressions in an unrestricted terminal before closing P4 acceptance.
 
 Full Xcode is still required for P5; command-line tools alone cannot build SwiftUI.
 See [the phase checkpoints](docs/06_IMPLEMENTATION_CHECKPOINTS.md) for remaining work.

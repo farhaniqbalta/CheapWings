@@ -30,7 +30,7 @@ export function OfferList({ offers, rankedQuoteId }: { offers: PublicOffer[]; ra
               {offer.provider_id}
               {offer.seller ? ` - ${offer.seller}` : " - seller unknown"}
               {offer.fare_family ? ` - ${offer.fare_family}` : ""}
-              {offer.basic_economy === true ? " - basic economy" : ""}
+              {offer.basic_economy === true ? " - basic economy" : offer.basic_economy == null ? " - fare type unknown" : ""}
             </div>
             <div className="offer-meta">
               Checked bag:{" "}
@@ -39,6 +39,14 @@ export function OfferList({ offers, rankedQuoteId }: { offers: PublicOffer[]; ra
               {new Date(offer.retrieved_at).toLocaleString()}
               {offer.repriced_at ? ` - repriced ${new Date(offer.repriced_at).toLocaleString()}` : ""}
             </div>
+            {offer.attribution && <p className="offer-meta">Source: {offer.attribution}</p>}
+            {offer.comparable_currency && offer.comparable_currency !== offer.currency_original && (
+              <p className="offer-meta">
+                Original quote: {formatMoney(offer.amount_original, offer.currency_original)}.
+                {offer.fx_rate ? ` FX rate: ${offer.fx_rate}.` : ""}
+                {offer.fx_as_of ? ` FX as of ${new Date(offer.fx_as_of).toLocaleString()}.` : ""}
+              </p>
+            )}
             <FareRiskNotice offer={offer} />
             {offer.warnings.length > 0 && (
               <ul className="offer-warnings">

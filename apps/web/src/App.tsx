@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "./api/client";
+import { setOwnerToken } from "./api/session";
 import type { Capabilities, SearchRequest, SortMode } from "./api/types";
 import { ItineraryCard } from "./components/ItineraryCard";
 import { JobErrorPanel } from "./components/JobErrorPanel";
@@ -23,16 +24,25 @@ function setJobIdInUrl(jobId: string | null) {
 
 export default function App() {
   const [jobId, setJobId] = useState<string | null>(jobIdFromUrl);
+  const [accessVersion, setAccessVersion] = useState(0);
+  const [tokenDraft, setTokenDraft] = useState("");
+  const [capabilitiesError, setCapabilitiesError] = useState<Error | null>(null);
   const [sort, setSort] = useState<SortMode>("best_checked");
   const [capabilities, setCapabilities] = useState<Capabilities | null>(null);
 
   const { createSearch, submitting, error: createError } = useCreateSearch();
-  const { cancelSearch, cancelling } = useCancelSearch();
-  const { job, results, error: pollError } = useJobPolling(jobId, sort);
+  const { cancelSearch, cancelling, error: cancelError, clearError: clearCancelError } = useCancelSearch();
+  const { job, results, error: pollError, loadMore, loadingMore, retry } = useJobPolling(jobId, sort, accessVersion);
 
   useEffect(() => {
-    api.capabilities().catch(() => undefined).then((c) => c && setCapabilities(c));
-  }, []);
+    let alive = true;
+    setCapabilities(null);
+    setCapabilitiesError(null);
+    api.capabilities().then(c => { if (alive) setCapabilities(c); }).catch(err => {
+      if (alive) setCapabilitiesError(err instanceof Error ? err : new Error(String(err)));
+    });
+    return () => { alive = false; };
+  }, [accessVersion]);
 
   useEffect(() => {
     setJobIdInUrl(jobId);
@@ -40,10 +50,10 @@ export default function App() {
 
   const handleSubmit = async (request: SearchRequest) => {
     const created = await createSearch(request);
-    if (created) setJobId(created.job_id);
+    if (created) { clearCancelError(); setJobId(created.job_id); }
   };
 
-  const startNewSearch = () => setJobId(null);
+  const startNewSearch = () => { clearCancelError(); setJobId(null); };
 
   const isTerminalSuccess = job && (job.status === "completed" || job.status === "partial");
   const zeroEligibleFares = isTerminalSuccess && results && results.itineraries.length === 0;
@@ -59,6 +69,25 @@ export default function App() {
           </p>
         )}
       </header>
+
+      <details className="access-settings">
+        <summary>Private server access</summary>
+        <form onSubmit={event => {
+          event.preventDefault();
+          setOwnerToken(tokenDraft);
+          setTokenDraft("");
+          setAccessVersion(value => value + 1);
+        }}>
+          <label htmlFor="owner-token">Owner access token</label>
+          <input id="owner-token" type="password" autoComplete="off" value={tokenDraft}
+                 onChange={event => setTokenDraft(event.target.value)} />
+          <button type="submit">Apply access token</button>
+          <p>Leave blank for local access. Tokens stay in this tab's memory; enter again after refresh.</p>
+        </form>
+      </details>
+      {capabilitiesError && <div role="alert">{capabilitiesError.message}
+        <button type="button" onClick={() => setAccessVersion(value => value + 1)}>Retry connection</button>
+      </div>}
 
       {!jobId && (
         <SearchForm
@@ -76,24 +105,25 @@ export default function App() {
             &larr; New search
           </button>
 
-          <JobErrorPanel job={job} transportError={pollError} />
+          <JobErrorPanel job={job} transportError={cancelError ?? pollError} />
+          {(pollError || cancelError) && <button type="button" onClick={() => { clearCancelError(); retry(); }}>Retry search status</button>}
+          {job && <ResultSortBar sort={sort} onChange={setSort} />}
 
           {job && (
-            <SearchProgress job={job} onCancel={() => cancelSearch(jobId)} cancelling={cancelling} />
+            <SearchProgress job={job} onCancel={async () => { await cancelSearch(jobId); retry(); }} cancelling={cancelling} />
           )}
 
           {!job && !pollError && <p aria-live="polite">Loading search...</p>}
 
-          {job?.status === "failed" ? null : zeroEligibleFares ? (
+          {zeroEligibleFares ? (
             <p className="empty-state">
               No matching fares returned in searched sources. This does not mean no flights exist -
-              only the enabled providers were checked.
+              only the enabled providers were checked. Try Lowest advertised to inspect lower-confidence offers.
             </p>
           ) : (
             results &&
             results.itineraries.length > 0 && (
               <>
-                <ResultSortBar sort={sort} onChange={setSort} />
                 <p className="results-as-of">
                   As of {new Date(results.as_of).toLocaleString()}. {results.warnings.join(" ")}
                 </p>
@@ -102,6 +132,9 @@ export default function App() {
                     <ItineraryCard key={it.itinerary_id} itinerary={it} />
                   ))}
                 </div>
+                {results.next_cursor && <button type="button" onClick={loadMore} disabled={loadingMore}>
+                  {loadingMore ? "Loading more..." : "Load more results"}
+                </button>}
               </>
             )
           )}

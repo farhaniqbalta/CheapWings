@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { PublicItinerary } from "../api/types";
+import { flightLocalTime } from "../lib/time";
 import { OfferList } from "./OfferList";
 
 function formatDuration(minutes: number): string {
@@ -10,7 +11,6 @@ function formatDuration(minutes: number): string {
 
 export function ItineraryCard({ itinerary }: { itinerary: PublicItinerary }) {
   const [expanded, setExpanded] = useState(false);
-  const depart = new Date(itinerary.departure_local);
   const best = itinerary.offers.find((o) => o.quote_id === itinerary.ranked_quote_id) ?? itinerary.offers[0];
 
   return (
@@ -21,7 +21,7 @@ export function ItineraryCard({ itinerary }: { itinerary: PublicItinerary }) {
             {itinerary.origin} &rarr; {itinerary.destination}
           </span>
           <span className="route-date">
-            {depart.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
+            {flightLocalTime(itinerary.departure_local)}
           </span>
           <span className="route-stops">{itinerary.stops === 0 ? "Nonstop" : `${itinerary.stops} stop${itinerary.stops > 1 ? "s" : ""}`}</span>
           <span className="route-duration">{formatDuration(itinerary.duration_minutes)}</span>
@@ -63,7 +63,7 @@ export function ItineraryCard({ itinerary }: { itinerary: PublicItinerary }) {
             <li key={s.ordinal}>
               {s.marketing_carrier}
               {s.flight_number} {s.origin}&rarr;{s.destination}
-              {" "}({new Date(s.depart_at).toLocaleTimeString()} - {new Date(s.arrive_at).toLocaleTimeString()})
+              {" "}({flightLocalTime(s.depart_at)} - {flightLocalTime(s.arrive_at)})
               {s.operating_carrier !== s.marketing_carrier ? ` operated by ${s.operating_carrier}` : ""}
             </li>
           ))}

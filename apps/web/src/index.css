@@ -541,3 +541,29 @@ a {
     border-left: 3px solid var(--accent);
   }
 }
+
+.access-settings {
+  margin: 1rem 0;
+}
+
+.access-settings summary {
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.access-settings form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.access-settings input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.5rem;
+}
+
+.offer-meta,
+.route-date {
+  overflow-wrap: anywhere;
+}

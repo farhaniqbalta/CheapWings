@@ -1,3 +1,5 @@
+import { errorMessage } from "./errors";
+import { getOwnerToken } from "./session";
 import type {
   Capabilities,
   Created,
@@ -9,7 +11,7 @@ import type {
 } from "./types";
 
 const BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000").replace(/\/$/, "");
-const OWNER_TOKEN = import.meta.env.VITE_OWNER_TOKEN as string | undefined;
+
 
 export class ApiError extends Error {
   status: number;
@@ -25,7 +27,8 @@ export class ApiError extends Error {
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set("Content-Type", "application/json");
-  if (OWNER_TOKEN) headers.set("Authorization", `Bearer ${OWNER_TOKEN}`);
+  const ownerToken = getOwnerToken();
+  if (ownerToken) headers.set("Authorization", `Bearer ${ownerToken}`);
 
   const response = await fetch(`${BASE_URL}${path}`, { ...init, headers });
   if (!response.ok) {
@@ -35,8 +38,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     } catch {
       // Non-JSON error body (e.g. plain-text 429/410); leave detail null.
     }
-    const message =
-      detail?.detail?.map((d) => d.msg).join("; ") || `${response.status} ${response.statusText}`;
+    const message = errorMessage(detail, `${response.status} ${response.statusText}`);
     throw new ApiError(response.status, message, detail);
   }
   if (response.status === 204) return undefined as T;
@@ -51,16 +53,16 @@ export const api = {
   createSearch: (body: SearchRequest) =>
     request<Created>("/api/v1/searches", { method: "POST", body: JSON.stringify(body) }),
 
-  getJob: (jobId: string) => request<Job>(`/api/v1/searches/${jobId}`),
+  getJob: (jobId: string) => request<Job>(`/api/v1/searches/${encodeURIComponent(jobId)}`),
 
   getResults: (jobId: string, sort: SortMode, cursor?: string | null, limit = 50) => {
     const params = new URLSearchParams({ sort, limit: String(limit) });
     if (cursor) params.set("cursor", cursor);
-    return request<Results>(`/api/v1/searches/${jobId}/results?${params.toString()}`);
+    return request<Results>(`/api/v1/searches/${encodeURIComponent(jobId)}/results?${params.toString()}`);
   },
 
   cancelSearch: (jobId: string) =>
-    request<Job>(`/api/v1/searches/${jobId}/cancel`, { method: "POST" }),
+    request<Job>(`/api/v1/searches/${encodeURIComponent(jobId)}/cancel`, { method: "POST" }),
 };
 
 export const TERMINAL_STATUSES = new Set(["completed", "partial", "failed", "cancelled"]);

@@ -1,32 +1,38 @@
-# React + TypeScript + Vite
+# CheapWings web
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React + TypeScript + Vite client for the FastAPI backend. Follow the repository
+[root README](../../README.md) for API/worker startup and live-provider configuration.
 
-Currently, two official plugins are available:
+From this directory, with Node 22.18+ (the project currently uses Node 26):
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```sh
+npm ci
+cp .env.example .env
+npm run dev -- --host localhost --port 5173 --strictPort
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Open `http://localhost:5173`. Keep the backend API and worker running in separate
+terminals. `VITE_API_BASE_URL` selects the backend; localhost access needs no token.
+For a private authenticated backend, expand **Private server access** and enter the
+owner token at runtime. It stays in tab memory and must be entered again after a
+refresh. Never put a bearer token or upstream credential in a `VITE_*` variable.
+
+```sh
+npm test
+npm run build
+# Browser regressions; install Chromium once if it is absent:
+npx playwright install chromium
+npm run test:browser
+```
+
+The browser suite serves the built bundle and synthetic API responses through
+Playwright request interception, without contacting a provider or starting a web
+server. It covers empty safe results switching to advertised results, cursor
+pagination, refresh/recovery, runtime auth, expiry, and cancellation with retained
+fares. These new browser tests could not launch Chromium in the current managed
+sandbox (MachPort permission denied); they need an unrestricted terminal run.
+See WORK_LOG.md for previous successful visual checks and current validation limits.
+
+Public API types are maintained in `src/api/types.ts` against
+`../../contracts/openapi.yaml`. Money stays as decimal strings. The backend owns
+ranking, currency conversion, coverage, provider calls, and durable execution.

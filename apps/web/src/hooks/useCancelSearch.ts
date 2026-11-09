@@ -17,5 +17,6 @@ export function useCancelSearch() {
     }
   }, []);
 
-  return { cancelSearch, cancelling, error };
+  const clearError = useCallback(() => setError(null), []);
+  return { cancelSearch, cancelling, error, clearError };
 }

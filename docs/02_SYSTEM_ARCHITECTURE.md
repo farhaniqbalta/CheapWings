@@ -1,0 +1,142 @@
+# 02 — System Architecture and Runtime Boundaries
+
+## Approved stack and rationale
+
+- Backend: **Python 3.12+**, **FastAPI**, Pydantic v2, Uvicorn, `httpx`, official Python MCP client SDK if compatible, SQLite, SQLAlchemy 2, Alembic; `pytest`, pytest-asyncio, Ruff, static typing.
+- Web: **React + TypeScript + Vite**, accessible responsive CSS. Consume OpenAPI schema or generated TS types; no browser-side provider secrets/requests.
+- iOS: **SwiftUI + URLSession**, genuinely native UI, structured concurrency, native date selection, same backend contract.
+- Blocking providers (e.g., `swoop`) isolated in a **bounded** executor / `asyncio.to_thread` with concurrency, timeout and cancellation semantics documented; avoid freezing event loop.
+- SQLite + one dedicated scheduler owner for personal deployment. No Redis, Celery, Kafka, Rust services, or microservices before measured need.
+
+**Why Python:** external APIs, throttling and fare semantics are bottlenecks; adding Rust would increase integration friction without improving prices. Do not reopen this decision absent concrete evidence.
+
+## Ownership diagram
+
+```text
+apps/web ──────────────────────┐
+                              ├── REST /api/v1 ─── backend/api
+apps/ios (SwiftUI) ────────────┘                        │
+                                            application/search_service
+                                                      │
+               ┌──────────────────────────────────────┼──────────────────────┐
+               ▼                                      ▼                      ▼
+      scheduler + coverage                   canonical domain          SQLite repositories
+               │                        (money, itinerary, fare)       and migrations
+       provider adapter registry                      │
+         ├─ Skiplagged MCP                            ▼
+         ├─ swoop                          matcher → aggregator → ranker
+         └─ future third-party                      ↑
+                                         pricing/repricing service
+```
+
+### Dependency rule
+
+`api -> application -> domain`; provider adapters and repositories implement `domain/application` interfaces. **Domain never imports HTTP, MCP, FastAPI, SQLAlchemy, swoop, React or SwiftUI.** `api` and app clients never interpret raw source payloads.
+
+## Proposed repository layout
+
+```text
+flightfinder/
+  README.md
+  docs/                                 # copied worker handoff + implementation ADRs
+  contracts/openapi.yaml
+  contracts/fixtures/{provider,canonical}/
+  backend/
+    pyproject.toml
+    alembic.ini
+    migrations/
+    src/flightfinder/
+      api/{routes,schemas,errors}.py
+      application/{search_service,job_runner,verification_service}.py
+      domain/{query,money,segments,itinerary,offer,coverage,ranking}.py
+      providers/{base,registry,skiplagged,swoop,fake}.py
+      engine/{expansion,rate_limiter,scheduler,normalization,aggregation,matching}.py
+      storage/{db,models,repositories}.py
+      config.py
+      main.py
+    tests/{unit,integration,fixtures,live_canary}/
+  apps/
+    web/{src,package.json}
+    ios/                                  # Xcode project + SwiftUI sources
+  scripts/                              # local dev, canary, fixture refresh helpers
+  .env.example
+```
+
+## Provider abstraction contract
+
+Keep these concerns distinct:
+
+```python
+from dataclasses import dataclass
+from typing import Protocol
+
+@dataclass(frozen=True)
+class ProviderCapabilities:
+    detailed_search: bool
+    calendar: bool
+    exact_reprice: bool
+    has_booking_link: bool
+    has_hidden_city_flag: bool
+    has_baggage_details: bool
+
+class FlightProvider(Protocol):
+    provider_id: str
+    capabilities: ProviderCapabilities
+
+    async def search(self, query: 'SingleDateRouteQuery') -> 'ProviderSearchResult': ...
+    async def get_calendar(self, query: 'CalendarQuery') -> 'ProviderCalendarResult': ...
+    async def reprice(self, quote: 'ProviderQuoteHandle') -> 'ProviderRepriceResult': ...
+```
+
+**Important:** optional capability methods should produce a typed `UnsupportedCapability` result or be separate protocols. Do not make adapters pretend to support a calendar or repricing operation. The orchestration path must branch by advertised capability, not by specific provider name.
+
+Every provider result contains `provider_id`, `requested_pair`, source timestamp if known, retrieval timestamp, result limit/completeness signal, raw evidence handle, returned candidates, and normalized errors. Adapter owns its raw response parsing and legal-use configuration.
+
+## Durable job model
+
+**Never use request-scoped FastAPI `BackgroundTasks` as the sole mechanism for multi-minute jobs.** Require DB-backed jobs and work items. Recommended starter deployment: a single server process with an **explicitly owned scheduler coroutine** or a separate worker command sharing the DB, **not both**. For simpler, robust deployment prefer a separate `python -m flightfinder.worker` process launched beside FastAPI; this gives a dedicated queue owner and clearer recovery. If deploying as one process instead, document lifecycle and set `WEB_CONCURRENCY=1`.
+
+Persist:
+- `search_jobs`: id, query snapshot, owner token/tenant where applicable, status, created/updated, cancel flag, query counters, error summary.
+- `work_items`: id, job, provider, origin, dest, local date, type (`detailed`, `calendar`, `reprice`), status, attempts, next_retry_at, lease_until, result/error refs, timestamps.
+- `itineraries`, `segments`, `fare_quotes`, `quote_revisions`, `fx_snapshots`, optionally `provider_evidence` (redacted/TTL).
+
+Unique key `(job_id, provider_id, origin, destination, depart_date, work_type, unique_target)` ensures idempotency. `unique_target` empty for detailed route/date; quote target for repricing. Store dates and UTC instants separately.
+
+**State transitions:** `pending → running → succeeded_results | succeeded_empty | retry_wait | failed_terminal | skipped_unsupported | cancelled`; `retry_wait → pending`; stale `running` lease after crash → `pending` if retries remain; terminal states never rerun unintentionally.
+
+**Transactions:** claim work atomically (SQLite supports conditional UPDATE / RETURNING on modern versions), lease it, write success/errors and normalized offers in a transaction, then release/complete. Only one scheduler owns claim operations in MVP. Multi-instance safety requires a deliberate later redesign; don't assume SQLite alone solves distributed work claims.
+
+## Search scheduling algorithm
+
+1. Validate and snapshot query. Expand all valid origin × dest × inclusive departure dates.
+2. For every enabled detailed provider, insert one durable work item per route-date combo. Unsupported providers get explicit records/reasons. Optional provider calendars create separate hint work; cannot remove detailed work items.
+3. Run each provider under its concurrency semaphore, minimum inter-request delay/token bucket, timeouts, max attempts and global per-job budget. First test conservative values and document source-specific pacing.
+4. On completion, normalize quote events, append provenance, match complete itineraries, aggregate offers and recompute rankings incrementally. Store results before telling clients progress advanced.
+5. Schedule repricing separately for top eligible candidates **and near-price competitors**, rather than repricing only the first cheapest quote. Deduplicate same quote reprices; set max verification budget.
+6. If repricing increases or invalidates a fare, continue down the shortlist until the budget/coverage policy is met. Never leave an outdated quote as the “best checked”.
+7. When all detailed provider work is terminal and repricing is done (or budget ended), finalize job: `completed`, `partial`, `cancelled`, or `failed`, with a coverage ledger and remaining uncertainties.
+
+### Partial, timeout and cancellation semantics
+
+- `succeeded_empty`: valid source response and no matching itineraries. Distinct from malformed/empty parser response and request failure.
+- `429` respects `Retry-After` and bounded exponential backoff + jitter; circuit breaker/cooldown allowed. Never evade restriction.
+- Parse/schema errors → provider failure + redacted evidence, not `succeeded_empty`.
+- On explicit cancel, stop scheduling new work; mark unstarted items cancelled, retain completed results. In-flight blocking thread calls might **not be force-killable**; use source timeouts, ignore late results after cancel, cap executor workers.
+- Phone/browser disconnect never cancels the server job. New clients fetch job by authorized job id.
+- `provider_complete=false` means truncated results; `combination_covered=true` only proves a query returned an acceptable response.
+
+## Operational defaults to tune at P0
+
+- Set configurable max total origin × destination × date combos; start conservatively around **120**, based on provider terms and typical personal usage (illustrative, NOT a guaranteed allowed quota).
+- One or two concurrent calls per fragile provider initially; tune downward or upward only with evidence and documented terms.
+- Respect per-provider maximum calls/time horizon; put provider-specific limits in config, never hardcode them in UI.
+- Persist work on each attempt so restarts do not throw away progress; store only small, sanitized payload excerpts or encrypted/TTL evidence where needed.
+
+## Boundary acceptance
+
+- Third test/fake provider can be added by implementing adapter/registry config, without editing query expansion, ranker, API schemas or UI.
+- A backend restart requeues stale leased items and preserves all completed results.
+- Parallel jobs respect global provider rate caps, not just individual job limits.
+- A disabled provider is visible in metadata and not silently omitted.
+- No source IDs or source-specific objects leak into domain logic except opaque `provider_quote_handle` stored for provider-only repricing.

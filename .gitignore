@@ -3,6 +3,9 @@
 .venv_probe/
 __pycache__/
 *.pyc
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
 
 # Node
 node_modules/

@@ -29,9 +29,9 @@ The browser suite serves the built bundle and synthetic API responses through
 Playwright request interception, without contacting a provider or starting a web
 server. It covers empty safe results switching to advertised results, cursor
 pagination, refresh/recovery, runtime auth, expiry, and cancellation with retained
-fares. These new browser tests could not launch Chromium in the current managed
-sandbox (MachPort permission denied); they need an unrestricted terminal run.
-See WORK_LOG.md for previous successful visual checks and current validation limits.
+fares. All four scenarios passed during the P4 launch session. In a restricted sandbox,
+Chromium may need additional execution permission. See WORK_LOG.md for exact
+validation evidence, wider-viewport visual checks and current runtime configuration.
 
 Public API types are maintained in `src/api/types.ts` against
 `../../contracts/openapi.yaml`. Money stays as decimal strings. The backend owns

@@ -73,3 +73,11 @@ SwiftUI iOS ──────┘                                  │
 - A completion report with what works, what remains unverified, measured coverage, how to run, test results, and known risks.
 
 **Definition of success:** a valid request produces an honest ranked set of fares (or an honest empty/partial state), with the exact coverage and price evidence behind each displayed result, and the same results are consumable from web and native iOS.
+
+## P4.5 web UI/UX handoff
+
+The owner requested a presentation-refinement phase before native iOS integration.
+Use [the UI/UX agent prompt](P4_5_UI_UX_AGENT_PROMPT.md) and
+[the integration contract](P4_5_UI_UX_INTEGRATION.md). These are static assignment
+artifacts; `../WORK_LOG.md` remains the source of truth for progress and decisions.
+The existing REST/React behavior and native SwiftUI requirement remain in force.

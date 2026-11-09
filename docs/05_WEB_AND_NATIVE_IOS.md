@@ -25,7 +25,7 @@ Use a minimal, slightly warm neutral aesthetic; dense but readable information, 
 ```text
 iPhone:
 ┌───────────────────────────────┐
-│ FlightFinder             ⚙     │
+│ CheapWings             ⚙     │
 │ Search cheapest flights       │
 │ From: MEL   To: CGK DPS SUB   │
 │ Departure: 12–20 Dec          │

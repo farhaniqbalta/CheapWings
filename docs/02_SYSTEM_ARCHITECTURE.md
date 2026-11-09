@@ -36,7 +36,7 @@ apps/ios (SwiftUI) ────────────┘                      
 ## Proposed repository layout
 
 ```text
-flightfinder/
+cheapwings/
   README.md
   docs/                                 # copied worker handoff + implementation ADRs
   contracts/openapi.yaml
@@ -45,7 +45,7 @@ flightfinder/
     pyproject.toml
     alembic.ini
     migrations/
-    src/flightfinder/
+    src/cheapwings/
       api/{routes,schemas,errors}.py
       application/{search_service,job_runner,verification_service}.py
       domain/{query,money,segments,itinerary,offer,coverage,ranking}.py
@@ -94,7 +94,7 @@ Every provider result contains `provider_id`, `requested_pair`, source timestamp
 
 ## Durable job model
 
-**Never use request-scoped FastAPI `BackgroundTasks` as the sole mechanism for multi-minute jobs.** Require DB-backed jobs and work items. Recommended starter deployment: a single server process with an **explicitly owned scheduler coroutine** or a separate worker command sharing the DB, **not both**. For simpler, robust deployment prefer a separate `python -m flightfinder.worker` process launched beside FastAPI; this gives a dedicated queue owner and clearer recovery. If deploying as one process instead, document lifecycle and set `WEB_CONCURRENCY=1`.
+**Never use request-scoped FastAPI `BackgroundTasks` as the sole mechanism for multi-minute jobs.** Require DB-backed jobs and work items. Recommended starter deployment: a single server process with an **explicitly owned scheduler coroutine** or a separate worker command sharing the DB, **not both**. For simpler, robust deployment prefer a separate `python -m cheapwings.worker` process launched beside FastAPI; this gives a dedicated queue owner and clearer recovery. If deploying as one process instead, document lifecycle and set `WEB_CONCURRENCY=1`.
 
 Persist:
 - `search_jobs`: id, query snapshot, owner token/tenant where applicable, status, created/updated, cancel flag, query counters, error summary.

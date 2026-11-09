@@ -51,7 +51,7 @@ A **flexible one-way cheapest-flight finder**, not a booking site and not an air
 ## Results screen and states
 
 ```text
-FlightFinder                                              [Settings]
+CheapWings                                              [Settings]
 Find the lowest priced eligible one-way flights across flexible dates
 
 From [MEL]   To [CGK] [DPS] [SUB]   Departure [12 Dec]–[20 Dec]

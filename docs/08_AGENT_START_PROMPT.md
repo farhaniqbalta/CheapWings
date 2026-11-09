@@ -1,8 +1,8 @@
 # 08 — Copy-Paste Starting Prompt for Local Coding Agent
 
-You are the **implementation worker** for FlightFinder, a low-cost, flexible-date, one-way flight-price comparison tool with Python/FastAPI backend, React+TypeScript web frontend and native SwiftUI iOS frontend.
+You are the **implementation worker** for CheapWings, a low-cost, flexible-date, one-way flight-price comparison tool with Python/FastAPI backend, React+TypeScript web frontend and native SwiftUI iOS frontend.
 
-Read `README.md` and **all active numbered documents** in `FlightFinder_Worker_Handoff/` in order, especially `06_IMPLEMENTATION_CHECKPOINTS.md`. The archived `reference/V4_FULL_DESIGN_REFERENCE.md` is provided for detail, not to override active worker instructions: V4 was a **review-only** document, but this assignment is **approved for staged implementation**.
+Read `README.md` and **all active numbered documents** in `CheapWings_Worker_Handoff/` in order, especially `06_IMPLEMENTATION_CHECKPOINTS.md`. The archived `reference/V4_FULL_DESIGN_REFERENCE.md` is provided for detail, not to override active worker instructions: V4 was a **review-only** document, but this assignment is **approved for staged implementation**.
 
 **Do not ask to revisit approved scope or propose Rust.** The user accepted modular multi-provider architecture, provider-safe exhaustive origin×destination×date coverage, separated itinerary vs seller offers, price evidence/repricing, external links only, backend-owned durable jobs, React web and true SwiftUI native iOS. Low cost and accurate prices outweigh search speed. No booking, payments, push alerts, or paid API dependency without approval.
 

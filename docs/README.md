@@ -1,4 +1,4 @@
-# FlightFinder — Worker Implementation Handoff
+# CheapWings — Worker Implementation Handoff
 
 **Version:** 1.0 · **Prepared:** 2026-11-09 · **Status:** Approved product direction, pending provider feasibility gates
 

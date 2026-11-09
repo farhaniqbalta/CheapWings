@@ -70,10 +70,10 @@ pip install -e './backend[dev]'
 cp .env.example .env
 # edit config locally: database, enabled providers, per-provider budgets
 alembic -c backend/alembic.ini upgrade head
-uvicorn flightfinder.main:app --app-dir backend/src --reload
+uvicorn cheapwings.main:app --app-dir backend/src --reload
 
 # In another terminal (single queue owner)
-python -m flightfinder.worker
+python -m cheapwings.worker
 
 # Web frontend
 cd apps/web
@@ -92,7 +92,7 @@ Include at minimum (exact names can be chosen and documented):
 
 ```dotenv
 APP_ENV=local
-DATABASE_URL=sqlite:///./data/flightfinder.db
+DATABASE_URL=sqlite:///./data/cheapwings.db
 API_BIND_HOST=127.0.0.1
 API_BIND_PORT=8000
 CORS_ALLOWED_ORIGINS=http://localhost:5173

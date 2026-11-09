@@ -1,0 +1,14 @@
+# Python
+.venv/
+.venv_probe/
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+
+# Local env / secrets
+.env
+
+# OS
+.DS_Store

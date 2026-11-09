@@ -1,0 +1,2411 @@
+{
+  "provider_id": "skiplagged",
+  "endpoint": "https://mcp.skiplagged.com/mcp",
+  "mcp_sdk_version": "2.3.0",
+  "probe_run_at": "2026-11-09T12:33:56Z",
+  "tools": [
+    {
+      "name": "sk_flights_search",
+      "description": "Search Skiplagged for flights between specific locations with filtering options for passengers, fare class, stops, airlines, and timing preferences",
+      "input_schema": {
+        "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "origin": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Departure location - prefer IATA code"
+          },
+          "destination": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Arrival location - prefer IATA code"
+          },
+          "departureDate": {
+            "type": "string"
+          },
+          "returnDate": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 12,
+            "description": "Maximum number of flights to return (default: 12, max: 100)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "offset": {
+            "default": 0,
+            "description": "Number of flights to skip (default: 0); limit + offset must not exceed 100",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 99
+          },
+          "sort": {
+            "default": "value",
+            "description": "Sort flights by price (cheapest first), duration (shortest first), or value (best price/time ratio, default)",
+            "type": "string",
+            "enum": [
+              "price",
+              "duration",
+              "value"
+            ]
+          },
+          "currency": {
+            "description": "Currency to show prices in (ISO 4217, default: USD). Pass the user's local currency when you know it, e.g. GBP for a UK user or EUR for a user in Germany. Prices are converted from USD and are approximate; sorting and booking links are unaffected.",
+            "type": "string",
+            "enum": [
+              "USD",
+              "AUD",
+              "BRL",
+              "CAD",
+              "CHF",
+              "CNY",
+              "CZK",
+              "DKK",
+              "EUR",
+              "GBP",
+              "HKD",
+              "IDR",
+              "INR",
+              "JPY",
+              "KRW",
+              "MXN",
+              "MYR",
+              "PLN",
+              "RON",
+              "SEK",
+              "SGD",
+              "TRY",
+              "TWD",
+              "UAH",
+              "VND"
+            ]
+          },
+          "adults": {
+            "default": 1,
+            "description": "Number of adult passengers (default: 1, max: 9)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9
+          },
+          "children": {
+            "default": 0,
+            "description": "Number of child passengers (default: 0, max: 8)",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 8
+          },
+          "infantsLap": {
+            "default": 0,
+            "description": "Number of lap infants (default: 0, max: 4)",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "infantsSeat": {
+            "default": 0,
+            "description": "Number of seat infants (default: 0, max: 4)",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "fareClass": {
+            "default": "economy",
+            "description": "Fare class preference (default: economy)",
+            "type": "string",
+            "enum": [
+              "basic-economy",
+              "economy",
+              "premium",
+              "business",
+              "first"
+            ]
+          },
+          "includeHiddenCity": {
+            "default": true,
+            "description": "Include hidden city flights (default: true)",
+            "type": "boolean"
+          },
+          "includeVirtualInterlining": {
+            "default": true,
+            "description": "Include virtual interlining flights (default: true)",
+            "type": "boolean"
+          },
+          "includeStandard": {
+            "default": true,
+            "description": "Include standard flights (default: true)",
+            "type": "boolean"
+          },
+          "maxStops": {
+            "description": "Maximum number of stops (none=nonstop, one=1 stop, many=2+ stops)",
+            "type": "string",
+            "enum": [
+              "none",
+              "one",
+              "many"
+            ]
+          },
+          "preferredAirlines": {
+            "description": "Array of preferred airline codes (e.g., ['UA', 'DL'])",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "excludedAirlines": {
+            "description": "Array of excluded airline codes (e.g., ['F9', 'NK'])",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "departureTimeEarliest": {
+            "description": "Earliest departure time in minutes from midnight (0-1439)",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1439
+          },
+          "departureTimeLatest": {
+            "description": "Latest departure time in minutes from midnight (0-1439)",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1439
+          },
+          "arrivalTimeEarliest": {
+            "description": "Earliest arrival time in minutes from midnight (0-1439)",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1439
+          },
+          "arrivalTimeLatest": {
+            "description": "Latest arrival time in minutes from midnight (0-1439)",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1439
+          },
+          "maxFlightDuration": {
+            "description": "Maximum total flight duration in minutes",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "maxLayoverDuration": {
+            "description": "Maximum layover duration in minutes",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "departureAirports": {
+            "anyOf": [
+              {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Array of specific departure airport codes to include (when origin city has multiple airports)"
+          },
+          "arrivalAirports": {
+            "anyOf": [
+              {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Array of specific arrival airport codes to include (when destination city has multiple airports)"
+          }
+        },
+        "required": [
+          "origin",
+          "destination",
+          "departureDate"
+        ]
+      },
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "searchUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Complete search URL with all parameters"
+          },
+          "flights": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "FlightCard"
+                },
+                "id": {
+                  "type": "string",
+                  "description": "Flight result card identifier; not a user identifier"
+                },
+                "airlines": {
+                  "type": "string"
+                },
+                "departure": {
+                  "type": "object",
+                  "properties": {
+                    "airport": {
+                      "type": "string"
+                    },
+                    "dateTime": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "airport",
+                    "dateTime"
+                  ],
+                  "additionalProperties": false
+                },
+                "arrival": {
+                  "type": "object",
+                  "properties": {
+                    "airport": {
+                      "type": "string"
+                    },
+                    "dateTime": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "airport",
+                    "dateTime"
+                  ],
+                  "additionalProperties": false
+                },
+                "duration": {
+                  "type": "string"
+                },
+                "layovers": {
+                  "type": "number"
+                },
+                "price": {
+                  "type": "object",
+                  "properties": {
+                    "amount": {
+                      "type": "number",
+                      "description": "Price in `currency` (converted from USD)"
+                    },
+                    "currency": {
+                      "type": "string",
+                      "description": "ISO 4217 code of `amount`"
+                    },
+                    "usdAmount": {
+                      "description": "Source price in US dollars; use it for sorting/comparison",
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "amount",
+                    "currency"
+                  ],
+                  "additionalProperties": false
+                },
+                "deepLink": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "attributes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "returnFlight": {
+                  "type": "object",
+                  "properties": {
+                    "airlines": {
+                      "type": "string"
+                    },
+                    "departure": {
+                      "type": "object",
+                      "properties": {
+                        "airport": {
+                          "type": "string"
+                        },
+                        "dateTime": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "airport",
+                        "dateTime"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "arrival": {
+                      "type": "object",
+                      "properties": {
+                        "airport": {
+                          "type": "string"
+                        },
+                        "dateTime": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "airport",
+                        "dateTime"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "duration": {
+                      "type": "string"
+                    },
+                    "layovers": {
+                      "type": "number"
+                    },
+                    "attributes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "airlines",
+                    "departure",
+                    "arrival",
+                    "duration"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "id",
+                "airlines",
+                "departure",
+                "arrival",
+                "duration",
+                "price",
+                "deepLink"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "pagination": {
+            "type": "object",
+            "properties": {
+              "totalAvailable": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Total number of flights available"
+              },
+              "currentlyShowing": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Number of flights in this result set"
+              },
+              "offset": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Current result offset for pagination"
+              },
+              "limit": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Maximum results per page"
+              },
+              "hasMoreResults": {
+                "type": "boolean",
+                "description": "Whether additional results are available"
+              }
+            },
+            "required": [
+              "totalAvailable",
+              "currentlyShowing",
+              "offset",
+              "limit",
+              "hasMoreResults"
+            ],
+            "additionalProperties": false,
+            "description": "Result pagination information"
+          },
+          "pricing": {
+            "description": "Currency used for `flights[].price`",
+            "type": "object",
+            "properties": {
+              "currency": {
+                "type": "string",
+                "description": "ISO 4217 code the prices are shown in"
+              },
+              "requestedCurrency": {
+                "type": "string",
+                "description": "ISO 4217 code the caller asked for (may differ on fallback)"
+              },
+              "rate": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "Units of `currency` per 1 USD used for conversion (1 for USD)"
+              },
+              "rateAsOf": {
+                "description": "When the server fetched the exchange rate (ISO datetime)",
+                "type": "string"
+              },
+              "approximate": {
+                "type": "boolean",
+                "description": "True when prices were converted from USD; the final charge on the booking site may differ"
+              },
+              "notice": {
+                "description": "Short note to relay to the user about the shown currency",
+                "type": "string"
+              }
+            },
+            "required": [
+              "currency",
+              "requestedCurrency",
+              "rate",
+              "approximate"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "searchUrl",
+          "flights",
+          "pagination"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "sk_destinations_anywhere",
+      "description": "Find lower-priced destinations from a departure city when the user is flexible about where to go.",
+      "input_schema": {
+        "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "Departure IATA code or city name"
+          },
+          "depart": {
+            "type": "string",
+            "description": "Departure date in YYYY-MM-DD format"
+          },
+          "return": {
+            "description": "Return date in YYYY-MM-DD format (optional for one-way trips)",
+            "type": "string"
+          },
+          "fare_class": {
+            "default": "economy",
+            "description": "Fare class preference",
+            "type": "string",
+            "enum": [
+              "basic-economy",
+              "economy",
+              "premium",
+              "business",
+              "first"
+            ]
+          },
+          "currency": {
+            "description": "Currency to show prices in (ISO 4217, default: USD). Pass the user's local currency when you know it, e.g. GBP for a UK user or EUR for a user in Germany. Prices are converted from USD and are approximate; sorting and booking links are unaffected.",
+            "type": "string",
+            "enum": [
+              "USD",
+              "AUD",
+              "BRL",
+              "CAD",
+              "CHF",
+              "CNY",
+              "CZK",
+              "DKK",
+              "EUR",
+              "GBP",
+              "HKD",
+              "IDR",
+              "INR",
+              "JPY",
+              "KRW",
+              "MXN",
+              "MYR",
+              "PLN",
+              "RON",
+              "SEK",
+              "SGD",
+              "TRY",
+              "TWD",
+              "UAH",
+              "VND"
+            ]
+          },
+          "adults": {
+            "default": 1,
+            "description": "Number of adult passengers",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9
+          },
+          "children": {
+            "default": 0,
+            "description": "Number of child passengers",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 8
+          },
+          "infantsLap": {
+            "default": 0,
+            "description": "Number of lap infants",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "infantsSeat": {
+            "default": 0,
+            "description": "Number of seat infants",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          }
+        },
+        "required": [
+          "from",
+          "depart"
+        ]
+      },
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "searchUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Complete search URL with all parameters"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "DealCard"
+                },
+                "id": {
+                  "type": "string",
+                  "description": "Travel deal card identifier; not a user identifier"
+                },
+                "destination": {
+                  "type": "object",
+                  "properties": {
+                    "city": {
+                      "type": "string"
+                    },
+                    "region": {
+                      "type": "string"
+                    },
+                    "airport": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "city",
+                    "region",
+                    "airport"
+                  ],
+                  "additionalProperties": false
+                },
+                "price": {
+                  "type": "object",
+                  "properties": {
+                    "amount": {
+                      "type": "number",
+                      "description": "Price in `currency` (converted from USD)"
+                    },
+                    "currency": {
+                      "type": "string",
+                      "description": "ISO 4217 code of `amount`"
+                    },
+                    "usdAmount": {
+                      "description": "Source price in US dollars; use it for comparison",
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "amount",
+                    "currency"
+                  ],
+                  "additionalProperties": false
+                },
+                "flightType": {
+                  "type": "string"
+                },
+                "dateRange": {
+                  "type": "string"
+                },
+                "tripLength": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "deepLink": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              },
+              "required": [
+                "type",
+                "id",
+                "destination",
+                "price",
+                "flightType",
+                "deepLink"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "pagination": {
+            "type": "object",
+            "properties": {
+              "totalAvailable": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Total number of destinations available"
+              },
+              "currentlyShowing": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Number of destinations in this result set"
+              },
+              "offset": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Current result offset for pagination"
+              },
+              "limit": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Maximum results per page"
+              },
+              "hasMoreResults": {
+                "type": "boolean",
+                "description": "Whether additional results are available"
+              }
+            },
+            "required": [
+              "totalAvailable",
+              "currentlyShowing",
+              "offset",
+              "limit",
+              "hasMoreResults"
+            ],
+            "additionalProperties": false,
+            "description": "Result pagination information"
+          },
+          "pricing": {
+            "description": "Currency used for `results[].price`",
+            "type": "object",
+            "properties": {
+              "currency": {
+                "type": "string",
+                "description": "ISO 4217 code the prices are shown in"
+              },
+              "requestedCurrency": {
+                "type": "string",
+                "description": "ISO 4217 code the caller asked for (may differ on fallback)"
+              },
+              "rate": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "Units of `currency` per 1 USD used for conversion (1 for USD)"
+              },
+              "rateAsOf": {
+                "description": "When the server fetched the exchange rate (ISO datetime)",
+                "type": "string"
+              },
+              "approximate": {
+                "type": "boolean",
+                "description": "True when prices were converted from USD; the final charge on the booking site may differ"
+              },
+              "notice": {
+                "description": "Short note to relay to the user about the shown currency",
+                "type": "string"
+              }
+            },
+            "required": [
+              "currency",
+              "requestedCurrency",
+              "rate",
+              "approximate"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "searchUrl",
+          "results",
+          "pagination"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "sk_flex_departure_calendar",
+      "description": "Generate a flexible calendar of the lowest one-way fares around a chosen departure, returning date \u2192 cheapest-price entries to help pick the best day to fly. Intended for flexible-date price discovery, not exact itinerary selection.",
+      "input_schema": {
+        "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "origin": {
+            "type": "string",
+            "description": "Departure city name or IATA code (will be resolved to IATA code automatically)"
+          },
+          "destination": {
+            "type": "string",
+            "description": "Arrival city name or IATA code (will be resolved to IATA code automatically)"
+          },
+          "departureDate": {
+            "type": "string",
+            "description": "Preferred departure date (YYYY-MM-DD format)"
+          },
+          "returnDate": {
+            "description": "Return date for matching trip length (optional, YYYY-MM-DD format)",
+            "type": "string"
+          },
+          "sort": {
+            "default": "date",
+            "description": "Sort results chronologically or by lowest price first",
+            "type": "string",
+            "enum": [
+              "date",
+              "price"
+            ]
+          },
+          "currency": {
+            "description": "Currency to show prices in (ISO 4217, default: USD). Pass the user's local currency when you know it, e.g. GBP for a UK user or EUR for a user in Germany. Prices are converted from USD and are approximate; sorting and booking links are unaffected.",
+            "type": "string",
+            "enum": [
+              "USD",
+              "AUD",
+              "BRL",
+              "CAD",
+              "CHF",
+              "CNY",
+              "CZK",
+              "DKK",
+              "EUR",
+              "GBP",
+              "HKD",
+              "IDR",
+              "INR",
+              "JPY",
+              "KRW",
+              "MXN",
+              "MYR",
+              "PLN",
+              "RON",
+              "SEK",
+              "SGD",
+              "TRY",
+              "TWD",
+              "UAH",
+              "VND"
+            ]
+          },
+          "adults": {
+            "default": 1,
+            "description": "Number of adult passengers (default: 1, max: 9)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9
+          },
+          "children": {
+            "default": 0,
+            "description": "Number of child passengers (default: 0, max: 8)",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 8
+          },
+          "infantsLap": {
+            "default": 0,
+            "description": "Number of lap infants (default: 0, max: 4)",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "infantsSeat": {
+            "default": 0,
+            "description": "Number of seat infants (default: 0, max: 4)",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          }
+        },
+        "required": [
+          "origin",
+          "destination",
+          "departureDate"
+        ]
+      },
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "searchUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Complete search URL with all parameters"
+          },
+          "origin": {
+            "type": "string",
+            "description": "Resolved origin airport code used for this search"
+          },
+          "destination": {
+            "type": "string",
+            "description": "Resolved destination airport code used for this search"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "depart",
+              "return"
+            ],
+            "description": "Indicates whether these options vary departure dates or return dates"
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "date",
+              "price"
+            ],
+            "description": "Ordering applied to the options array"
+          },
+          "chart": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "FlexChart"
+              },
+              "id": {
+                "type": "string",
+                "description": "Fare chart identifier; not a user identifier"
+              },
+              "title": {
+                "type": "string"
+              },
+              "subtitle": {
+                "type": "string"
+              },
+              "origin": {
+                "type": "string"
+              },
+              "destination": {
+                "type": "string"
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "depart",
+                  "return"
+                ]
+              },
+              "sort": {
+                "type": "string",
+                "enum": [
+                  "date",
+                  "price"
+                ]
+              },
+              "searchUrl": {
+                "type": "string",
+                "format": "uri"
+              },
+              "currency": {
+                "description": "ISO 4217 code of `points[].price` (USD when absent)",
+                "type": "string"
+              },
+              "points": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "departure": {
+                      "type": "string"
+                    },
+                    "return": {
+                      "type": "string"
+                    },
+                    "price": {
+                      "type": "number",
+                      "description": "Price in `currency`"
+                    },
+                    "usdPrice": {
+                      "description": "Source price in US dollars; use it for comparison",
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "departure",
+                    "price"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "type",
+              "id",
+              "title",
+              "origin",
+              "destination",
+              "mode",
+              "sort",
+              "searchUrl",
+              "points"
+            ],
+            "additionalProperties": false
+          },
+          "pricing": {
+            "description": "Currency used for `chart.points[].price`",
+            "type": "object",
+            "properties": {
+              "currency": {
+                "type": "string",
+                "description": "ISO 4217 code the prices are shown in"
+              },
+              "requestedCurrency": {
+                "type": "string",
+                "description": "ISO 4217 code the caller asked for (may differ on fallback)"
+              },
+              "rate": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "Units of `currency` per 1 USD used for conversion (1 for USD)"
+              },
+              "rateAsOf": {
+                "description": "When the server fetched the exchange rate (ISO datetime)",
+                "type": "string"
+              },
+              "approximate": {
+                "type": "boolean",
+                "description": "True when prices were converted from USD; the final charge on the booking site may differ"
+              },
+              "notice": {
+                "description": "Short note to relay to the user about the shown currency",
+                "type": "string"
+              }
+            },
+            "required": [
+              "currency",
+              "requestedCurrency",
+              "rate",
+              "approximate"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "searchUrl",
+          "origin",
+          "destination",
+          "mode",
+          "sort",
+          "chart"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "sk_flex_return_calendar",
+      "description": "Generate a flexible round-trip price calendar for a fixed-length stay around a chosen travel window. Returns (depart date, return date, lowest total price) entries for nearby date pairs that preserve the original trip length; intended for price discovery, not exact itinerary selection.",
+      "input_schema": {
+        "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "origin": {
+            "type": "string",
+            "description": "Departure city name or IATA code (will be resolved to IATA code automatically)"
+          },
+          "destination": {
+            "type": "string",
+            "description": "Arrival city name or IATA code (will be resolved to IATA code automatically)"
+          },
+          "departureDate": {
+            "type": "string",
+            "description": "Preferred departure date (YYYY-MM-DD format)"
+          },
+          "returnDate": {
+            "type": "string",
+            "description": "Return date for the reference trip (YYYY-MM-DD format)"
+          },
+          "sort": {
+            "default": "date",
+            "description": "Sort results chronologically or by lowest price first",
+            "type": "string",
+            "enum": [
+              "date",
+              "price"
+            ]
+          },
+          "currency": {
+            "description": "Currency to show prices in (ISO 4217, default: USD). Pass the user's local currency when you know it, e.g. GBP for a UK user or EUR for a user in Germany. Prices are converted from USD and are approximate; sorting and booking links are unaffected.",
+            "type": "string",
+            "enum": [
+              "USD",
+              "AUD",
+              "BRL",
+              "CAD",
+              "CHF",
+              "CNY",
+              "CZK",
+              "DKK",
+              "EUR",
+              "GBP",
+              "HKD",
+              "IDR",
+              "INR",
+              "JPY",
+              "KRW",
+              "MXN",
+              "MYR",
+              "PLN",
+              "RON",
+              "SEK",
+              "SGD",
+              "TRY",
+              "TWD",
+              "UAH",
+              "VND"
+            ]
+          },
+          "adults": {
+            "default": 1,
+            "description": "Number of adult passengers (default: 1, max: 9)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9
+          },
+          "children": {
+            "default": 0,
+            "description": "Number of child passengers (default: 0, max: 8)",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 8
+          },
+          "infantsLap": {
+            "default": 0,
+            "description": "Number of lap infants (default: 0, max: 4)",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "infantsSeat": {
+            "default": 0,
+            "description": "Number of seat infants (default: 0, max: 4)",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          }
+        },
+        "required": [
+          "origin",
+          "destination",
+          "departureDate",
+          "returnDate"
+        ]
+      },
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "searchUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Complete search URL with all parameters"
+          },
+          "origin": {
+            "type": "string",
+            "description": "Resolved origin airport code used for this search"
+          },
+          "destination": {
+            "type": "string",
+            "description": "Resolved destination airport code used for this search"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "depart",
+              "return"
+            ],
+            "description": "Indicates whether these options vary departure dates or return dates"
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "date",
+              "price"
+            ],
+            "description": "Ordering applied to the options array"
+          },
+          "chart": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "FlexChart"
+              },
+              "id": {
+                "type": "string",
+                "description": "Fare chart identifier; not a user identifier"
+              },
+              "title": {
+                "type": "string"
+              },
+              "subtitle": {
+                "type": "string"
+              },
+              "origin": {
+                "type": "string"
+              },
+              "destination": {
+                "type": "string"
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "depart",
+                  "return"
+                ]
+              },
+              "sort": {
+                "type": "string",
+                "enum": [
+                  "date",
+                  "price"
+                ]
+              },
+              "searchUrl": {
+                "type": "string",
+                "format": "uri"
+              },
+              "currency": {
+                "description": "ISO 4217 code of `points[].price` (USD when absent)",
+                "type": "string"
+              },
+              "points": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "departure": {
+                      "type": "string"
+                    },
+                    "return": {
+                      "type": "string"
+                    },
+                    "price": {
+                      "type": "number",
+                      "description": "Price in `currency`"
+                    },
+                    "usdPrice": {
+                      "description": "Source price in US dollars; use it for comparison",
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "departure",
+                    "price"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "type",
+              "id",
+              "title",
+              "origin",
+              "destination",
+              "mode",
+              "sort",
+              "searchUrl",
+              "points"
+            ],
+            "additionalProperties": false
+          },
+          "pricing": {
+            "description": "Currency used for `chart.points[].price`",
+            "type": "object",
+            "properties": {
+              "currency": {
+                "type": "string",
+                "description": "ISO 4217 code the prices are shown in"
+              },
+              "requestedCurrency": {
+                "type": "string",
+                "description": "ISO 4217 code the caller asked for (may differ on fallback)"
+              },
+              "rate": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "Units of `currency` per 1 USD used for conversion (1 for USD)"
+              },
+              "rateAsOf": {
+                "description": "When the server fetched the exchange rate (ISO datetime)",
+                "type": "string"
+              },
+              "approximate": {
+                "type": "boolean",
+                "description": "True when prices were converted from USD; the final charge on the booking site may differ"
+              },
+              "notice": {
+                "description": "Short note to relay to the user about the shown currency",
+                "type": "string"
+              }
+            },
+            "required": [
+              "currency",
+              "requestedCurrency",
+              "rate",
+              "approximate"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "searchUrl",
+          "origin",
+          "destination",
+          "mode",
+          "sort",
+          "chart"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "sk_hotels_search",
+      "description": "Search Skiplagged for hotels in a city with specific check-in and check-out dates, including ratings and pricing.",
+      "input_schema": {
+        "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "city": {
+            "type": "string",
+            "minLength": 1,
+            "description": "City name to search for hotels (will be matched against available cities)"
+          },
+          "checkin": {
+            "type": "string",
+            "description": "Check-in date (YYYY-MM-DD format)"
+          },
+          "checkout": {
+            "type": "string",
+            "description": "Check-out date (YYYY-MM-DD format)"
+          },
+          "limit": {
+            "default": 12,
+            "description": "Maximum number of hotels to return (default: 12, max: 100)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "offset": {
+            "default": 0,
+            "description": "Number of hotels to skip (default: 0); limit + offset must not exceed 100",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 99
+          },
+          "sort": {
+            "default": "value",
+            "description": "Sort hotels by price (cheapest first), ranking (highest rated first), value (best value rating), or discount (best deals first, default when deals available)",
+            "type": "string",
+            "enum": [
+              "price",
+              "ranking",
+              "value",
+              "discount"
+            ]
+          },
+          "currency": {
+            "description": "Currency to show prices in (ISO 4217, default: USD). Pass the user's local currency when you know it, e.g. GBP for a UK user or EUR for a user in Germany. Prices are converted from USD and are approximate; sorting and booking links are unaffected.",
+            "type": "string",
+            "enum": [
+              "USD",
+              "AUD",
+              "BRL",
+              "CAD",
+              "CHF",
+              "CNY",
+              "CZK",
+              "DKK",
+              "EUR",
+              "GBP",
+              "HKD",
+              "IDR",
+              "INR",
+              "JPY",
+              "KRW",
+              "MXN",
+              "MYR",
+              "PLN",
+              "RON",
+              "SEK",
+              "SGD",
+              "TRY",
+              "TWD",
+              "UAH",
+              "VND"
+            ]
+          },
+          "numRooms": {
+            "default": 1,
+            "description": "Number of rooms (default: 1, max: 9)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9
+          },
+          "numAdults": {
+            "default": 2,
+            "description": "Number of adults (default: 2, max: 10)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "numChildren": {
+            "default": 0,
+            "description": "Number of children (default: 0, max: 10)",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10
+          }
+        },
+        "required": [
+          "city",
+          "checkin",
+          "checkout"
+        ]
+      },
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "searchUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Complete search URL with all parameters"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "HotelCard"
+                },
+                "id": {
+                  "type": "string",
+                  "description": "Hotel result card identifier; not a user identifier"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "imageUrl": {
+                  "type": "string"
+                },
+                "rating": {
+                  "type": "object",
+                  "properties": {
+                    "stars": {
+                      "type": "number"
+                    },
+                    "text": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "stars",
+                    "text"
+                  ],
+                  "additionalProperties": false
+                },
+                "price": {
+                  "type": "object",
+                  "properties": {
+                    "amount": {
+                      "type": "number",
+                      "description": "Nightly price in `currency` (converted from USD)"
+                    },
+                    "currency": {
+                      "type": "string",
+                      "description": "ISO 4217 code of `amount`"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "usdAmount": {
+                      "description": "Source nightly price in US dollars; use it for comparison",
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "amount",
+                    "currency",
+                    "text"
+                  ],
+                  "additionalProperties": false
+                },
+                "chain": {
+                  "type": "string"
+                },
+                "location": {
+                  "type": "string"
+                },
+                "amenities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "deepLink": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              },
+              "required": [
+                "type",
+                "id",
+                "name",
+                "rating",
+                "price",
+                "chain",
+                "location",
+                "amenities",
+                "deepLink"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "pagination": {
+            "type": "object",
+            "properties": {
+              "totalAvailable": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Total number of hotels available"
+              },
+              "currentlyShowing": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Number of hotels in this result set"
+              },
+              "offset": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Current result offset for pagination"
+              },
+              "limit": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Maximum results per page"
+              },
+              "hasMoreResults": {
+                "type": "boolean",
+                "description": "Whether additional results are available"
+              }
+            },
+            "required": [
+              "totalAvailable",
+              "currentlyShowing",
+              "offset",
+              "limit",
+              "hasMoreResults"
+            ],
+            "additionalProperties": false,
+            "description": "Result pagination information"
+          },
+          "pricing": {
+            "description": "Currency used for `results[].price`",
+            "type": "object",
+            "properties": {
+              "currency": {
+                "type": "string",
+                "description": "ISO 4217 code the prices are shown in"
+              },
+              "requestedCurrency": {
+                "type": "string",
+                "description": "ISO 4217 code the caller asked for (may differ on fallback)"
+              },
+              "rate": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "Units of `currency` per 1 USD used for conversion (1 for USD)"
+              },
+              "rateAsOf": {
+                "description": "When the server fetched the exchange rate (ISO datetime)",
+                "type": "string"
+              },
+              "approximate": {
+                "type": "boolean",
+                "description": "True when prices were converted from USD; the final charge on the booking site may differ"
+              },
+              "notice": {
+                "description": "Short note to relay to the user about the shown currency",
+                "type": "string"
+              }
+            },
+            "required": [
+              "currency",
+              "requestedCurrency",
+              "rate",
+              "approximate"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "searchUrl",
+          "results",
+          "pagination"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "sk_cars_search",
+      "description": "Search Skiplagged for rental cars between pickup and dropoff locations/dates, returning prices, companies, and car details.",
+      "input_schema": {
+        "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "pickupLocation": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Pickup city or airport code"
+          },
+          "pickupDate": {
+            "type": "string",
+            "description": "Pickup date (YYYY-MM-DD)"
+          },
+          "pickupTime": {
+            "default": "10:00",
+            "description": "Pickup time (HH:mm or HH:mm:ss, default 10:00)",
+            "type": "string",
+            "pattern": "^\\d{2}:\\d{2}(?::\\d{2})?$"
+          },
+          "dropoffLocation": {
+            "description": "Dropoff city or airport code (defaults to pickup)",
+            "type": "string",
+            "minLength": 1
+          },
+          "dropoffDate": {
+            "type": "string",
+            "description": "Dropoff date (YYYY-MM-DD)"
+          },
+          "dropoffTime": {
+            "default": "10:00",
+            "description": "Dropoff time (HH:mm or HH:mm:ss, default 10:00)",
+            "type": "string",
+            "pattern": "^\\d{2}:\\d{2}(?::\\d{2})?$"
+          },
+          "limit": {
+            "default": 12,
+            "description": "Maximum number of car offers to return",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "offset": {
+            "default": 0,
+            "description": "Number of car offers to skip (default: 0); limit + offset must not exceed 100",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 99
+          }
+        },
+        "required": [
+          "pickupLocation",
+          "pickupDate",
+          "dropoffDate"
+        ]
+      },
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "searchUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Complete search URL with all parameters"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Opaque offer identifier; not a user identifier"
+                },
+                "companyName": {
+                  "type": "string",
+                  "description": "Rental company name"
+                },
+                "companyLogoUrl": {
+                  "description": "Rental company logo URL",
+                  "type": "string"
+                },
+                "vehicleName": {
+                  "type": "string",
+                  "description": "Vehicle name"
+                },
+                "vehicleDescription": {
+                  "description": "Vehicle description",
+                  "type": "string"
+                },
+                "exampleVehicle": {
+                  "description": "Example model text",
+                  "type": "string"
+                },
+                "passengers": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991,
+                  "description": "Passenger capacity"
+                },
+                "bags": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991,
+                  "description": "Bag capacity"
+                },
+                "transmission": {
+                  "type": "string",
+                  "enum": [
+                    "Automatic",
+                    "Manual"
+                  ],
+                  "description": "Transmission type"
+                },
+                "unlimitedMileage": {
+                  "type": "boolean",
+                  "description": "Includes unlimited mileage"
+                },
+                "freeCancellation": {
+                  "type": "boolean",
+                  "description": "Free cancellation available"
+                },
+                "allowCancellation": {
+                  "type": "boolean",
+                  "description": "Cancellation allowed (free or fee)"
+                },
+                "prepaid": {
+                  "type": "boolean",
+                  "description": "Whether the rate is prepaid"
+                },
+                "ccRequired": {
+                  "type": "boolean",
+                  "description": "Credit card required to book"
+                },
+                "ageRequired": {
+                  "type": "boolean",
+                  "description": "Driver age required"
+                },
+                "priceCurrency": {
+                  "type": "string",
+                  "description": "Currency code (ISO-4217)"
+                },
+                "priceRateInDollars": {
+                  "type": "number",
+                  "description": "Per-day/quoted rate in US dollars for comparison"
+                },
+                "totalPriceInDollars": {
+                  "type": "number",
+                  "description": "Total rental price in US dollars"
+                },
+                "pickup": {
+                  "type": "object",
+                  "properties": {
+                    "airportCode": {
+                      "description": "Pickup/dropoff airport code",
+                      "type": "string"
+                    },
+                    "address": {
+                      "description": "Pickup/dropoff address",
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "description": "Pickup location"
+                },
+                "dropoff": {
+                  "type": "object",
+                  "properties": {
+                    "airportCode": {
+                      "description": "Pickup/dropoff airport code",
+                      "type": "string"
+                    },
+                    "address": {
+                      "description": "Pickup/dropoff address",
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "description": "Dropoff location"
+                },
+                "bookingLink": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "Deep link to book this car"
+                },
+                "tags": {
+                  "description": "Vehicle type tags",
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "companyName",
+                "vehicleName",
+                "passengers",
+                "bags",
+                "transmission",
+                "unlimitedMileage",
+                "freeCancellation",
+                "allowCancellation",
+                "prepaid",
+                "ccRequired",
+                "ageRequired",
+                "priceCurrency",
+                "priceRateInDollars",
+                "totalPriceInDollars",
+                "pickup",
+                "dropoff",
+                "bookingLink"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Available car rental offers"
+          },
+          "pagination": {
+            "type": "object",
+            "properties": {
+              "totalAvailable": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Total number of cars available"
+              },
+              "currentlyShowing": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Number of cars in this result set"
+              },
+              "offset": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Current result offset for pagination"
+              },
+              "limit": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Maximum results per page"
+              },
+              "hasMoreResults": {
+                "type": "boolean",
+                "description": "Whether additional results are available"
+              }
+            },
+            "required": [
+              "totalAvailable",
+              "currentlyShowing",
+              "offset",
+              "limit",
+              "hasMoreResults"
+            ],
+            "additionalProperties": false,
+            "description": "Result pagination information"
+          }
+        },
+        "required": [
+          "searchUrl",
+          "results",
+          "pagination"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "sk_hotel_details",
+      "description": "Fetch room-level availability, pricing, and amenities for a specific hotel and stay dates.",
+      "input_schema": {
+        "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "hotelId": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Hotel ID (from search results) to fetch detailed availability for"
+          },
+          "checkin": {
+            "type": "string",
+            "description": "Check-in date (YYYY-MM-DD format)"
+          },
+          "checkout": {
+            "type": "string",
+            "description": "Check-out date (YYYY-MM-DD format)"
+          },
+          "live": {
+            "default": true,
+            "description": "Use live rates (includes booking links). Disable for faster, less accurate cached rates.",
+            "type": "boolean"
+          },
+          "currency": {
+            "description": "Currency to show prices in (ISO 4217, default: USD). Pass the user's local currency when you know it, e.g. GBP for a UK user or EUR for a user in Germany. Prices are converted from USD and are approximate; sorting and booking links are unaffected.",
+            "type": "string",
+            "enum": [
+              "USD",
+              "AUD",
+              "BRL",
+              "CAD",
+              "CHF",
+              "CNY",
+              "CZK",
+              "DKK",
+              "EUR",
+              "GBP",
+              "HKD",
+              "IDR",
+              "INR",
+              "JPY",
+              "KRW",
+              "MXN",
+              "MYR",
+              "PLN",
+              "RON",
+              "SEK",
+              "SGD",
+              "TRY",
+              "TWD",
+              "UAH",
+              "VND"
+            ]
+          },
+          "numRooms": {
+            "default": 1,
+            "description": "Number of rooms (default: 1, max: 5)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "numAdults": {
+            "default": 2,
+            "description": "Number of adults (default: 2, max: 10)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "numChildren": {
+            "default": 0,
+            "description": "Number of children (default: 0, max: 10)",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10
+          }
+        },
+        "required": [
+          "hotelId",
+          "checkin",
+          "checkout"
+        ]
+      },
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "hotelId": {
+            "type": "string",
+            "description": "Skiplagged property identifier; not a user identifier"
+          },
+          "imageUrl": {
+            "description": "Hotel image URL",
+            "type": "string"
+          },
+          "hotelName": {
+            "type": "string",
+            "description": "Hotel name"
+          },
+          "starRating": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5,
+            "description": "Hotel star rating (0-5)"
+          },
+          "reviewRating": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10,
+            "description": "Review rating (0-10)"
+          },
+          "pricePerNightInDollars": {
+            "type": "number",
+            "description": "Price per night in US dollars"
+          },
+          "totalPriceInDollars": {
+            "description": "Total price for entire stay in US dollars",
+            "type": "number"
+          },
+          "chainName": {
+            "type": "string",
+            "description": "Hotel chain name or 'Independent'"
+          },
+          "amenityNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of hotel amenities"
+          },
+          "address": {
+            "type": "string",
+            "description": "Hotel address"
+          },
+          "cityName": {
+            "description": "City name",
+            "type": "string"
+          },
+          "stateName": {
+            "description": "State name",
+            "type": "string"
+          },
+          "countryName": {
+            "description": "Country name",
+            "type": "string"
+          },
+          "bookingLink": {
+            "type": "string",
+            "format": "uri",
+            "description": "Direct booking URL for this hotel"
+          },
+          "priceCurrency": {
+            "description": "ISO 4217 code of pricePerNightInDollars/totalPriceInDollars (USD when absent; may differ when the summary comes from a room quoted in another currency)",
+            "type": "string"
+          },
+          "description": {
+            "description": "Hotel description",
+            "type": "string"
+          },
+          "reviewCount": {
+            "description": "Number of guest reviews",
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "checkinDate": {
+            "type": "string",
+            "description": "Check-in date for this detail search (YYYY-MM-DD)"
+          },
+          "checkoutDate": {
+            "type": "string",
+            "description": "Check-out date for this detail search (YYYY-MM-DD)"
+          },
+          "checkInTime": {
+            "description": "Check-in time window",
+            "type": "string"
+          },
+          "checkOutTime": {
+            "description": "Check-out time window",
+            "type": "string"
+          },
+          "location": {
+            "description": "Geographic coordinates",
+            "type": "object",
+            "properties": {
+              "lat": {
+                "type": "number",
+                "description": "Hotel latitude"
+              },
+              "lng": {
+                "type": "number",
+                "description": "Hotel longitude"
+              }
+            },
+            "required": [
+              "lat",
+              "lng"
+            ],
+            "additionalProperties": false
+          },
+          "rooms": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Room offer identifier; not a user identifier"
+                },
+                "title": {
+                  "type": "string",
+                  "description": "Room name or title"
+                },
+                "description": {
+                  "description": "Short room description",
+                  "type": "string"
+                },
+                "occupancyLimit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991,
+                  "description": "Maximum guests allowed"
+                },
+                "pricePerNightInDollars": {
+                  "type": "number",
+                  "description": "Nightly price in US dollars for this room"
+                },
+                "totalPriceInDollars": {
+                  "type": "number",
+                  "description": "Total stay price (room + taxes/fees) in US dollars"
+                },
+                "taxesAndFeesInDollars": {
+                  "description": "Portion of total that is taxes/fees in US dollars",
+                  "type": "number"
+                },
+                "currency": {
+                  "type": "string",
+                  "description": "Price currency code (e.g., USD)"
+                },
+                "refundable": {
+                  "description": "Whether the room is refundable",
+                  "type": "boolean"
+                },
+                "freeCancellation": {
+                  "description": "Whether cancellation is free",
+                  "type": "boolean"
+                },
+                "amenities": {
+                  "description": "Room-level amenity highlights",
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "bedTypes": {
+                  "description": "Bed configuration descriptions",
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "imageUrl": {
+                  "description": "Representative room photo",
+                  "type": "string"
+                },
+                "bookingLink": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "Direct booking URL for this room"
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "occupancyLimit",
+                "pricePerNightInDollars",
+                "totalPriceInDollars",
+                "currency",
+                "bookingLink"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Room offers for this search"
+          },
+          "pricing": {
+            "description": "Exchange rate for showing the USD prices above in another currency; the markdown output is already converted",
+            "type": "object",
+            "properties": {
+              "currency": {
+                "type": "string",
+                "description": "ISO 4217 code the prices are shown in"
+              },
+              "requestedCurrency": {
+                "type": "string",
+                "description": "ISO 4217 code the caller asked for (may differ on fallback)"
+              },
+              "rate": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "Units of `currency` per 1 USD used for conversion (1 for USD)"
+              },
+              "rateAsOf": {
+                "description": "When the server fetched the exchange rate (ISO datetime)",
+                "type": "string"
+              },
+              "approximate": {
+                "type": "boolean",
+                "description": "True when prices were converted from USD; the final charge on the booking site may differ"
+              },
+              "notice": {
+                "description": "Short note to relay to the user about the shown currency",
+                "type": "string"
+              }
+            },
+            "required": [
+              "currency",
+              "requestedCurrency",
+              "rate",
+              "approximate"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "hotelId",
+          "hotelName",
+          "starRating",
+          "reviewRating",
+          "pricePerNightInDollars",
+          "chainName",
+          "amenityNames",
+          "address",
+          "bookingLink",
+          "checkinDate",
+          "checkoutDate",
+          "rooms"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "sk_faq_search",
+      "description": "Search Skiplagged support articles for answers about its services, products, and policies.",
+      "input_schema": {
+        "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Concise FAQ question for retrieval. Do not include personal identifiers, account IDs, or session details."
+          },
+          "top_k": {
+            "default": 3,
+            "description": "Number of top FAQ sources to return (1-5)",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "chunks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "content": {
+                  "type": "string",
+                  "description": "The text content of the retrieved chunk"
+                },
+                "similarity": {
+                  "type": "number",
+                  "description": "Similarity score (0-1)"
+                },
+                "url": {
+                  "description": "URL of the source article",
+                  "type": "string"
+                },
+                "title": {
+                  "description": "Title of the source article",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "content",
+                "similarity"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Retrieved relevant chunks"
+          }
+        },
+        "required": [
+          "chunks"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "sk_resolve_location",
+      "description": "Resolve coarse location metadata supplied by the client to the nearest airport. Takes no user-provided arguments.",
+      "input_schema": {
+        "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {}
+      },
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "iata": {
+            "type": "string",
+            "description": "Nearest airport IATA code"
+          },
+          "city": {
+            "type": "string",
+            "description": "Resolved city name"
+          },
+          "country": {
+            "type": "string",
+            "description": "Resolved country name"
+          }
+        },
+        "required": [
+          "iata",
+          "city",
+          "country"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "sk_resolve_iata",
+      "description": "Resolve a city name to an IATA code, or pass through a three-letter code",
+      "input_schema": {
+        "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "input": {
+            "type": "string",
+            "minLength": 1,
+            "description": "City name code to resolve to IATA code"
+          }
+        },
+        "required": [
+          "input"
+        ]
+      },
+      "output_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "iataCode": {
+            "type": "string",
+            "description": "Resolved airport IATA code"
+          }
+        },
+        "required": [
+          "iataCode"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ],
+  "search_attempted": true,
+  "search_result_sanitized": [
+    {
+      "type": "text",
+      "text": "# Flight search results (MEL \u2192 DPS)\n\n- Departure: 2026-12-16\n- Sorted by: Best value (price/time)\n- Showing 5 of 64 results (more available)\n- Prices: approximate, converted from USD at 1 USD = 18108.7 IDR (rate as of 2026-11-09T11:47:15.634Z). The final charge on the booking site may differ.\n\n[Open search on Skiplagged](https://skiplagged.com/flights/MEL/DPS/2026-12-16?utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp)\n\n| Price | Duration | Stops | Type | Airlines | Segments | Booking |\n| --- | --- | --- | --- | --- | --- | --- |\n| IDR\u00a04,907,458 | 6h | Nonstop | \u2014 | Garuda Indonesia | Outbound:<br/>MEL \u2192 DPS (2026-12-16 07:00:00+11:00 \u2192 2026-12-16 10:00:00+08:00) | [Book](https://skiplagged.com/flights/MEL/DPS/2026-12-16?utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=GA719) |\n| IDR\u00a010,195,198 | 6h | Nonstop | \u2014 | Jetstar Airways | Outbound:<br/>MEL \u2192 DPS (2026-12-16 10:00:00+11:00 \u2192 2026-12-16 13:00:00+08:00) | [Book](https://skiplagged.com/flights/MEL/DPS/2026-12-16?utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=JQ43) |\n| IDR\u00a011,462,807 | 6h | Nonstop | \u2014 | Jetstar Airways | Outbound:<br/>MEL \u2192 DPS (2026-12-16 07:00:00+11:00 \u2192 2026-12-16 10:00:00+08:00) | [Book](https://skiplagged.com/flights/MEL/DPS/2026-12-16?utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=JQ31) |\n| IDR\u00a08,637,850 | 6h 15m | Nonstop | \u2014 | Malindo Air | Outbound:<br/>MEL \u2192 DPS (2026-12-16 07:45:00+11:00 \u2192 2026-12-16 11:00:00+08:00) | [Book](https://skiplagged.com/flights/MEL/DPS/2026-12-16?utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=OD178) |\n| IDR\u00a010,158,981 | 6h 15m | Nonstop | \u2014 | TransNusa | Outbound:<br/>MEL \u2192 DPS (2026-12-16 05:30:00+11:00 \u2192 2026-12-16 08:45:00+08:00) | [Book](https://skiplagged.com/flights/MEL/DPS/2026-12-16?utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp#trip=8B19) |",
+      "annotations": null,
+      "meta": null
+    }
+  ],
+  "faq_results": [
+    {
+      "query": "Can I cache or store Skiplagged flight search results returned by the MCP server?",
+      "content": [
+        {
+          "type": "text",
+          "text": "# FAQ search results\n\n_No matching FAQ articles were found._",
+          "annotations": null,
+          "meta": null
+        }
+      ]
+    },
+    {
+      "query": "Can a third-party app combine or aggregate Skiplagged results with other flight search providers?",
+      "content": [
+        {
+          "type": "text",
+          "text": "# FAQ search results\n\n1. [Can I search for a multi-city itinerary?](https://support.skiplagged.com/hc/en-us/articles/115001320733-Can-I-search-for-a-multi-city-itinerary) (score 0.55)\n   > Skiplagged does not offer a multi-city search feature at this time.\n\n2. [How to Book a Flight on Skiplagged](https://support.skiplagged.com/hc/en-us/articles/15646993533847-How-to-Book-a-Flight-on-Skiplagged) (score 0.53)\n   > Welcome to Skiplagged! Here are some basic instructions on how to search for and book a flight. Go to the [https://skiplagged.com/](https://skiplagged.com/) homepage and enter your departure and destination locations and\u2026\n\n3. [About Skiplagged \\| Flight Deals & Travel Hacks Since 2013](https://skiplagged.com/about?utm_source=mcp&utm_medium=ai&utm_campaign=skiplagged_mcp) (score 0.52)\n   > # They made the rules. We help you outsmart them. We find deals airlines don't want you to find, saving travelers money that should have been theirs all along.[ Start saving](https://skiplagged.com/flights) Trusted by ov\u2026",
+          "annotations": null,
+          "meta": null
+        }
+      ]
+    },
+    {
+      "query": "Can I use Skiplagged MCP results in a commercial product?",
+      "content": [
+        {
+          "type": "text",
+          "text": "# FAQ search results\n\n_No matching FAQ articles were found._",
+          "annotations": null,
+          "meta": null
+        }
+      ]
+    },
+    {
+      "query": "Does Skiplagged allow redistributing or republishing flight prices from the API or MCP server?",
+      "content": [
+        {
+          "type": "text",
+          "text": "# FAQ search results\n\n1. [Skiplagged Price Hacker](https://support.skiplagged.com/hc/en-us/articles/40800689179799-Skiplagged-Price-Hacker) (score 0.54)\n   > Price Hacker is selected by default on eligible airlines and fares. Basic Economy fares aren't eligible. When it's on, we'll watch your flight for a drop in price. example-addons-pricehacker1.png If your flight drops in\u2026\n\n2. [Why does the price of a flight sometimes increase when I get to a booking page?](https://support.skiplagged.com/hc/en-us/articles/31594328235799-Why-does-the-price-of-a-flight-sometimes-increase-when-I-get-to-a-booking-page) (score 0.52)\n   > \u2708\ufe0f 1. Airline Pricing is Dynamic Airlines use real-time pricing algorithms that constantly adjust based on demand, availability, and user behavior. If you're viewing a fare and someone else books it right before you, the\u2026",
+          "annotations": null,
+          "meta": null
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "search_tool_name": "sk_flights_search",
+  "search_args": {
+    "origin": "MEL",
+    "destination": "DPS",
+    "departureDate": "2026-12-16",
+    "adults": 1,
+    "fareClass": "economy",
+    "limit": 5,
+    "includeHiddenCity": false,
+    "includeVirtualInterlining": false,
+    "currency": "IDR"
+  },
+  "search_is_error": false
+}

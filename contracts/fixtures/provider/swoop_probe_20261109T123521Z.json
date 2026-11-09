@@ -1,0 +1,1631 @@
+{
+  "provider_id": "swoop",
+  "package": "swoop-flights",
+  "package_version": "0.7.0",
+  "probe_run_at": "2026-11-09T12:35:19Z",
+  "search_attempted": true,
+  "search_result": {
+    "results": [
+      {
+        "selector": "<redacted-opaque-selector len=626>",
+        "price": 7764811,
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "MEL",
+            "destination": "DPS",
+            "date": "2026-12-16",
+            "itinerary": {
+              "airline_code": "multi",
+              "airline_names": [
+                "Qantas",
+                "Garuda Indonesia"
+              ],
+              "segments": [
+                {
+                  "airline": "QF",
+                  "airline_name": "Qantas",
+                  "flight_number": "406",
+                  "operator": "",
+                  "codeshares": [],
+                  "aircraft": "Boeing 737",
+                  "departure_airport_code": "MEL",
+                  "departure_airport_name": "Melbourne Airport",
+                  "arrival_airport_code": "SYD",
+                  "arrival_airport_name": "Sydney Airport",
+                  "departure_date": [
+                    2026,
+                    12,
+                    16
+                  ],
+                  "arrival_date": [
+                    2026,
+                    12,
+                    16
+                  ],
+                  "departure_time": [
+                    6,
+                    30
+                  ],
+                  "arrival_time": [
+                    8,
+                    0
+                  ],
+                  "travel_time": 90,
+                  "seat_pitch_short": "30 in",
+                  "legroom": "30 inches",
+                  "co2_grams": 80946,
+                  "overnight": false,
+                  "has_premium_ife": false,
+                  "amenities": {
+                    "has_power": false,
+                    "has_live_tv": false,
+                    "has_on_demand_video": false,
+                    "has_stream_media": true,
+                    "wifi": 2
+                  },
+                  "seat_type": 1
+                },
+                {
+                  "airline": "GA",
+                  "airline_name": "Garuda Indonesia",
+                  "flight_number": "715",
+                  "operator": "",
+                  "codeshares": [],
+                  "aircraft": "Airbus A330",
+                  "departure_airport_code": "SYD",
+                  "departure_airport_name": "Sydney Airport",
+                  "arrival_airport_code": "DPS",
+                  "arrival_airport_name": "I Gusti Ngurah Rai International Airport",
+                  "departure_date": [
+                    2026,
+                    12,
+                    16
+                  ],
+                  "arrival_date": [
+                    2026,
+                    12,
+                    16
+                  ],
+                  "departure_time": [
+                    11,
+                    10
+                  ],
+                  "arrival_time": [
+                    14,
+                    30
+                  ],
+                  "travel_time": 380,
+                  "seat_pitch_short": "33 in",
+                  "legroom": "33 inches",
+                  "co2_grams": 332027,
+                  "overnight": false,
+                  "has_premium_ife": false,
+                  "amenities": {
+                    "has_power": true,
+                    "has_live_tv": false,
+                    "has_on_demand_video": true,
+                    "has_stream_media": false,
+                    "wifi": null
+                  },
+                  "seat_type": 3
+                }
+              ],
+              "layovers": [
+                {
+                  "minutes": 190,
+                  "departure_airport_code": "SYD",
+                  "departure_airport_name": "Sydney Airport",
+                  "departure_airport_city": "Sydney",
+                  "arrival_airport_code": "SYD",
+                  "arrival_airport_name": "Sydney Airport",
+                  "arrival_airport_city": "Sydney",
+                  "is_overnight": false
+                }
+              ],
+              "travel_time": 660,
+              "departure_airport_code": "MEL",
+              "arrival_airport_code": "DPS",
+              "departure_date": [
+                2026,
+                12,
+                16
+              ],
+              "arrival_date": [
+                2026,
+                12,
+                16
+              ],
+              "departure_time": [
+                6,
+                30
+              ],
+              "arrival_time": [
+                14,
+                30
+              ],
+              "price_info": null,
+              "direct_price": null,
+              "booking_token": "CjRISTZjNDBLWDM2YzhBS0lhTGdCRy0tLS0tLXNtY3drNi1uMkFBQUFBR3J4dmdjS2oxYXdBEgtRRjQwNnxHQTcxNRoMCMv22QMQABoDSURSOBxwyM8C",
+              "carbon_emissions": {
+                "this_flight_grams": 413000,
+                "typical_for_route_grams": 386000,
+                "difference_percent": 7,
+                "emissions_rating": 3
+              },
+              "stop_count": 1,
+              "is_budget_carrier": false,
+              "quality_signals": {
+                "quality_tier": 1,
+                "bag_flags": [
+                  null,
+                  1
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "selector": "<redacted-opaque-selector len=624>",
+        "price": 7784013,
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "MEL",
+            "destination": "DPS",
+            "date": "2026-12-16",
+            "itinerary": {
+              "airline_code": "JQ",
+              "airline_names": [
+                "Jetstar"
+              ],
+              "segments": [
+                {
+                  "airline": "JQ",
+                  "airline_name": "Jetstar",
+                  "flight_number": "472",
+                  "operator": "",
+                  "codeshares": [],
+                  "aircraft": "Airbus A320",
+                  "departure_airport_code": "MEL",
+                  "departure_airport_name": "Melbourne Airport",
+                  "arrival_airport_code": "NTL",
+                  "arrival_airport_name": "Newcastle Airport",
+                  "departure_date": [
+                    2026,
+                    12,
+                    16
+                  ],
+                  "arrival_date": [
+                    2026,
+                    12,
+                    16
+                  ],
+                  "departure_time": [
+                    6,
+                    30
+                  ],
+                  "arrival_time": [
+                    8,
+                    0
+                  ],
+                  "travel_time": 90,
+                  "seat_pitch_short": "29 in",
+                  "legroom": "29 inches",
+                  "co2_grams": 86140,
+                  "overnight": false,
+                  "has_premium_ife": false,
+                  "amenities": {
+                    "has_power": false,
+                    "has_live_tv": false,
+                    "has_on_demand_video": false,
+                    "has_stream_media": true,
+                    "wifi": null
+                  },
+                  "seat_type": 2
+                },
+                {
+                  "airline": "JQ",
+                  "airline_name": "Jetstar",
+                  "flight_number": "88",
+                  "operator": "",
+                  "codeshares": [],
+                  "aircraft": "Airbus A321neo",
+                  "departure_airport_code": "NTL",
+                  "departure_airport_name": "Newcastle Airport",
+                  "arrival_airport_code": "DPS",
+                  "arrival_airport_name": "I Gusti Ngurah Rai International Airport",
+                  "departure_date": [
+                    2026,
+                    12,
+                    16
+                  ],
+                  "arrival_date": [
+                    2026,
+                    12,
+                    16
+                  ],
+                  "departure_time": [
+                    10,
+                    5
+                  ],
+                  "arrival_time": [
+                    13,
+                    20
+                  ],
+                  "travel_time": 375,
+                  "seat_pitch_short": "29 in",
+                  "legroom": "29 inches",
+                  "co2_grams": 279693,
+                  "overnight": false,
+                  "has_premium_ife": false,
+                  "amenities": {
+                    "has_power": false,
+                    "has_live_tv": false,
+                    "has_on_demand_video": false,
+                    "has_stream_media": true,
+                    "wifi": null
+                  },
+                  "seat_type": 2
+                }
+              ],
+              "layovers": [
+                {
+                  "minutes": 125,
+                  "departure_airport_code": "NTL",
+                  "departure_airport_name": "Newcastle Airport",
+                  "departure_airport_city": "Newcastle",
+                  "arrival_airport_code": "NTL",
+                  "arrival_airport_name": "Newcastle Airport",
+                  "arrival_airport_city": "Newcastle",
+                  "is_overnight": false
+                }
+              ],
+              "travel_time": 590,
+              "departure_airport_code": "MEL",
+              "arrival_airport_code": "DPS",
+              "departure_date": [
+                2026,
+                12,
+                16
+              ],
+              "arrival_date": [
+                2026,
+                12,
+                16
+              ],
+              "departure_time": [
+                6,
+                30
+              ],
+              "arrival_time": [
+                13,
+                20
+              ],
+              "price_info": null,
+              "direct_price": null,
+              "booking_token": "CjRISTZjNDBLWDM2YzhBS0lhTGdCRy0tLS0tLXNtY3drNi1uMkFBQUFBR3J4dmdjS2oxYXdBEgpKUTQ3MnxKUTg4GgwIzYzbAxAAGgNJRFI4HHCy0AI=",
+              "carbon_emissions": {
+                "this_flight_grams": 366000,
+                "typical_for_route_grams": 386000,
+                "difference_percent": -5,
+                "emissions_rating": 2
+              },
+              "stop_count": 1,
+              "is_budget_carrier": false,
+              "quality_signals": {
+                "quality_tier": 3,
+                "bag_flags": [
+                  null,
+                  0
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "selector": "<redacted-opaque-selector len=558>",
+        "price": 4891694,
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "MEL",
+            "destination": "DPS",
+            "date": "2026-12-16",
+            "itinerary": {
+              "airline_code": "GA",
+              "airline_names": [
+                "Garuda Indonesia"
+              ],
+              "segments": [
+                {
+                  "airline": "GA",
+                  "airline_name": "Garuda Indonesia",
+                  "flight_number": "719",
+                  "operator": "",
+                  "codeshares": [],
+                  "aircraft": "Airbus A330",
+                  "departure_airport_code": "MEL",
+                  "departure_airport_name": "Melbourne Airport",
+                  "arrival_airport_code": "DPS",
+                  "arrival_airport_name": "I Gusti Ngurah Rai International Airport",
+                  "departure_date": [
+                    2026,
+                    12,
+                    16
+                  ],
+                  "arrival_date": [
+                    2026,
+                    12,
+                    16
+                  ],
+                  "departure_time": [
+                    7,
+                    0
+                  ],
+                  "arrival_time": [
+                    10,
+                    0
+                  ],
+                  "travel_time": 360,
+                  "seat_pitch_short": "33 in",
+                  "legroom": "33 inches",
+                  "co2_grams": 320052,
+                  "overnight": false,
+                  "has_premium_ife": false,
+                  "amenities": {
+                    "has_power": true,
+                    "has_live_tv": false,
+                    "has_on_demand_video": true,
+                    "has_stream_media": false,
+                    "wifi": null
+                  },
+                  "seat_type": 3
+                }
+              ],
+              "layovers": [],
+              "travel_time": 360,
+              "departure_airport_code": "MEL",
+              "arrival_airport_code": "DPS",
+              "departure_date": [
+                2026,
+                12,
+                16
+              ],
+              "arrival_date": [
+                2026,
+                12,
+                16
+              ],
+              "departure_time": [
+                7,
+                0
+              ],
+              "arrival_time": [
+                10,
+                0
+              ],
+              "price_info": null,
+              "direct_price": null,
+              "booking_token": "CjRISTZjNDBLWDM2YzhBS0lhTGdCRy0tLS0tLXNtY3drNi1uMkFBQUFBR3J4dmdjS2oxYXdBEgVHQTcxORoMCK7IqgIQABoDSURSOBxws9MB",
+              "carbon_emissions": {
+                "this_flight_grams": 320000,
+                "typical_for_route_grams": 386000,
+                "difference_percent": -17,
+                "emissions_rating": 1
+              },
+              "stop_count": 0,
+              "is_budget_carrier": true,
+              "quality_signals": {
+                "quality_tier": 1,
+                "bag_flags": [
+                  null,
+                  1
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "selector": "<redacted-opaque-selector len=556>",
+        "price": 11434360,
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "MEL",
+            "destination": "DPS",
+            "date": "2026-12-16",
+            "itinerary": {
+              "airline_code": "JQ",
+              "airline_names": [
+                "Jetstar"
+              ],
+              "segments": [
+                {
+                  "airline": "JQ",
+                  "airline_name": "Jetstar",
+                  "flight_number": "31",
+                  "operator": "",
+                  "codeshares": [
+                    {
+                      "airline_code": "QF",
+                      "flight_number": "5425",
+                      "airline_name": "Qantas"
+                    }
+                  ],
+                  "aircraft": "Airbus A321neo",
+                  "departure_airport_code": "MEL",
+                  "departure_airport_name": "Melbourne Airport",
+                  "arrival_airport_code": "DPS",
+                  "arrival_airport_name": "I Gusti Ngurah Rai International Airport",
+                  "departure_date": [
+                    2026,
+                    12,
+                    16
+                  ],
+                  "arrival_date": [
+                    2026,
+                    12,
+                    16
+                  ],
+                  "departure_time": [
+                    7,
+                    0
+                  ],
+                  "arrival_time": [
+                    10,
+                    0
+                  ],
+                  "travel_time": 360,
+                  "seat_pitch_short": "29 in",
+                  "legroom": "29 inches",
+                  "co2_grams": 266073,
+                  "overnight": false,
+                  "has_premium_ife": false,
+                  "amenities": {
+                    "has_power": false,
+                    "has_live_tv": false,
+                    "has_on_demand_video": false,
+                    "has_stream_media": true,
+                    "wifi": null
+                  },
+                  "seat_type": 2
+                }
+              ],
+              "layovers": [],
+              "travel_time": 360,
+              "departure_airport_code": "MEL",
+              "arrival_airport_code": "DPS",
+              "departure_date": [
+                2026,
+                12,
+                16
+              ],
+              "arrival_date": [
+                2026,
+                12,
+                16
+              ],
+              "departure_time": [
+                7,
+                0
+              ],
+              "arrival_time": [
+                10,
+                0
+              ],
+              "price_info": null,
+              "direct_price": null,
+              "booking_token": "CjRISTZjNDBLWDM2YzhBS0lhTGdCRy0tLS0tLXNtY3drNi1uMkFBQUFBR3J4dmdjS2oxYXdBEgRKUTMxGgwI+PK5BRAAGgNJRFI4HHCS7gM=",
+              "carbon_emissions": {
+                "this_flight_grams": 266000,
+                "typical_for_route_grams": 386000,
+                "difference_percent": -31,
+                "emissions_rating": 1
+              },
+              "stop_count": 0,
+              "is_budget_carrier": false,
+              "quality_signals": {
+                "quality_tier": 3,
+                "bag_flags": [
+                  null,
+                  0
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "selector": "<redacted-opaque-selector len=564>",
+        "price": 10889064,
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "MEL",
+            "destination": "DPS",
+            "date": "2026-12-16",
+            "itinerary": {
+              "airline_code": "OD",
+              "airline_names": [
+                "Batik Air"
+              ],
+              "segments": [
+                {
+                  "airline": "OD",
+                  "airline_name": "Batik Air",
+                  "flight_number": "5336",
+                  "operator": "",
+                  "codeshares": [],
+                  "aircraft": "",
+                  "departure_airport_code": "MEL",
+                  "departure_airport_name": "Melbourne Airport",
+                  "arrival_airport_code": "DPS",
+                  "arrival_airport_name": "I Gusti Ngurah Rai International Airport",
+                  "departure_date": [
+                    2026,
+                    12,
+                    16
+                  ],
+                  "arrival_date": [
+                    2026,
+                    12,
+                    16
+                  ],
+                  "departure_time": [
+                    7,
+                    45
+                  ],
+                  "arrival_time": [
+                    11,
+                    0
+                  ],
+                  "travel_time": 375,
+                  "seat_pitch_short": "",
+                  "legroom": "",
+                  "co2_grams": null,
+                  "overnight": false,
+                  "has_premium_ife": false,
+                  "amenities": null,
+                  "seat_type": null
+                }
+              ],
+              "layovers": [],
+              "travel_time": 375,
+              "departure_airport_code": "MEL",
+              "arrival_airport_code": "DPS",
+              "departure_date": [
+                2026,
+                12,
+                16
+              ],
+              "arrival_date": [
+                2026,
+                12,
+                16
+              ],
+              "departure_time": [
+                7,
+                45
+              ],
+              "arrival_time": [
+                11,
+                0
+              ],
+              "price_info": null,
+              "direct_price": null,
+              "booking_token": "CjRISTZjNDBLWDM2YzhBS0lhTGdCRy0tLS0tLXNtY3drNi1uMkFBQUFBR3J4dmdjS2oxYXdBEgZPRDUzMzYaDAjozpgFEAAaA0lEUjgccMrWAw==",
+              "carbon_emissions": {
+                "this_flight_grams": null,
+                "typical_for_route_grams": 386000,
+                "difference_percent": null,
+                "emissions_rating": 0
+              },
+              "stop_count": 0,
+              "is_budget_carrier": false,
+              "quality_signals": {
+                "quality_tier": 1,
+                "bag_flags": [
+                  null,
+                  1
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "selector": "<redacted-opaque-selector len=526>",
+        "price": null,
+        "currency": null,
+        "legs": [
+          {
+            "origin": "MEL",
+            "destination": "DPS",
+            "date": "2026-12-16",
+            "itinerary": {
+              "airline_code": "OD",
+              "airline_names": [
+                "Batik Air"
+              ],
+              "segments": [
+                {
+                  "airline": "OD",
+                  "airline_name": "Batik Air",
+                  "flight_number": "178",
+                  "operator": "",
+                  "codeshares": [],
+                  "aircraft": "Boeing 737MAX 8 Passenger",
+                  "departure_airport_code": "MEL",
+                  "departure_airport_name": "Melbourne Airport",
+                  "arrival_airport_code": "DPS",
+                  "arrival_airport_name": "I Gusti Ngurah Rai International Airport",
+                  "departure_date": [
+                    2026,
+                    12,
+                    16
+                  ],
+                  "arrival_date": [
+                    2026,
+                    12,
+                    16
+                  ],
+                  "departure_time": [
+                    7,
+                    45
+                  ],
+                  "arrival_time": [
+                    11,
+                    0
+                  ],
+                  "travel_time": 375,
+                  "seat_pitch_short": "29 in",
+                  "legroom": "29 inches",
+                  "co2_grams": 276399,
+                  "overnight": false,
+                  "has_premium_ife": false,
+                  "amenities": {
+                    "has_power": false,
+                    "has_live_tv": false,
+                    "has_on_demand_video": false,
+                    "has_stream_media": true,
+                    "wifi": null
+                  },
+                  "seat_type": 2
+                }
+              ],
+              "layovers": [],
+              "travel_time": 375,
+              "departure_airport_code": "MEL",
+              "arrival_airport_code": "DPS",
+              "departure_date": [
+                2026,
+                12,
+                16
+              ],
+              "arrival_date": [
+                2026,
+                12,
+                16
+              ],
+              "departure_time": [
+                7,
+                45
+              ],
+              "arrival_time": [
+                11,
+                0
+              ],
+              "price_info": null,
+              "direct_price": null,
+              "booking_token": "CjRISTZjNDBLWDM2YzhBS0lhTGdCRy0tLS0tLXNtY3drNi1uMkFBQUFBR3J4dmdjS2oxYXdBEgVPRDE3ODgc",
+              "carbon_emissions": {
+                "this_flight_grams": 276000,
+                "typical_for_route_grams": 386000,
+                "difference_percent": -28,
+                "emissions_rating": 1
+              },
+              "stop_count": 0,
+              "is_budget_carrier": false,
+              "quality_signals": null
+            }
+          }
+        ]
+      },
+      {
+        "selector": "<redacted-opaque-selector len=556>",
+        "price": 10162462,
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "MEL",
+            "destination": "DPS",
+            "date": "2026-12-16",
+            "itinerary": {
+              "airline_code": "JQ",
+              "airline_names": [
+                "Jetstar"
+              ],
+              "segments": [
+                {
+                  "airline": "JQ",
+                  "airline_name": "Jetstar",
+                  "flight_number": "43",
+                  "operator": "",
+                  "codeshares": [
+                    {
+                      "airline_code": "QF",
+                      "flight_number": "5455",
+                      "airline_name": "Qantas"
+                    }
+                  ],
+                  "aircraft": "Airbus A321neo",
+                  "departure_airport_code": "MEL",
+                  "departure_airport_name": "Melbourne Airport",
+                  "arrival_airport_code": "DPS",
+                  "arrival_airport_name": "I Gusti Ngurah Rai International Airport",
+                  "departure_date": [
+                    2026,
+                    12,
+                    16
+                  ],
+                  "arrival_date": [
+                    2026,
+                    12,
+                    16
+                  ],
+                  "departure_time": [
+                    10,
+                    0
+                  ],
+                  "arrival_time": [
+                    13,
+                    0
+                  ],
+                  "travel_time": 360,
+                  "seat_pitch_short": "29 in",
+                  "legroom": "29 inches",
+                  "co2_grams": 266073,
+                  "overnight": false,
+                  "has_premium_ife": false,
+                  "amenities": {
+                    "has_power": false,
+                    "has_live_tv": false,
+                    "has_on_demand_video": false,
+                    "has_stream_media": true,
+                    "wifi": null
+                  },
+                  "seat_type": 2
+                }
+              ],
+              "layovers": [],
+              "travel_time": 360,
+              "departure_airport_code": "MEL",
+              "arrival_airport_code": "DPS",
+              "departure_date": [
+                2026,
+                12,
+                16
+              ],
+              "arrival_date": [
+                2026,
+                12,
+                16
+              ],
+              "departure_time": [
+                10,
+                0
+              ],
+              "arrival_time": [
+                13,
+                0
+              ],
+              "price_info": null,
+              "direct_price": null,
+              "booking_token": "CjRISTZjNDBLWDM2YzhBS0lhTGdCRy0tLS0tLXNtY3drNi1uMkFBQUFBR3J4dmdjS2oxYXdBEgRKUTQzGgwInqLsBBAAGgNJRFI4HHCWtwM=",
+              "carbon_emissions": {
+                "this_flight_grams": 266000,
+                "typical_for_route_grams": 386000,
+                "difference_percent": -31,
+                "emissions_rating": 1
+              },
+              "stop_count": 0,
+              "is_budget_carrier": false,
+              "quality_signals": {
+                "quality_tier": 3,
+                "bag_flags": [
+                  null,
+                  0
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "selector": "<redacted-opaque-selector len=556>",
+        "price": 12154852,
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "MEL",
+            "destination": "DPS",
+            "date": "2026-12-16",
+            "itinerary": {
+              "airline_code": "VA",
+              "airline_names": [
+                "Virgin Australia"
+              ],
+              "segments": [
+                {
+                  "airline": "VA",
+                  "airline_name": "Virgin Australia",
+                  "flight_number": "91",
+                  "operator": "Virgin Aust Intl",
+                  "codeshares": [],
+                  "aircraft": "Boeing 737MAX 8 Passenger",
+                  "departure_airport_code": "MEL",
+                  "departure_airport_name": "Melbourne Airport",
+                  "arrival_airport_code": "DPS",
+                  "arrival_airport_name": "I Gusti Ngurah Rai International Airport",
+                  "departure_date": [
+                    2026,
+                    12,
+                    16
+                  ],
+                  "arrival_date": [
+                    2026,
+                    12,
+                    16
+                  ],
+                  "departure_time": [
+                    11,
+                    35
+                  ],
+                  "arrival_time": [
+                    14,
+                    45
+                  ],
+                  "travel_time": 370,
+                  "seat_pitch_short": "30 in",
+                  "legroom": "30 inches",
+                  "co2_grams": 297314,
+                  "overnight": false,
+                  "has_premium_ife": false,
+                  "amenities": {
+                    "has_power": false,
+                    "has_live_tv": false,
+                    "has_on_demand_video": false,
+                    "has_stream_media": true,
+                    "wifi": 3
+                  },
+                  "seat_type": 1
+                }
+              ],
+              "layovers": [],
+              "travel_time": 370,
+              "departure_airport_code": "MEL",
+              "arrival_airport_code": "DPS",
+              "departure_date": [
+                2026,
+                12,
+                16
+              ],
+              "arrival_date": [
+                2026,
+                12,
+                16
+              ],
+              "departure_time": [
+                11,
+                35
+              ],
+              "arrival_time": [
+                14,
+                45
+              ],
+              "price_info": null,
+              "direct_price": null,
+              "booking_token": "CjRISTZjNDBLWDM2YzhBS0lhTGdCRy0tLS0tLXNtY3drNi1uMkFBQUFBR3J4dmdjS2oxYXdBEgRWQTkxGgwI5O/lBRAAGgNJRFI4HHCkjQQ=",
+              "carbon_emissions": {
+                "this_flight_grams": 297000,
+                "typical_for_route_grams": 386000,
+                "difference_percent": -23,
+                "emissions_rating": 1
+              },
+              "stop_count": 0,
+              "is_budget_carrier": false,
+              "quality_signals": {
+                "quality_tier": 1,
+                "bag_flags": [
+                  null,
+                  1
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "selector": "<redacted-opaque-selector len=556>",
+        "price": 11434360,
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "MEL",
+            "destination": "DPS",
+            "date": "2026-12-16",
+            "itinerary": {
+              "airline_code": "JQ",
+              "airline_names": [
+                "Jetstar"
+              ],
+              "segments": [
+                {
+                  "airline": "JQ",
+                  "airline_name": "Jetstar",
+                  "flight_number": "33",
+                  "operator": "",
+                  "codeshares": [],
+                  "aircraft": "Airbus A321neo",
+                  "departure_airport_code": "MEL",
+                  "departure_airport_name": "Melbourne Airport",
+                  "arrival_airport_code": "DPS",
+                  "arrival_airport_name": "I Gusti Ngurah Rai International Airport",
+                  "departure_date": [
+                    2026,
+                    12,
+                    16
+                  ],
+                  "arrival_date": [
+                    2026,
+                    12,
+                    16
+                  ],
+                  "departure_time": [
+                    16,
+                    0
+                  ],
+                  "arrival_time": [
+                    19,
+                    0
+                  ],
+                  "travel_time": 360,
+                  "seat_pitch_short": "29 in",
+                  "legroom": "29 inches",
+                  "co2_grams": 266073,
+                  "overnight": false,
+                  "has_premium_ife": false,
+                  "amenities": {
+                    "has_power": false,
+                    "has_live_tv": false,
+                    "has_on_demand_video": false,
+                    "has_stream_media": true,
+                    "wifi": null
+                  },
+                  "seat_type": 2
+                }
+              ],
+              "layovers": [],
+              "travel_time": 360,
+              "departure_airport_code": "MEL",
+              "arrival_airport_code": "DPS",
+              "departure_date": [
+                2026,
+                12,
+                16
+              ],
+              "arrival_date": [
+                2026,
+                12,
+                16
+              ],
+              "departure_time": [
+                16,
+                0
+              ],
+              "arrival_time": [
+                19,
+                0
+              ],
+              "price_info": null,
+              "direct_price": null,
+              "booking_token": "CjRISTZjNDBLWDM2YzhBS0lhTGdCRy0tLS0tLXNtY3drNi1uMkFBQUFBR3J4dmdjS2oxYXdBEgRKUTMzGgwI+PK5BRAAGgNJRFI4HHCS7gM=",
+              "carbon_emissions": {
+                "this_flight_grams": 266000,
+                "typical_for_route_grams": 386000,
+                "difference_percent": -31,
+                "emissions_rating": 1
+              },
+              "stop_count": 0,
+              "is_budget_carrier": false,
+              "quality_signals": {
+                "quality_tier": 3,
+                "bag_flags": [
+                  null,
+                  0
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "selector": "<redacted-opaque-selector len=556>",
+        "price": 12154852,
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "MEL",
+            "destination": "DPS",
+            "date": "2026-12-16",
+            "itinerary": {
+              "airline_code": "VA",
+              "airline_names": [
+                "Virgin Australia"
+              ],
+              "segments": [
+                {
+                  "airline": "VA",
+                  "airline_name": "Virgin Australia",
+                  "flight_number": "95",
+                  "operator": "Virgin Aust Intl",
+                  "codeshares": [],
+                  "aircraft": "Boeing 737MAX 8 Passenger",
+                  "departure_airport_code": "MEL",
+                  "departure_airport_name": "Melbourne Airport",
+                  "arrival_airport_code": "DPS",
+                  "arrival_airport_name": "I Gusti Ngurah Rai International Airport",
+                  "departure_date": [
+                    2026,
+                    12,
+                    16
+                  ],
+                  "arrival_date": [
+                    2026,
+                    12,
+                    16
+                  ],
+                  "departure_time": [
+                    17,
+                    45
+                  ],
+                  "arrival_time": [
+                    20,
+                    55
+                  ],
+                  "travel_time": 370,
+                  "seat_pitch_short": "30 in",
+                  "legroom": "30 inches",
+                  "co2_grams": 297314,
+                  "overnight": false,
+                  "has_premium_ife": false,
+                  "amenities": {
+                    "has_power": false,
+                    "has_live_tv": false,
+                    "has_on_demand_video": false,
+                    "has_stream_media": true,
+                    "wifi": 3
+                  },
+                  "seat_type": 1
+                }
+              ],
+              "layovers": [],
+              "travel_time": 370,
+              "departure_airport_code": "MEL",
+              "arrival_airport_code": "DPS",
+              "departure_date": [
+                2026,
+                12,
+                16
+              ],
+              "arrival_date": [
+                2026,
+                12,
+                16
+              ],
+              "departure_time": [
+                17,
+                45
+              ],
+              "arrival_time": [
+                20,
+                55
+              ],
+              "price_info": null,
+              "direct_price": null,
+              "booking_token": "CjRISTZjNDBLWDM2YzhBS0lhTGdCRy0tLS0tLXNtY3drNi1uMkFBQUFBR3J4dmdjS2oxYXdBEgRWQTk1GgwI5O/lBRAAGgNJRFI4HHCkjQQ=",
+              "carbon_emissions": {
+                "this_flight_grams": 297000,
+                "typical_for_route_grams": 386000,
+                "difference_percent": -23,
+                "emissions_rating": 1
+              },
+              "stop_count": 0,
+              "is_budget_carrier": false,
+              "quality_signals": {
+                "quality_tier": 1,
+                "bag_flags": [
+                  null,
+                  1
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "selector": "<redacted-opaque-selector len=556>",
+        "price": 11246692,
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "MEL",
+            "destination": "DPS",
+            "date": "2026-12-16",
+            "itinerary": {
+              "airline_code": "QF",
+              "airline_names": [
+                "Qantas"
+              ],
+              "segments": [
+                {
+                  "airline": "QF",
+                  "airline_name": "Qantas",
+                  "flight_number": "45",
+                  "operator": "",
+                  "codeshares": [],
+                  "aircraft": "Boeing 737",
+                  "departure_airport_code": "MEL",
+                  "departure_airport_name": "Melbourne Airport",
+                  "arrival_airport_code": "DPS",
+                  "arrival_airport_name": "I Gusti Ngurah Rai International Airport",
+                  "departure_date": [
+                    2026,
+                    12,
+                    16
+                  ],
+                  "arrival_date": [
+                    2026,
+                    12,
+                    16
+                  ],
+                  "departure_time": [
+                    17,
+                    55
+                  ],
+                  "arrival_time": [
+                    21,
+                    0
+                  ],
+                  "travel_time": 365,
+                  "seat_pitch_short": "30 in",
+                  "legroom": "30 inches",
+                  "co2_grams": 341020,
+                  "overnight": false,
+                  "has_premium_ife": false,
+                  "amenities": {
+                    "has_power": false,
+                    "has_live_tv": false,
+                    "has_on_demand_video": false,
+                    "has_stream_media": true,
+                    "wifi": 2
+                  },
+                  "seat_type": 1
+                }
+              ],
+              "layovers": [],
+              "travel_time": 365,
+              "departure_airport_code": "MEL",
+              "arrival_airport_code": "DPS",
+              "departure_date": [
+                2026,
+                12,
+                16
+              ],
+              "arrival_date": [
+                2026,
+                12,
+                16
+              ],
+              "departure_time": [
+                17,
+                55
+              ],
+              "arrival_time": [
+                21,
+                0
+              ],
+              "price_info": null,
+              "direct_price": null,
+              "booking_token": "CjRISTZjNDBLWDM2YzhBS0lhTGdCRy0tLS0tLXNtY3drNi1uMkFBQUFBR3J4dmdjS2oxYXdBEgRRRjQ1GgwI5LiuBRAAGgNJRFI4HHCE5gM=",
+              "carbon_emissions": {
+                "this_flight_grams": 341000,
+                "typical_for_route_grams": 386000,
+                "difference_percent": -12,
+                "emissions_rating": 1
+              },
+              "stop_count": 0,
+              "is_budget_carrier": false,
+              "quality_signals": {
+                "quality_tier": 1,
+                "bag_flags": [
+                  null,
+                  1
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "price_range": {
+      "low": 4891694,
+      "high": 30491001
+    },
+    "is_complete": true
+  },
+  "price_attempted": true,
+  "price_result": {
+    "price": 7764811,
+    "currency": "IDR",
+    "fare_brand": null,
+    "is_basic_economy": false,
+    "is_estimate": true,
+    "booking_options": [
+      {
+        "price": 7767558,
+        "brand_label": "",
+        "brand_code": "",
+        "is_basic": true,
+        "fare_family": "basic",
+        "rebookability_signal": "restricted",
+        "seller_name": "Jetabroad",
+        "seller_code": "JETABROAD",
+        "booking_url": "<redacted-signed-booking-url len=4594>",
+        "logo_url": "",
+        "is_airline_direct": false,
+        "_is_basic_by_flags": true,
+        "_is_basic_by_text": false,
+        "_option_index": 0,
+        "_token_price_raw": 7767558,
+        "_display_price_raw": 7767558,
+        "_price_delta_raw": 0,
+        "_context_segment_token": "ClkKA01FTBIZMjAyNi0xMi0xNlQwNjozMDowMCsxMTowMBoDU1lEIhkyMDI2LTEyLTE2VDA4OjAwOjAwKzExOjAwKgJRRjIDNDA2OgJRRkIDNDA2SAFSAzczSApZCgNTWUQSGTIwMjYtMTItMTZUMTE6MTA6MDArMTE6MDAaA0RQUyIZMjAyNi0xMi0xNlQxNDozMDowMCswODowMCoCR0EyAzcxNToCR0FCAzcxNUgBUgMzMzM=",
+        "_context_origin_iata": "SYD",
+        "_context_destination_iata": "DPS",
+        "_context_departure_local_iso": "2026-12-16T11:10:00+11:00",
+        "_context_arrival_local_iso": "2026-12-16T14:30:00+08:00",
+        "_context_carrier_code": "GA",
+        "_context_flight_number": "715",
+        "_context_aircraft_code": "333",
+        "_cabin_bucket": "economy",
+        "_brand_attribute_vector": [],
+        "_registry_version": null
+      }
+    ],
+    "itinerary": {
+      "airline_code": "multi",
+      "airline_names": [
+        "Qantas",
+        "Garuda Indonesia"
+      ],
+      "segments": [
+        {
+          "airline": "QF",
+          "airline_name": "Qantas",
+          "flight_number": "406",
+          "operator": "",
+          "codeshares": [],
+          "aircraft": "Boeing 737",
+          "departure_airport_code": "MEL",
+          "departure_airport_name": "Melbourne Airport",
+          "arrival_airport_code": "SYD",
+          "arrival_airport_name": "Sydney Airport",
+          "departure_date": [
+            2026,
+            12,
+            16
+          ],
+          "arrival_date": [
+            2026,
+            12,
+            16
+          ],
+          "departure_time": [
+            6,
+            30
+          ],
+          "arrival_time": [
+            8,
+            0
+          ],
+          "travel_time": 90,
+          "seat_pitch_short": "30 in",
+          "legroom": "30 inches",
+          "co2_grams": 80946,
+          "overnight": false,
+          "has_premium_ife": false,
+          "amenities": {
+            "has_power": false,
+            "has_live_tv": false,
+            "has_on_demand_video": false,
+            "has_stream_media": true,
+            "wifi": 2
+          },
+          "seat_type": 1
+        },
+        {
+          "airline": "GA",
+          "airline_name": "Garuda Indonesia",
+          "flight_number": "715",
+          "operator": "",
+          "codeshares": [],
+          "aircraft": "Airbus A330",
+          "departure_airport_code": "SYD",
+          "departure_airport_name": "Sydney Airport",
+          "arrival_airport_code": "DPS",
+          "arrival_airport_name": "I Gusti Ngurah Rai International Airport",
+          "departure_date": [
+            2026,
+            12,
+            16
+          ],
+          "arrival_date": [
+            2026,
+            12,
+            16
+          ],
+          "departure_time": [
+            11,
+            10
+          ],
+          "arrival_time": [
+            14,
+            30
+          ],
+          "travel_time": 380,
+          "seat_pitch_short": "33 in",
+          "legroom": "33 inches",
+          "co2_grams": 332027,
+          "overnight": false,
+          "has_premium_ife": false,
+          "amenities": {
+            "has_power": true,
+            "has_live_tv": false,
+            "has_on_demand_video": true,
+            "has_stream_media": false,
+            "wifi": null
+          },
+          "seat_type": 3
+        }
+      ],
+      "layovers": [
+        {
+          "minutes": 190,
+          "departure_airport_code": "SYD",
+          "departure_airport_name": "Sydney Airport",
+          "departure_airport_city": "Sydney",
+          "arrival_airport_code": "SYD",
+          "arrival_airport_name": "Sydney Airport",
+          "arrival_airport_city": "Sydney",
+          "is_overnight": false
+        }
+      ],
+      "travel_time": 660,
+      "departure_airport_code": "MEL",
+      "arrival_airport_code": "DPS",
+      "departure_date": [
+        2026,
+        12,
+        16
+      ],
+      "arrival_date": [
+        2026,
+        12,
+        16
+      ],
+      "departure_time": [
+        6,
+        30
+      ],
+      "arrival_time": [
+        14,
+        30
+      ],
+      "price_info": {
+        "flights": "QF406|GA715",
+        "price": 7764811,
+        "currency": "IDR"
+      },
+      "direct_price": 7764811,
+      "booking_token": "CjRIcFVDb0FzZWxTRVlBS0c4Z0FCRy0tLS0tLS0tLXNtdXAxNUFBQUFBR3J4dmdnQW92SGVBEgtRRjQwNnxHQTcxNRoMCMv22QMQABoDSURSOBxwyM8C",
+      "carbon_emissions": {
+        "this_flight_grams": 413000,
+        "typical_for_route_grams": 386000,
+        "difference_percent": 7,
+        "emissions_rating": 3
+      },
+      "stop_count": 1,
+      "is_budget_carrier": false,
+      "quality_signals": {
+        "quality_tier": 1,
+        "bag_flags": [
+          null,
+          1
+        ]
+      }
+    },
+    "resolved_legs": [
+      {
+        "flight_summary": "QF 406",
+        "origin": "MEL",
+        "destination": "DPS",
+        "date": "2026-12-16",
+        "itinerary": {
+          "airline_code": "multi",
+          "airline_names": [
+            "Qantas",
+            "Garuda Indonesia"
+          ],
+          "segments": [
+            {
+              "airline": "QF",
+              "airline_name": "Qantas",
+              "flight_number": "406",
+              "operator": "",
+              "codeshares": [],
+              "aircraft": "Boeing 737",
+              "departure_airport_code": "MEL",
+              "departure_airport_name": "Melbourne Airport",
+              "arrival_airport_code": "SYD",
+              "arrival_airport_name": "Sydney Airport",
+              "departure_date": [
+                2026,
+                12,
+                16
+              ],
+              "arrival_date": [
+                2026,
+                12,
+                16
+              ],
+              "departure_time": [
+                6,
+                30
+              ],
+              "arrival_time": [
+                8,
+                0
+              ],
+              "travel_time": 90,
+              "seat_pitch_short": "30 in",
+              "legroom": "30 inches",
+              "co2_grams": 80946,
+              "overnight": false,
+              "has_premium_ife": false,
+              "amenities": {
+                "has_power": false,
+                "has_live_tv": false,
+                "has_on_demand_video": false,
+                "has_stream_media": true,
+                "wifi": 2
+              },
+              "seat_type": 1
+            },
+            {
+              "airline": "GA",
+              "airline_name": "Garuda Indonesia",
+              "flight_number": "715",
+              "operator": "",
+              "codeshares": [],
+              "aircraft": "Airbus A330",
+              "departure_airport_code": "SYD",
+              "departure_airport_name": "Sydney Airport",
+              "arrival_airport_code": "DPS",
+              "arrival_airport_name": "I Gusti Ngurah Rai International Airport",
+              "departure_date": [
+                2026,
+                12,
+                16
+              ],
+              "arrival_date": [
+                2026,
+                12,
+                16
+              ],
+              "departure_time": [
+                11,
+                10
+              ],
+              "arrival_time": [
+                14,
+                30
+              ],
+              "travel_time": 380,
+              "seat_pitch_short": "33 in",
+              "legroom": "33 inches",
+              "co2_grams": 332027,
+              "overnight": false,
+              "has_premium_ife": false,
+              "amenities": {
+                "has_power": true,
+                "has_live_tv": false,
+                "has_on_demand_video": true,
+                "has_stream_media": false,
+                "wifi": null
+              },
+              "seat_type": 3
+            }
+          ],
+          "layovers": [
+            {
+              "minutes": 190,
+              "departure_airport_code": "SYD",
+              "departure_airport_name": "Sydney Airport",
+              "departure_airport_city": "Sydney",
+              "arrival_airport_code": "SYD",
+              "arrival_airport_name": "Sydney Airport",
+              "arrival_airport_city": "Sydney",
+              "is_overnight": false
+            }
+          ],
+          "travel_time": 660,
+          "departure_airport_code": "MEL",
+          "arrival_airport_code": "DPS",
+          "departure_date": [
+            2026,
+            12,
+            16
+          ],
+          "arrival_date": [
+            2026,
+            12,
+            16
+          ],
+          "departure_time": [
+            6,
+            30
+          ],
+          "arrival_time": [
+            14,
+            30
+          ],
+          "price_info": {
+            "flights": "QF406|GA715",
+            "price": 7764811,
+            "currency": "IDR"
+          },
+          "direct_price": 7764811,
+          "booking_token": "CjRIcFVDb0FzZWxTRVlBS0c4Z0FCRy0tLS0tLS0tLXNtdXAxNUFBQUFBR3J4dmdnQW92SGVBEgtRRjQwNnxHQTcxNRoMCMv22QMQABoDSURSOBxwyM8C",
+          "carbon_emissions": {
+            "this_flight_grams": 413000,
+            "typical_for_route_grams": 386000,
+            "difference_percent": 7,
+            "emissions_rating": 3
+          },
+          "stop_count": 1,
+          "is_budget_carrier": false,
+          "quality_signals": {
+            "quality_tier": 1,
+            "bag_flags": [
+              null,
+              1
+            ]
+          }
+        },
+        "selection": "explicit"
+      }
+    ],
+    "rpc_calls": 2
+  },
+  "basic_economy_search_result": {
+    "result_count": 11,
+    "is_complete": true,
+    "cheapest_price": 4891694
+  },
+  "errors": []
+}

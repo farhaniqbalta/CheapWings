@@ -194,8 +194,7 @@ sandbox restrictions can still prevent starting servers or browsers.
 Web validation (from `apps/web`): `npm test` and `npm run build`. Browser
 regressions: `npm run test:browser` after Chromium is installed with
 `npx playwright install chromium`. This suite uses synthetic intercepted responses
-and makes no provider calls. All four scenarios passed in the recorded P4 launch
-session; restricted sessions may require permission to start Chromium.
+and makes no provider calls. The four core scenarios and 36 P4.5 state/viewport cases passed during integration; restricted sessions may require permission to start Chromium.
 
 Full Xcode is still required for P5; command-line tools alone cannot build SwiftUI.
 See [the phase checkpoints](docs/06_IMPLEMENTATION_CHECKPOINTS.md) for remaining work.

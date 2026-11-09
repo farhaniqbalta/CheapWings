@@ -14,6 +14,7 @@ export function useJobPolling(jobId: string | null, sort: SortMode, accessVersio
   const [revision, setRevision] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
   const generation = useRef(0);
+  const resultScope = useRef("");
   const moreInFlight = useRef(false);
 
   useEffect(() => {
@@ -46,7 +47,11 @@ export function useJobPolling(jobId: string | null, sort: SortMode, accessVersio
   const status = currentJob?.status;
   useEffect(() => {
     const currentGeneration = ++generation.current;
-    setResults(null);
+    const scope = JSON.stringify([jobId, sort, accessVersion]);
+    if (resultScope.current !== scope) {
+      setResults(null);
+      resultScope.current = scope;
+    }
     setResultsError(null);
     setLoadingMore(false);
     moreInFlight.current = false;
@@ -55,6 +60,7 @@ export function useJobPolling(jobId: string | null, sort: SortMode, accessVersio
       if (generation.current === currentGeneration) setResults(r);
     }).catch((err) => {
       if (generation.current === currentGeneration) {
+        if (err instanceof ApiError && [401, 403, 404, 410].includes(err.status)) setResults(null);
         setResultsError(err instanceof Error ? err : new Error(String(err)));
       }
     });

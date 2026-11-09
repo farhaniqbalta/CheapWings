@@ -87,6 +87,7 @@ export function SearchForm({ onSubmit, submitting, error, maxCombinations, suppo
         guarantee of availability.
       </p>
 
+      <p className="form-section-caption">01 · Route and dates</p>
       <div className="field-row">
         <AirportMultiSelect label="From" codes={origins} onChange={setOrigins} />
         <AirportMultiSelect label="To" codes={destinations} onChange={setDestinations} />
@@ -117,6 +118,7 @@ export function SearchForm({ onSubmit, submitting, error, maxCombinations, suppo
         </div>
       </div>
 
+      <p className="form-section-caption">02 · Fare preferences</p>
       <div className="field-row">
         <div className="field">
           <label htmlFor={`${formId}-stops`}>Max stops</label>

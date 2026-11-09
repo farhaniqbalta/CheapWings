@@ -8,12 +8,12 @@ import { chromium } from 'playwright';
 
 const dist = fileURLToPath(new URL('../dist/', import.meta.url));
 const timestamp = '2027-01-10T12:00:00Z';
-const job = { job_id: 'test-job', status: 'completed', phase: 'done', cancel_requested: false,
+const job = { query: { origins: ['MEL'], destinations: ['DPS'], departure_date_from: '2027-01-10', departure_date_through: '2027-01-10', display_currency: 'IDR', checked_bags_required: false }, job_id: 'test-job', status: 'completed', phase: 'done', cancel_requested: false,
   created_at: timestamp, updated_at: timestamp, total_route_date_combinations: 1,
   covered_route_date_combinations: 1, total_provider_work_items: 1,
   succeeded_provider_work_items: 1, succeeded_empty: 0, failed_provider_work_items: 0,
   skipped_unsupported: 0, cancelled_provider_work_items: 0, inventory_completeness: 'unknown',
-  exact_reprice_attempted: 0, exact_reprice_succeeded: 0, provider_status: [], warnings: [] };
+  exact_reprice_attempted: 0, exact_reprice_succeeded: 0, provider_status: [], coverage: [], warnings: [] };
 const capabilities = { synthetic_mode: true, supported_currencies: ['IDR'], max_route_date_combinations: 120 };
 const itinerary = id => ({ itinerary_id: id, identity_confidence: 'insufficient_identity',
   origin: 'MEL', destination: 'DPS', departure_local: timestamp, arrival_local: timestamp,

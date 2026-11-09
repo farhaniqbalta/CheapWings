@@ -29,9 +29,10 @@ The browser suite serves the built bundle and synthetic API responses through
 Playwright request interception, without contacting a provider or starting a web
 server. It covers empty safe results switching to advertised results, cursor
 pagination, refresh/recovery, runtime auth, expiry, and cancellation with retained
-fares. All four scenarios passed during the P4 launch session. In a restricted sandbox,
-Chromium may need additional execution permission. See WORK_LOG.md for exact
-validation evidence, wider-viewport visual checks and current runtime configuration.
+fares. The suite now includes the four core flows and 36 P4.5 state/viewport checks at
+375/768/1440px. All passed during integration. In a restricted sandbox,
+Chromium may need additional execution permission. Integrated synthetic screenshots are retained in `../../docs/design/p45-qa/`.
+See WORK_LOG.md for exact validation evidence and current runtime configuration.
 
 Public API types are maintained in `src/api/types.ts` against
 `../../contracts/openapi.yaml`. Money stays as decimal strings. The backend owns

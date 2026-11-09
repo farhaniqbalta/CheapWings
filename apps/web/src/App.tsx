@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import "./p45.css";
 import { api } from "./api/client";
 import { setOwnerToken } from "./api/session";
 import type { Capabilities, SearchRequest, SortMode } from "./api/types";
@@ -55,17 +56,17 @@ export default function App() {
 
   const startNewSearch = () => { clearCancelError(); setJobId(null); };
 
-  const isTerminalSuccess = job && (job.status === "completed" || job.status === "partial");
-  const zeroEligibleFares = isTerminalSuccess && results && results.itineraries.length === 0;
+  const hasRetainedCoverage = job && (job.status === "completed" || job.status === "partial" || job.status === "cancelled");
+  const zeroEligibleFares = hasRetainedCoverage && results && results.itineraries.length === 0 && (job?.succeeded_provider_work_items ?? 0) > 0;
 
   return (
     <div className="app">
       <header className="app-header">
-        <h1>CheapWings</h1>
-        <p>Find the lowest priced eligible one-way flights across flexible dates.</p>
+        <h1><span className="brand-mark" aria-hidden="true">↗</span>CheapWings</h1>
+        <p>Compare source-reported one-way fares across airports and flexible departure dates.</p>
         {capabilities?.synthetic_mode && (
           <p className="synthetic-banner">
-            Running in synthetic mode: all results are fake fixtures, not real fares.
+            SYNTHETIC · Demonstration fares only. These are not real flights or prices.
           </p>
         )}
       </header>
@@ -107,18 +108,40 @@ export default function App() {
 
           <JobErrorPanel job={job} transportError={cancelError ?? pollError} />
           {(pollError || cancelError) && <button type="button" onClick={() => { clearCancelError(); retry(); }}>Retry search status</button>}
-          {job && <ResultSortBar sort={sort} onChange={setSort} />}
-
           {job && (
             <SearchProgress job={job} onCancel={async () => { await cancelSearch(jobId); retry(); }} cancelling={cancelling} />
           )}
+          {job && (
+            <section className="results-section" aria-labelledby="results-heading">
+              <div className="results-heading-row">
+                <h2 className="results-heading" id="results-heading">Flight results</h2>
+                {results && <p className="results-count">{results.itineraries.length} itineraries currently shown</p>}
+              </div>
+              <ResultSortBar sort={sort} onChange={setSort} />
+            </section>
+          )}
 
-          {!job && !pollError && <p aria-live="polite">Loading search...</p>}
+          {!job && !pollError && <p aria-live="polite" role="status">Restoring your search…</p>}
+          {job && (job.status === "queued" || job.status === "running") &&
+            results && results.itineraries.length === 0 && (
+              <p className="empty-state" role="status">
+                Source searches are still in progress. No matching quotes have arrived in this view yet;
+                results may appear while the search continues. Lowest advertised can include indicative fares.
+              </p>
+            )}
 
           {zeroEligibleFares ? (
             <p className="empty-state">
-              No matching fares returned in searched sources. This does not mean no flights exist -
-              only the enabled providers were checked. Try Lowest advertised to inspect lower-confidence offers.
+              {sort === "best_checked"
+                ? "No matching fares returned for the safe comparison criteria in this view. Returned quotes may have unknown risk or required costs."
+                : "No matching fares returned in this view by the responding sources."}
+              {" "}This does not mean no flights exist.
+              {job?.status !== "completed" && " This search is incomplete."}
+              {sort === "best_checked" && (
+                <button type="button" className="advertised-cta" onClick={() => setSort("lowest_advertised")}>
+                  View lower-confidence advertised offers
+                </button>
+              )}
             </p>
           ) : (
             results &&

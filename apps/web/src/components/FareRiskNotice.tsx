@@ -7,7 +7,7 @@ export function FareRiskNotice({ offer }: { offer: PublicOffer }) {
   if (offer.hidden_city === "unknown") notices.push("Hidden-city risk unknown for this fare.");
   if (offer.self_transfer === "yes") notices.push("Self-transfer: you must recheck in, no protection if a leg is delayed.");
   if (offer.self_transfer === "unknown") notices.push("Self-transfer risk unknown.");
-  if (offer.checked_bag === "unknown") notices.push("Checked-bag cost unknown; may not be the full payable total.");
+  if (offer.checked_bag === "unknown") notices.push("Checked-bag allowance and price are unknown; confirm any bag you need.");
   if (offer.comparison_status === "missing_required_baggage")
     notices.push("Required checked bag not confirmed included; price is not a verified total.");
   if (offer.comparison_status === "currency_unresolved")

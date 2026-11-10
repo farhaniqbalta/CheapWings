@@ -36,12 +36,12 @@ class JobRunner:
         result = None
         error, retry_after = None, 0
         try:
-            async with asyncio.timeout(self.timeout_seconds):
-                if item.work_type == 'reprice':
+            async with asyncio.timeout(registration.timeout_seconds or self.timeout_seconds):
+                if item.work_type == "reprice":
                     result = await registration.provider.reprice(self.repo.reprice_request(item))
                 else:
                     result = await registration.provider.search(request)
-            if item.work_type != 'reprice':
+            if item.work_type != "reprice":
                 if result.provider_id != item.provider_id or result.requested != request:
                     raise ProviderFailure("schema_changed")
                 if result.status == WorkStatus.FAILED_TERMINAL:
@@ -100,7 +100,13 @@ class JobRunner:
                 p == registration.provider.provider_id for p in self.task_providers.values()
             )
             for _ in range(max(0, registration.concurrency - active)):
-                claimed = self.repo.claim(registration, lease_seconds=self.lease_seconds)
+                claimed = self.repo.claim(
+                    registration,
+                    lease_seconds=max(
+                        self.lease_seconds,
+                        (registration.timeout_seconds or self.timeout_seconds) + 10,
+                    ),
+                )
                 if claimed is None:
                     break
                 item, query = claimed
@@ -124,6 +130,6 @@ class JobRunner:
         self.tasks.clear()
         self.task_providers.clear()
         for registration in self.registry:
-            blocking = getattr(registration.provider, 'blocking', None)
+            blocking = getattr(registration.provider, "blocking", None)
             if blocking:
                 blocking.close()

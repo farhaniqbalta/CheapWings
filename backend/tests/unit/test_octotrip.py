@@ -151,3 +151,27 @@ def test_neighbor_airports_are_excluded_and_elapsed_time_includes_layover():
     with pytest.raises(ProviderFailure) as error:
         OctotripProvider().normalize(data, query())
     assert error.value.code == "partial_payload"
+
+
+async def test_mcp_returns_on_matching_event_without_waiting_for_stream_close():
+    import asyncio
+
+    class OpenStream(httpx.AsyncByteStream):
+        closed = False
+
+        async def __aiter__(self):
+            yield b'event: message\r\ndata: {"jsonrpc":"2.0","id":1,"result":{"server":"synthetic"}}\r\n\r\n'
+            await asyncio.Event().wait()
+
+        async def aclose(self):
+            self.closed = True
+
+    stream = OpenStream()
+
+    async def handler(request):
+        return httpx.Response(200, headers={"Content-Type": "text/event-stream"}, stream=stream)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        async with asyncio.timeout(0.2):
+            result = await OctotripProvider()._rpc(client, 1, "initialize", {})
+    assert result == {"server": "synthetic"} and stream.closed

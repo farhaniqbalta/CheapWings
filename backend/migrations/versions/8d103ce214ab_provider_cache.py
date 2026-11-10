@@ -69,32 +69,29 @@ def upgrade():
         "search_jobs",
         sa.Column("upstream_work_reserved", sa.Boolean(), nullable=False, server_default="1"),
     )
-    # SQLite requires batch mode when introducing the operation foreign key.
-    with op.batch_alter_table("work_items") as batch:
-        batch.add_column(sa.Column("operation_id", sa.String()))
-        batch.create_foreign_key(
-            "fk_work_operation", "provider_operations", ["operation_id"], ["id"]
-        )
-        batch.add_column(
-            sa.Column("result_origin", sa.String(), nullable=False, server_default="live")
-        )
-        for col in ("observation_retrieved_at", "reused_at", "cache_fresh_until"):
-            batch.add_column(sa.Column(col, sa.Integer()))
-        batch.create_index("ix_work_items_operation_id", ["operation_id"])
+    # Direct nullable inline FK addition avoids rebuilding a table referenced by
+    # historical work_attempts/fare_quotes with PRAGMA foreign_keys=ON.
+    op.execute(
+        "ALTER TABLE work_items ADD COLUMN operation_id VARCHAR CONSTRAINT fk_work_operation REFERENCES provider_operations(id)"
+    )
+    op.add_column(
+        "work_items", sa.Column("result_origin", sa.String(), nullable=False, server_default="live")
+    )
+    for col in ("observation_retrieved_at", "reused_at", "cache_fresh_until"):
+        op.add_column("work_items", sa.Column(col, sa.Integer()))
+    op.create_index("ix_work_items_operation_id", "work_items", ["operation_id"])
 
 
 def downgrade():
-    with op.batch_alter_table("work_items") as batch:
-        batch.drop_index("ix_work_items_operation_id")
-        batch.drop_constraint("fk_work_operation", type_="foreignkey")
-        for col in (
-            "cache_fresh_until",
-            "reused_at",
-            "observation_retrieved_at",
-            "result_origin",
-            "operation_id",
-        ):
-            batch.drop_column(col)
+    op.drop_index("ix_work_items_operation_id", table_name="work_items")
+    for col in (
+        "cache_fresh_until",
+        "reused_at",
+        "observation_retrieved_at",
+        "result_origin",
+        "operation_id",
+    ):
+        op.drop_column("work_items", col)
     for col in ("upstream_work_reserved", "cache_mode", "provider_ids"):
         op.drop_column("search_jobs", col)
     op.drop_table("provider_result_cache")

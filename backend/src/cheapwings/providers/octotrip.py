@@ -1,6 +1,7 @@
 """OctoTrip stateless MCP v1.30: advertised prices, never exact fare confirmation."""
 
 import asyncio
+import codecs
 from dataclasses import replace
 from datetime import UTC, datetime
 from urllib.parse import urlsplit
@@ -47,31 +48,47 @@ class OctotripProvider:
             if response.status_code != 200:
                 raise ProviderFailure("provider_unavailable")
             chunks, size = [], 0
+            event_stream = "text/event-stream" in response.headers.get("Content-Type", "")
+            decoder = codecs.getincrementaldecoder("utf-8")()
+            buffer = ""
             async for chunk in response.aiter_bytes():
                 size += len(chunk)
                 if size > 2_000_000:
                     raise ProviderFailure("partial_payload")
-                chunks.append(chunk)
-        text = b"".join(chunks).decode()
-        if "text/event-stream" in response.headers.get("Content-Type", ""):
-            messages = [
-                json_payload(line[5:].strip())
-                for line in text.splitlines()
-                if line.startswith("data:")
-            ]
-            envelope = next((m for m in messages if m.get("id") == ident), {})
-        else:
-            envelope = json_payload(text)
-        if envelope.get("error"):
+                if event_stream:
+                    buffer = (buffer + decoder.decode(chunk)).replace("\r\n", "\n")
+                    frames = buffer.split("\n\n")
+                    buffer = frames.pop()
+                    for frame in frames:
+                        data = "\n".join(
+                            line[5:].lstrip(" ")
+                            for line in frame.splitlines()
+                            if line.startswith("data:")
+                        )
+                        if data:
+                            envelope = json_payload(data)
+                            if envelope.get("id") == ident:
+                                return self.rpc_result(envelope)
+                else:
+                    chunks.append(chunk)
+            if event_stream:
+                raise ProviderFailure("partial_payload")
+            return self.rpc_result(json_payload(b"".join(chunks).decode()))
+
+    @staticmethod
+    def rpc_result(envelope):
+        if not isinstance(envelope, dict) or envelope.get("error"):
             raise ProviderFailure("provider_unavailable")
         result = envelope["result"]
+        if not isinstance(result, dict):
+            raise ProviderFailure("schema_changed")
         if result.get("isError"):
             raise ProviderFailure("provider_unavailable")
         return result
 
     async def fetch(self, query):
         async with httpx.AsyncClient(
-            timeout=httpx.Timeout(25, connect=5),
+            timeout=httpx.Timeout(60, connect=5),
             headers={
                 "Content-Type": "application/json",
                 "Accept": "application/json, text/event-stream",

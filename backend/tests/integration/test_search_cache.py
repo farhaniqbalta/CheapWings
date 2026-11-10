@@ -339,3 +339,52 @@ async def test_reprice_revisions_are_never_replayed_from_mutable_quote_rows(engi
     second = repo.create_job(single(query), [reg])
     after = results_projection(repo, second.id, "lowest_advertised").itineraries[0].offers[0]
     assert after.seller == before.seller and after.result_origin == "cache"
+
+
+async def test_additive_migration_preserves_populated_work_attempt_and_quote_history(engine, query):
+    from pathlib import Path
+
+    from alembic import command
+    from alembic.config import Config
+
+    from cheapwings.storage.models import WorkAttempt, WorkItem
+
+    repo = Repository(engine)
+    reg = Registration(FakeProvider(), minimum_interval_seconds=0)
+    first = repo.create_job(single(query), [reg])
+    await finish(repo, reg, first)
+    config = Config(str(Path(__file__).parents[2] / "alembic.ini"))
+    config.attributes["database_url"] = str(engine.url)
+    command.downgrade(config, "7a2c9e103f41")
+    command.upgrade(config, "head")
+    with Session(engine) as s:
+        assert s.scalar(select(func.count()).select_from(WorkItem)) == 1
+        assert s.scalar(select(func.count()).select_from(WorkAttempt)) == 1
+        assert s.scalar(select(func.count()).select_from(FareQuote)) == 2
+    with engine.connect() as connection:
+        assert connection.exec_driver_sql("pragma foreign_key_check").all() == []
+
+
+async def test_provider_specific_timeout_extends_lease_without_changing_other_sources(
+    engine, query
+):
+    from cheapwings.domain.coverage import WorkStatus
+    from cheapwings.providers.fake import ScriptedOutcome
+
+    repo = Repository(engine)
+    provider = FakeProvider()
+    provider.script(
+        "MEL",
+        "DPS",
+        single(query).departure_date_from,
+        ScriptedOutcome(WorkStatus.SUCCEEDED_EMPTY, delay_seconds=0.03),
+    )
+    reg = Registration(provider, minimum_interval_seconds=0, timeout_seconds=1)
+    job = repo.create_job(single(query), [reg])
+    runner = JobRunner(repo, [reg], timeout_seconds=0.01, lease_seconds=0.1)
+    await runner.tick()
+    item = repo.get_job(job.id)[1][0]
+    assert item.leased_until - item.started_at >= 11000
+    await asyncio.gather(*runner.tasks)
+    assert repo.get_job(job.id)[0].status == "completed"
+    await runner.close()

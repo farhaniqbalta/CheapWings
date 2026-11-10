@@ -20,8 +20,11 @@ class Registration:
     retention_seconds: int | None = None
     usage_policy_reviewed_on: str | None = None
     cache_ttl_seconds: int = 1200
+    timeout_seconds: int | None = None
 
     def __post_init__(self):
+        if self.timeout_seconds is not None and self.timeout_seconds < 1:
+            raise ValueError("Provider timeout must be positive")
         if self.concurrency < 1 or self.minimum_interval_seconds < 0:
             raise ValueError("Provider concurrency must be positive and interval nonnegative")
 
@@ -40,9 +43,9 @@ def default_registry(settings=None):
     from importlib.util import find_spec
 
     from cheapwings.config import Settings
+    from cheapwings.providers.octotrip import OctotripProvider
     from cheapwings.providers.skiplagged import SkiplaggedProvider
     from cheapwings.providers.swoop import SwoopProvider
-    from cheapwings.providers.octotrip import OctotripProvider
 
     settings = settings or Settings.from_env()
     if settings.enabled_providers == ("fake",):
@@ -71,6 +74,7 @@ def default_registry(settings=None):
                 minimum_interval_seconds=15,
                 live_data=True,
                 permitted_to_aggregate=settings.use_scope == "personal",
+                timeout_seconds=90 if provider.provider_id == "octotrip" else None,
                 can_cache=provider.provider_id != "octotrip",
                 attribution_required=True,
                 retention_seconds=min(settings.live_retention_seconds, 900)

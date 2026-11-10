@@ -10,22 +10,18 @@ interface Props {
   maxCombinations: number | null;
   supportedCurrencies: string[];
 }
-
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
-
+function todayIso() { return new Date().toISOString().slice(0, 10); }
 function combinationCount(origins: string[], destinations: string[], from: string, through: string) {
   if (!from || !through) return 0;
   const start = new Date(`${from}T00:00:00Z`);
   const end = new Date(`${through}T00:00:00Z`);
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return 0;
   const days = Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1;
-  // Illustrative preview only; the server is the source of truth and also
-  // rejects same-origin/destination pairs on submit.
+  // Display preview only. Backend decides and validates the actual query scope.
   return origins.length * destinations.length * days;
 }
 
+/** P4.6 replaces visuals, not the SearchRequest contract or its validation. */
 export function SearchForm({ onSubmit, submitting, error, maxCombinations, supportedCurrencies }: Props) {
   const [origins, setOrigins] = useState<string[]>([]);
   const [destinations, setDestinations] = useState<string[]>([]);
@@ -37,22 +33,19 @@ export function SearchForm({ onSubmit, submitting, error, maxCombinations, suppo
   const [includeHiddenCity, setIncludeHiddenCity] = useState(false);
   const [displayCurrency, setDisplayCurrency] = useState<Currency>("IDR");
   const [clientError, setClientError] = useState<string | null>(null);
-
   const formId = useId();
-  const combos = useMemo(
-    () => combinationCount(origins, destinations, from, through),
-    [origins, destinations, from, through],
-  );
+  const combos = useMemo(() => combinationCount(origins, destinations, from, through),
+    [origins, destinations, from, through]);
   const overCap = maxCombinations != null && combos > maxCombinations;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
     setClientError(null);
     if (origins.length === 0 || destinations.length === 0) {
       setClientError("Add at least one origin and one destination airport.");
       return;
     }
-    if (origins.some((o) => destinations.includes(o))) {
+    if (origins.some(origin => destinations.includes(origin))) {
       setClientError("Origin and destination airports cannot overlap.");
       return;
     }
@@ -61,14 +54,11 @@ export function SearchForm({ onSubmit, submitting, error, maxCombinations, suppo
       return;
     }
     if (overCap) {
-      setClientError(
-        `${combos} origin x destination x date combinations exceeds the server limit of ${maxCombinations}. Narrow the airports or date range.`,
-      );
+      setClientError(`${combos} origin x destination x date combinations exceeds the server limit of ${maxCombinations}. Narrow the airports or date range.`);
       return;
     }
     onSubmit({
-      origins,
-      destinations,
+      origins, destinations,
       departure_date_from: from,
       departure_date_through: through,
       max_stops: maxStops === "any" ? null : (Number(maxStops) as 0 | 1 | 2),
@@ -80,134 +70,79 @@ export function SearchForm({ onSubmit, submitting, error, maxCombinations, suppo
   };
 
   return (
-    <form onSubmit={handleSubmit} aria-label="Flight search" className="search-form">
-      <p className="product-limitation">
-        Finds the lowest eligible one-way fare <strong>found by the enabled providers</strong> across
-        flexible dates. One-way, 1 adult, economy. Not the world's cheapest ticket, and not a
-        guarantee of availability.
-      </p>
-
-      <p className="form-section-caption">01 · Route and dates</p>
-      <div className="field-row">
-        <AirportMultiSelect label="From" codes={origins} onChange={setOrigins} />
-        <AirportMultiSelect label="To" codes={destinations} onChange={setDestinations} />
+    <form onSubmit={handleSubmit} aria-label="Flight search" className="search-form p46-search-form">
+      <div className="p46-console-head">
+        <div><span className="p46-console-icon" aria-hidden="true">▤</span><h2>Flight query console</h2><span className="p46-console-mode">FLEXIBLE DEPARTURE</span></div>
+        <span className="p46-console-meta">ONE-WAY / 1 ADULT / ECONOMY</span>
       </div>
-
-      <div className="field-row">
-        <div className="field">
-          <label htmlFor={`${formId}-from`}>Earliest departure</label>
-          <input
-            id={`${formId}-from`}
-            type="date"
-            value={from}
-            min={todayIso()}
-            onChange={(e) => setFrom(e.target.value)}
-            required
-          />
+      <div className="p46-console-body">
+        <div className="p46-route-section">
+          <div className="p46-section-legend"><span>✈</span> ROUTE SELECTION <small>Multi-airport search supported</small></div>
+          <div className="p46-route-fields">
+            <AirportMultiSelect label="Origin airports" codes={origins} onChange={setOrigins} />
+            <AirportMultiSelect label="Destination airports" codes={destinations} onChange={setDestinations} />
+          </div>
         </div>
-        <div className="field">
-          <label htmlFor={`${formId}-through`}>Latest departure</label>
-          <input
-            id={`${formId}-through`}
-            type="date"
-            value={through}
-            min={from}
-            onChange={(e) => setThrough(e.target.value)}
-            required
-          />
+        <div className="p46-parameters">
+          <div className="p46-section-legend"><span>▦</span> DEPARTURE WINDOW <small>Inclusive date range</small></div>
+          <div className="p46-dates-grid">
+            <div className="field">
+              <label htmlFor={`${formId}-from`}>Earliest departure</label>
+              <input id={`${formId}-from`} type="date" value={from} min={todayIso()}
+                onChange={event => setFrom(event.target.value)} required />
+            </div>
+            <div className="field">
+              <label htmlFor={`${formId}-through`}>Latest departure</label>
+              <input id={`${formId}-through`} type="date" value={through} min={from}
+                onChange={event => setThrough(event.target.value)} required />
+            </div>
+            <div className="p46-flight-profile"><span>FLIGHT PROFILE</span><strong>Economy <em>·</em> One-way</strong><small>One adult · Available one-way fares only</small></div>
+          </div>
+        </div>
+        <div className="p46-preferences">
+          <div className="p46-section-legend"><span>☷</span> FARE PREFERENCES</div>
+          <div className="p46-checkbox-strip">
+            <label className="checkbox"><input type="checkbox" checked={checkedBagsRequired}
+              onChange={event => setCheckedBagsRequired(event.target.checked)} />Checked bag required</label>
+            <label className="checkbox"><input type="checkbox" checked={includeBasicEconomy}
+              onChange={event => setIncludeBasicEconomy(event.target.checked)} />Include basic economy</label>
+          </div>
+          <details className="p46-advanced">
+            <summary>More search settings</summary>
+            <div className="p46-advanced-grid">
+              <div className="field">
+                <label htmlFor={`${formId}-stops`}>Maximum stops</label>
+                <select id={`${formId}-stops`} value={maxStops}
+                  onChange={event => setMaxStops(event.target.value as typeof maxStops)}>
+                  <option value="any">Any</option><option value="0">Nonstop</option>
+                  <option value="1">Up to 1 stop</option><option value="2">Up to 2 stops</option>
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor={`${formId}-currency`}>Display currency</label>
+                <select id={`${formId}-currency`} value={displayCurrency}
+                  onChange={event => setDisplayCurrency(event.target.value as Currency)}>
+                  {supportedCurrencies.map(currency => <option key={currency} value={currency}>{currency}</option>)}
+                </select>
+              </div>
+              <label className="checkbox p46-hidden-checkbox"><input type="checkbox" checked={includeHiddenCity}
+                onChange={event => setIncludeHiddenCity(event.target.checked)} />Include hidden-city fares</label>
+            </div>
+            {includeHiddenCity && <p className="warning-text">Hidden-city fares carry airline-enforcement risk and are excluded from the default Best checked deal ranking, even if requested.</p>}
+          </details>
+        </div>
+        <div className="p46-search-footer">
+          <div className="p46-query-scope">
+            <strong className="combo-preview" aria-live="polite">◉ {combos > 0 ? `${combos} route-date combinations` : "Add origin and destination airports"}</strong>
+            <span>Enabled sources may return results gradually.</span>
+            {overCap && <strong className="field-error">Exceeds the server limit of {maxCombinations}; narrow your search.</strong>}
+          </div>
+          <button type="submit" disabled={submitting || overCap}>{submitting ? "Starting search..." : <>Find cheapest flights <span aria-hidden="true">→</span></>}</button>
         </div>
       </div>
-
-      <p className="form-section-caption">02 · Fare preferences</p>
-      <div className="field-row">
-        <div className="field">
-          <label htmlFor={`${formId}-stops`}>Max stops</label>
-          <select
-            id={`${formId}-stops`}
-            value={maxStops}
-            onChange={(e) => setMaxStops(e.target.value as typeof maxStops)}
-          >
-            <option value="any">Any</option>
-            <option value="0">Nonstop</option>
-            <option value="1">1 stop</option>
-            <option value="2">2 stops</option>
-          </select>
-        </div>
-        <div className="field">
-          <label htmlFor={`${formId}-currency`}>Currency</label>
-          <select
-            id={`${formId}-currency`}
-            value={displayCurrency}
-            onChange={(e) => setDisplayCurrency(e.target.value as Currency)}
-          >
-            {supportedCurrencies.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="field-row checkboxes">
-        <label className="checkbox">
-          <input
-            type="checkbox"
-            checked={checkedBagsRequired}
-            onChange={(e) => setCheckedBagsRequired(e.target.checked)}
-          />
-          Checked bag required
-        </label>
-        <label className="checkbox">
-          <input
-            type="checkbox"
-            checked={includeBasicEconomy}
-            onChange={(e) => setIncludeBasicEconomy(e.target.checked)}
-          />
-          Include basic economy
-        </label>
-      </div>
-
-      <div className="field hidden-city-field">
-        <label className="checkbox">
-          <input
-            type="checkbox"
-            checked={includeHiddenCity}
-            onChange={(e) => setIncludeHiddenCity(e.target.checked)}
-          />
-          Include hidden-city fares
-        </label>
-        {includeHiddenCity && (
-          <p className="warning-text">
-            Hidden-city fares skip part of your ticketed itinerary and carry airline-enforcement
-            risk (lost status, cancelled return legs). They are never included in the default
-            "Best checked deal" ranking even when enabled here.
-          </p>
-        )}
-      </div>
-
-      <p className="combo-preview" aria-live="polite">
-        {combos > 0
-          ? `${combos} origin x destination x date combination${combos === 1 ? "" : "s"}.`
-          : "Add airports and dates to see how many combinations will be searched."}
-        {overCap && (
-          <span className="field-error">
-            {" "}
-            Exceeds the server limit of {maxCombinations}; narrow your search.
-          </span>
-        )}
-        {" A search may take time; results can arrive while it runs."}
-      </p>
-
-      {(clientError || error) && (
-        <p role="alert" className="field-error">
-          {clientError ?? (error instanceof ApiError ? error.message : "Could not start the search.")}
-        </p>
-      )}
-
-      <button type="submit" disabled={submitting || overCap}>
-        {submitting ? "Starting search..." : "Find cheapest flights"}
-      </button>
+      <p className="product-limitation">Source-reported comparison only. Not all flight inventory is covered; displayed prices and booking availability can change.</p>
+      {(clientError || error) && <p role="alert" className="field-error">{clientError ??
+        (error instanceof ApiError ? error.message : "Could not start the search.")}</p>}
     </form>
   );
 }

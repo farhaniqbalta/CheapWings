@@ -1,6 +1,6 @@
 # WORK_LOG.md — Worker Progress Tracker Template
 
-> Copy this file to repository root as `WORK_LOG.md`. The worker updates it at each checkpoint; do not replace actual evidence with optimistic estimates.
+> Copy this file to repository root as `WORK_LOG.md`. The worker updates it at each checkpoint, keeping it short (current state only, ≤5-line entries; long evidence goes to `docs/log/`); do not replace actual evidence with optimistic estimates.
 
 ## Project baseline
 - Date:

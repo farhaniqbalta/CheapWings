@@ -30,7 +30,7 @@ Run only low-volume requests compliant with each provider's terms, ideally for a
 - [ ] Check if one provider's own multi-destination API returns the same data as separate route-date requests; don't infer equivalence.
 - [ ] Record GO / CONDITIONAL GO / NO-GO **per provider**, with minimal evidence and integration implications.
 
-**Proof of Concept deliverable:** [the provider feasibility evidence section in WORK_LOG.md](../WORK_LOG.md#provider-feasibility-evidence) with a table of claims vs observed data, permission notes, dated references, redacted fixtures, exact probe command, route/date, failure logs, manual price comparison and verdict.
+**Proof of Concept deliverable:** [the provider feasibility evidence log](log/provider-feasibility-evidence.md) with a table of claims vs observed data, permission notes, dated references, redacted fixtures, exact probe command, route/date, failure logs, manual price comparison and verdict.
 
 ## Provider adapter contract
 

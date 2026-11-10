@@ -18,4 +18,4 @@ Important: price `float` forbidden, source errors must not look like zero matche
 
 **Start by reporting:** files and dependencies found, P0 probe plan, which source docs/terms you will validate, exact terminal commands for a first non-destructive probe, and the first checkpoint's acceptance criteria. Then perform the work in this session when authorized tools and network permit. If live access is unavailable, finish the fake-provider/contract tasks and clearly record that P0 live checks are unverified.
 
-All reports and handoff findings must be recorded in WORK_LOG.md. Do not create separate provider, test, design-return, release, or implementation report files.
+Read only WORK_LOG.md at session start (it is kept short: current status, approvals, next task). Record reports and handoff findings there as ≤5-line entries with evidence pointers; put long evidence/transcripts in the matching `docs/log/*.md` archive and open archives only when a task needs them. Do not create other report files.

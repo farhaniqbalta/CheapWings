@@ -32,7 +32,7 @@ Each phase must have: PR/commit, files changed, tests executed, screenshots if U
 - [ ] Manually compare at least a few quotes with the provider/airline booking/search page if offered. Document search date/time, route, seller and fare equivalence. Do not pretend checkout price is accessible if it is not.
 - [ ] Test failure conditions conservatively (synthetic mocks for most failures; no intentional hammering for rate-limit testing).
 - [ ] Document legal-use, quota and reuse/aggregation permission. **Do not enable disallowed provider.**
-- [ ] Record provider evidence in [WORK_LOG.md](../WORK_LOG.md#provider-feasibility-evidence) (evidence/observed vs claimed/GO decision/mitigation).
+- [ ] Record provider evidence in [provider feasibility evidence](log/provider-feasibility-evidence.md) (evidence/observed vs claimed/GO decision/mitigation).
 
 **Gate:** at least one provider exposes usable, acceptable-to-use detailed one-way search for target route/date. If not, stop real provider integration, keep fake-provider engine, and report viable fallback rather than inventing data. Second source is conditional on operational/legal feasibility.
 

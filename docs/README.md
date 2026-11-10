@@ -77,14 +77,15 @@ SwiftUI iOS ──────┘                                  │
 ## P4.5 web refinement
 
 The owner accepted the integrated presentation refinement, now merged into main.
-[WORK_LOG.md](../WORK_LOG.md) owns the design-return findings, validation and next
-engineering task. Integrated synthetic screenshots remain in
+[WORK_LOG.md](../WORK_LOG.md) owns the current status and next task; design-return
+findings and validation are archived in [log/p4.5.md](log/p4.5.md). Integrated synthetic screenshots remain in
 [design/p45-qa](design/p45-qa/). Completed handoff prompts have been retired;
 the existing REST/React behavior and native SwiftUI requirement remain in force.
 
 ## Reporting location — owner instruction
 
 Record all provider evidence, implementation/test reports, UI/UX design-return
-findings, and release summaries in [WORK_LOG.md](../WORK_LOG.md). Do not create
-separate report files. Static requirements, design prompts, integration guides,
+findings, and release summaries in [WORK_LOG.md](../WORK_LOG.md) (short, current
+state only) and append long detail to the matching file in [log/](log/). Do not
+create other report files. Static requirements, design prompts, integration guides,
 code, OpenAPI contracts, fixtures and screenshot artifacts may remain separate.

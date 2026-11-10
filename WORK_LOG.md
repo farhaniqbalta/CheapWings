@@ -47,7 +47,7 @@ This file is the source of truth for current phase status, implementation decisi
 - Implemented: all-approved-sources chooser and explicit source IDs, per-provider cache key v2, Lowest advertised web default with warning, string-only IDR truncation; per-observation expiry independently of job execution budget; HTTP 200 expired metadata instead of a whole-job price-age 410; amber expired cards with source/route/date/original timestamp where known and fresh-search action. No old amounts or booking links retained on expired cards. Completed jobs refresh at server-computed expiry without new searches.
 - Acceptance: **126 backend tests**, **4 web unit tests**, production build; browser **65 checks** (4 original + 42 P4.5 + 19 P4.6/P4.7), including automatic terminal-job expiry and three-width expired cards. Alembic upgrade/idempotence/legacy-row preservation and schema check pass. Lint exits 0 with the same four pre-existing App/hook warnings.
 - Local DB backed up privately to ignored `data/pre-p47-expiry-migration.db` (0600), no active jobs at migration. Applied `91f4b02a671c`, no schema drift; API and worker restarted on existing real-source configuration. Vite stays at http://localhost:5173/. Read-only API check of previous expired job returns 200, 119 expired metadata cards, zero retained itineraries; no new live provider searches issued.
-- Exact next task: owner checks expired visual state/live app; make requested adjustments, then publish P4.7/PR when requested. Do not merge automatically. Existing purged prices cannot be recovered; existing jobs retain their original deadlines/cutoffs. New jobs get independent execution budgets. All reports remain in this file.
+- Exact next task: owner authorized P4.7 push/PR; publish branch and open PR against main for manual review/merge. Do not merge automatically. Existing purged prices cannot be recovered; existing jobs retain their original deadlines/cutoffs. New jobs get independent execution budgets. All reports remain in this file.
 
 ## Explicit deviation log
 | Date | Approved design changed | Reason/evidence | Owner decision needed? |
@@ -742,3 +742,7 @@ Required synthetic regression cases for C2/C3: exact/key-version/market/currency
 - **Limits:** metadata is per source/route/date observation, not a reconstructed individual flight card. Previously purged fare identities/prices cannot be recovered. Old deadlines are not extended retroactively. Owner manually approves future archival expansion; current bounded fallback is complete. Leave branch for review; do not merge main.
 
 - Final API reload completed with PID 97923/session 96467 so missing legacy observation times are shown as unavailable. Worker remains session 46232. Live services left running; owner can refresh localhost:5173 to inspect.
+
+### P4.7 PR publication authorized (2026-11-10)
+- Owner requested push and PR after reviewing the expired-card update. Clean branch has implementation commits d13b335 and 9bd9aec atop origin/main 32190a1; fetch confirms no incoming main changes. Publish this checkpoint, create PR against main, leave merge control with owner.
+- Publication changes documentation only; prior completed validation remains 126 backend / 4 unit / 65 browser checks, production build and migration schema checks passing. No extra provider traffic needed. Record PR link below once created.

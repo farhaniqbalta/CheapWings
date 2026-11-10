@@ -1,21 +1,46 @@
-# 08 — Copy-Paste Starting Prompt for Local Coding Agent
+# 08 — Starting Prompt for a Local Coding Agent
 
-You are the **implementation worker** for CheapWings, a low-cost, flexible-date, one-way flight-price comparison tool with Python/FastAPI backend, React+TypeScript web frontend and native SwiftUI iOS frontend.
+You are the implementation worker for CheapWings: a Python/FastAPI flight
+comparison backend, React/TypeScript web client and planned native SwiftUI iOS
+client.
 
-Read `README.md` and **all active numbered documents** in `CheapWings_Worker_Handoff/` in order, especially `06_IMPLEMENTATION_CHECKPOINTS.md`. The archived `reference/V4_FULL_DESIGN_REFERENCE.md` is provided for detail, not to override active worker instructions: V4 was a **review-only** document, but this assignment is **approved for staged implementation**.
+Read the root `WORK_LOG.md` first. It records current phase status, approvals and
+the exact next task. Preserve existing code and owner changes. Do not recreate
+the work log or restart completed phases. Read the root README and relevant
+numbered specifications under `docs/` as needed; detailed phase evidence is
+indexed in `docs/log/README.md`. Open archives only when the task needs them.
+`docs/reference/V4_FULL_DESIGN_REFERENCE.md` is historical context.
 
-**Do not ask to revisit approved scope or propose Rust.** The user accepted modular multi-provider architecture, provider-safe exhaustive origin×destination×date coverage, separated itinerary vs seller offers, price evidence/repricing, external links only, backend-owned durable jobs, React web and true SwiftUI native iOS. Low cost and accurate prices outweigh search speed. No booking, payments, push alerts, or paid API dependency without approval.
+Follow the owner's current task and approvals. Experiments and architecture
+assessments do not authorize a production rollout. Python remains the approved
+backend; no automatic Rust migration or stack change. New live probes, toolchain
+installs, paid dependencies and deployment require authorization unless already
+authorized in the session. Never bypass provider protections.
 
-**First actions:**
+First actions:
 
-1. Inspect workspace/repo and existing code, record current baseline. Do not overwrite existing work.
-2. Create `WORK_LOG.md` with phase status, decisions, commands, test results and blockers.
-3. Execute **P0 provider feasibility** using only low-volume, terms-compliant probes for Skiplagged MCP and swoop; check exact runtime schemas/returned data, basic-economy inclusion, hidden-city identification, seller prices, repricing and redistribution/aggregation rights. Record provider feasibility evidence in `WORK_LOG.md` with dated observed evidence vs published claims. Never fabricate provider capabilities.
-4. If >=1 provider passes, build **P1 pure-domain + fake-provider offline vertical slice**, then P2 durable API and jobs, then P3 real provider adapter(s), P4 React web, P5 SwiftUI iOS and P6 hardening. If none passes, still create only the fake provider slice and report the blocking findings; do not fake live fares.
-5. At each checkpoint, provide runnable code, tests, exact commands, status, screenshots (for UI) and updated `WORK_LOG.md`. Keep implementation small and correctly modular. Do not jump to P5 before the API contract is stable.
+1. Inspect the branch, working tree and relevant implementation; preserve
+   unrelated changes. Report the baseline and what the next check will resolve.
+2. Complete the authorized task using the existing contracts, durable worker,
+   SQLite lease fencing, provider cooldowns, cache and cancellation semantics.
+3. Verify the change with appropriate offline tests. Live provider calls are
+   explicit opt-in; they never run in default CI. Honor source limits and stop
+   on throttling/blocking.
+4. Update WORK_LOG.md in at most five lines with the result and evidence pointer;
+   put long measurements, reports and validation in the matching docs/log/ file.
+   Replace the current checkpoint and next task. Do not create reports elsewhere.
 
-Important: price `float` forbidden, source errors must not look like zero matches, basic economy is **not** hidden-city ticketing, a cached calendar must never prune detailed searches, provider-specific code must not leak into API/client layers, and multi-provider aggregation must honor source terms. An uncertain quote is not automatically "verified" just because two providers agree.
+For an empty/new implementation only, follow the original P0→P6 sequence in
+`docs/06_IMPLEMENTATION_CHECKPOINTS.md`. The current repository has already
+completed P0–P4.7; its work log determines what comes next. Do not repeat provider
+feasibility merely because an old checklist is unchecked.
 
-**Start by reporting:** files and dependencies found, P0 probe plan, which source docs/terms you will validate, exact terminal commands for a first non-destructive probe, and the first checkpoint's acceptance criteria. Then perform the work in this session when authorized tools and network permit. If live access is unavailable, finish the fake-provider/contract tasks and clearly record that P0 live checks are unverified.
+Maintain these invariants: money uses Decimal/integer minor units; provider
+failure is not empty success; unknown fare/fee/hidden-city evidence stays unknown;
+calendar hints cannot prune required detailed coverage; provider-specific parsing
+stays in adapters; retries cannot duplicate committed results. Do not claim
+exactly-once upstream execution after a crash. No booking or payment integration.
 
-Read only WORK_LOG.md at session start (it is kept short: current status, approvals, next task). Record reports and handoff findings there as ≤5-line entries with evidence pointers; put long evidence/transcripts in the matching `docs/log/*.md` archive and open archives only when a task needs them. Do not create other report files.
+Finish with what changed, why, validation evidence, material limitations and the
+next task. Keep the current work log short; leave detailed historical evidence
+in docs/log/.

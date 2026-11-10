@@ -1,6 +1,6 @@
 # Provider and result-cache research; cache/OctoTrip; P4.6–P4.7
 
-> Archived verbatim from WORK_LOG.md on 2026-11-10. Historical record; read only when a task needs this phase's detail. Current status lives in [WORK_LOG.md](../../WORK_LOG.md).
+> Historical WORK_LOG archive (2026-11-10). Evidence and decisions remain as recorded; navigation links and whitespace may be normalized. Current status and approvals: [WORK_LOG.md](../../WORK_LOG.md).
 
 ## Provider and result-cache research (2026-11-10)
 
@@ -275,4 +275,3 @@ Required synthetic regression cases for C2/C3: exact/key-version/market/currency
 - GitHub confirms PR #2 MERGED at 12:26:33 UTC, merge commit 229fa3fdcaa22d50228ed0ac9f6c336d63dc54e4. Fetched origin and fast-forwarded local main to the owner merge; no merge performed by the worker.
 - Local-only live concurrency evidence b3b2a47 was carried onto main as documentation commit 59ad610. This checkpoint updates the tracker/summary to merged. Application code matches the validated PR; no test rerun needed for these documentation-only updates. Working services remain running.
 - Post-merge documentation commits are local only, pending a future requested push. No branch deletion or new feature work performed. Next agent should read this summary, preserve city/country deferral and metadata-only retention decision, and follow owner feedback.
-

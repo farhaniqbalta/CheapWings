@@ -2,12 +2,13 @@
 
 Personal-use, flexible-date, one-way flight comparison with a Python 3.12+
 backend and React/TypeScript web client. Durable SQLite jobs, a separate worker,
-REST v1, and Skiplagged/swoop adapters are implemented. Development defaults to
+REST v1, and Skiplagged/swoop/OctoTrip adapters are implemented. Development defaults to
 **synthetic fake fares**; live providers are opt-in for accepted personal use.
-Native SwiftUI iOS is the next phase and requires full Xcode.
+Native SwiftUI iOS remains planned and requires full Xcode.
 
-[WORK_LOG.md](WORK_LOG.md) is the source of truth for phase status, decisions,
-validation evidence, and the exact next task. Provider observations are in
+[WORK_LOG.md](WORK_LOG.md) holds current status, approvals and the next task.
+Detailed evidence is indexed in [docs/log/README.md](docs/log/README.md).
+Provider observations are in
 [provider feasibility evidence](docs/log/provider-feasibility-evidence.md).
 
 ## Local setup
@@ -87,8 +88,9 @@ LIVE_RETENTION_SECONDS=3600
 
 Restart the API and worker after sourcing the updated environment. Fake and live
 providers cannot be mixed in one configuration. Registry metadata exposes missing
-dependencies, disabled sources, and terms restrictions. Live results expire after
-the configured job retention window; expired result requests return `410`.
+dependencies, disabled sources, and terms restrictions. Fare details expire per
+source observation; results remain HTTP 200 with expired metadata, without old
+prices or booking links. See [retention and budgets](#access-and-budgets).
 Skiplagged prices remain indicative; swoop's unknown hidden-city risk excludes
 its offers from the safe ranking. **Lowest advertised** exposes those candidates
 with their evidence and warnings. No provider price is guaranteed bookable.
@@ -128,12 +130,15 @@ view does not prove no flights: inspect coverage and the advertised view.
   Result inserts and terminal success share one transaction. Per-job/provider
   source quote keys prevent duplicates. A failed transaction leaves the lease
   recoverable and no partial fares.
-- Global provider concurrency and spacing apply across jobs. Provider cooldowns
-  persist in SQLite, including `Retry-After`. Transient errors get up to three
+- Live registrations currently allow one in-flight operation per provider and
+  reserve starts 15 seconds apart across jobs. Different providers can overlap.
+  Provider cooldowns persist in SQLite when rate-limit feedback is retained.
+  Transient errors get up to three
   attempts with capped exponential backoff; auth/schema errors terminate.
   Adapters may raise normalized `ProviderFailure(code, retry_after_seconds)`.
 - Stale running work is reclaimed only after its lease expires; recovery runs
-  every tick and at startup. Defaults: 30s provider timeout, 40s lease, 30-minute
+  every tick and at startup. Defaults: 30s provider timeout, 40s lease (OctoTrip:
+  90s timeout and at least 100s lease), 30-minute
   job budget (including queue time/restarts). Budget exhaustion is a visible
   failure, not empty success. Completed work never reruns automatically.
 - Cancellation invalidates outstanding leases immediately; late results are
@@ -143,6 +148,14 @@ view does not prove no flights: inspect coverage and the advertised view.
   needs its own network timeout; do not release its actual execution slot early.
 - Registry changes produce explicit skipped entries for removed/disabled
   adapters; unknown provider IDs are rejected.
+
+P4.8 benchmark overrides are isolated experiments; their interval/concurrency
+pairs are not production environment options yet. The
+[experiment report](docs/log/p4.8-throughput-experiment.md) records known gaps:
+late 429 feedback after direct cancellation, nested MCP error classification,
+Retry-After fidelity, and claim-time versus actual request-start spacing.
+Those fixes and any faster rollout require approval. Production settings remain
+unchanged; no Rust migration is planned.
 
 ## Access and budgets
 
@@ -156,13 +169,15 @@ service or public deployment. Do not log or commit the token. Set
 external unauthenticated clients if the CLI binding was accidentally overridden.
 Only the documented CORS origins are allowed. Health and OpenAPI carry no secrets.
 
-Job creation is atomically limited to 2 active jobs and 20 jobs/hour for the
-single owner (including cancelled jobs); excess returns `429`. A job is limited
+Admission is atomic for the single owner: by default, at most 20 active search
+requests and 100 requests/hour, including cache hits and shared operations.
+Jobs reserving new upstream work also face limits of 2 active and 20/hour;
+cancelled jobs still count toward hourly budgets. Excess returns `429`. A job is limited
 to 120 combinations, and request validation forbids caller-controlled caps,
 unsupported passenger/cabin/currency settings, and expired departure dates.
-Airport codes currently validate by shape; an airport reference and origin-local
-expiry validation need to accompany later real-provider integration. P2 expiry
-uses the server calendar date. Current display currencies: IDR/USD/AUD/JPY.
+Airport inputs validate IATA shape; adapters use airport/timezone reference data
+where supported. Future-date validation uses the server calendar date, not a
+complete origin-local departure cutoff. Display currencies: IDR/USD/AUD/JPY.
 
 No raw provider payloads or passenger PII are stored. Live normalized fares, FX
 evidence, selectors, and revisions expire after the configured retention window
@@ -195,13 +210,26 @@ and roundtrip typed responses. Integration tests use temporary migrated SQLite
 DBs and fake providers, including failures, leases, restart, cancellation,
 transaction rollback, auth, quotas and pagination. No default test calls an
 external provider. P2 process smoke and the P3 production-adapter canary passed
-in the prior session; their evidence is recorded in WORK_LOG.md. Current managed
+in earlier sessions; evidence is archived in [P2–P4](docs/log/p2-p4.md). Current managed
 sandbox restrictions can still prevent starting servers or browsers.
 
 Web validation (from `apps/web`): `npm test` and `npm run build`. Browser
 regressions: `npm run test:browser` after Chromium is installed with
 `npx playwright install chromium`. This suite uses synthetic intercepted responses
-and makes no provider calls. The four core scenarios and 39 state/viewport cases passed after the carrier/airport-change fix; restricted sessions may require permission to start Chromium.
+and makes no provider calls. The latest archived P4.7 acceptance records 4 web
+unit tests and 65 browser checks; see the
+[P4.7 evidence](docs/log/research-cache-p4.6-p4.7.md).
+Restricted sessions may require permission to start Chromium.
+
+Offline P4.8 experiment checks:
+
+```sh
+.venv/bin/python -m pytest -c backend/pyproject.toml scripts/benchmarks/test_p48_instrumentation.py scripts/benchmarks/test_p48_failures.py scripts/benchmarks/test_p48_scheduler_review.py -q -rx
+```
+
+The review suite records 21 passes and one strict expected failure reproducing
+the cancellation/cooldown defect. That expected failure remains a rollout gate.
+Live benchmark scripts require explicit opt-in and are not part of default CI.
 
 Full Xcode is still required for P5; command-line tools alone cannot build SwiftUI.
 See [the phase checkpoints](docs/06_IMPLEMENTATION_CHECKPOINTS.md) for remaining work.
@@ -209,8 +237,9 @@ See [the phase checkpoints](docs/06_IMPLEMENTATION_CHECKPOINTS.md) for remaining
 ## P4.5 web refinement
 
 The owner accepted the integrated web design, which is merged into main.
-[WORK_LOG.md](WORK_LOG.md) records the design decisions, component map,
-validation and current next task. Integrated synthetic screenshots remain in
+[P4.5 archive](docs/log/p4.5.md) records the design decisions, component map and
+validation; [WORK_LOG.md](WORK_LOG.md) holds the current next task.
+Integrated synthetic screenshots remain in
 [docs/design/p45-qa](docs/design/p45-qa/); completed handoff prompts are retired.
 Native SwiftUI P5 remains a separate requirement and needs full Xcode.
 
@@ -233,8 +262,10 @@ new work. Force-refresh requests respect those limits and source pacing.
 The backend accepts optional `provider_ids` (distinct enabled source IDs) and
 `cache_mode` (`prefer_cache` or `refresh`) on POST `/api/v1/searches`. Omitting
 provider IDs uses the current configured sources; the resolved set is persisted.
-Source selection remains backend-only. The web shows cache/shared provenance and
-provides **Run fresh search**, which creates a new job with the same selections.
+The web's source chooser starts all enabled, permitted sources selected and sends
+explicit provider IDs; the backend validates the selection. The web shows
+cache/shared provenance and provides **Run fresh search**, which creates a new
+job with the same selections and `cache_mode=refresh`.
 
 OctoTrip is available for owner-approved personal use by adding `octotrip` to
 `ENABLED_PROVIDERS`, for example `skiplagged,swoop,octotrip`. Install backend live
@@ -244,7 +275,9 @@ fare products and mandatory costs remain unknown. Nearby-airport candidates are
 excluded from explicit-airport searches. Endpoint times use the validated airport
 reference; complete operating-carrier/segment identity is not inferred.
 OctoTrip caching and exact repricing remain disabled. Its conservative 900-second
-result lifecycle also caps a mixed-source job's expiry/budget; select the existing
-two sources through the API when a longer matrix needs their usual lifecycle.
+result lifecycle applies to its observations independently of other sources'
+fresh fares and the job's execution budget. Existing legacy deadlines/cutoffs are
+preserved by migration; expired prices cannot be recovered.
 Software defaults remain fake-only; source/accuracy evidence and owner approvals
-are recorded solely in WORK_LOG.md.
+are summarized in [WORK_LOG.md](WORK_LOG.md), with detailed evidence in
+[docs/log/](docs/log/README.md).

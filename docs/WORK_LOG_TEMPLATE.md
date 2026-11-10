@@ -1,39 +1,40 @@
-# WORK_LOG.md — Worker Progress Tracker Template
+# WORK_LOG.md — Current State Template
 
-> Copy this file to repository root as `WORK_LOG.md`. The worker updates it at each checkpoint, keeping it short (current state only, ≤5-line entries; long evidence goes to `docs/log/`); do not replace actual evidence with optimistic estimates.
+> For initialization only: never overwrite an existing root WORK_LOG.md. Keep it
+> under about 120 lines. Each update is at most five lines with an evidence
+> pointer; long reports and measurements belong in docs/log/. Replace the current
+> checkpoint and next task instead of appending a transcript.
 
-## Project baseline
-- Date:
+## Project basics
+
 - Repository/branch:
-- Existing code found:
-- Commands attempted:
-- Decisions/ADRs:
+- Runtime/clients/storage:
+- Owner approval and publication rules:
+- Baseline/history: docs/log/<relevant-file>.md
 
 ## Phase tracker
-| Phase | Status | Evidence | Blocking issue | Next action |
-|---|---|---|---|---|
-| P0 Provider feasibility | Not started | | | |
-| P1 Domain + fake provider | Not started | | | |
-| P2 Durable jobs + API | Not started | | | |
-| P3 Real providers + repricing | Not started | | | |
-| P4 React web | Not started | | | |
-| P5 SwiftUI native iOS | Not started | | | |
-| P6 Release acceptance | Not started | | | |
+
+| Phase | Status | Evidence / log |
+|---|---|---|
+| Current phase | Not started | |
 
 ## Provider decision ledger
-| Provider | GO/CONDITIONAL GO/NO-GO | Permission/terms | Tested version + date | Missing fields/risks |
-|---|---|---|---|---|
-| Skiplagged MCP | Unverified | | | |
-| swoop | Unverified | | | |
 
-## Latest checkpoint summary
-- Phase:
-- Files changed:
-- Tests/commands/results:
-- Demo evidence:
-- Assumptions and warnings:
-- Next smallest task:
+| Provider | Approved scope | Key limits / evidence |
+|---|---|---|
+| Source ID | Unverified | |
 
-## Explicit deviation log
-| Date | Approved design changed | Reason/evidence | Owner decision needed? |
+## Latest checkpoint
+
+- Decision/result:
+- Validation, unresolved failures and evidence pointer:
+- Standing decisions:
+
+## Next task
+
+State the exact authorized next action and any approval still required.
+
+## Deviation log
+
+| Date | Approved change | Reason / evidence | Owner decision |
 |---|---|---|---|

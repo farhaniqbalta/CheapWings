@@ -1,6 +1,6 @@
 # Pre-restructure WORK_LOG header (baseline, full tracker, ledger, summary, deviations)
 
-> Archived verbatim from WORK_LOG.md on 2026-11-10. Current status lives in [WORK_LOG.md](../../WORK_LOG.md).
+> Historical WORK_LOG archive (2026-11-10). Evidence and decisions remain as recorded; navigation links and whitespace may be normalized. Current status and approvals: [WORK_LOG.md](../../WORK_LOG.md).
 
 ## Project baseline
 - Date: 2026-11-09
@@ -22,7 +22,7 @@
 ## Phase tracker
 | Phase | Status | Evidence | Blocking issue | Next action |
 |---|---|---|---|---|
-| P0 Provider feasibility | Done (owner-accepted personal-use GO both providers) | [provider feasibility evidence](#provider-feasibility-evidence); redacted fixtures in `contracts/fixtures/provider/`; `scripts/provider_probe_skiplagged.py`, `scripts/provider_probe_swoop.py` | None for accepted personal scope; revisit before public/commercial use | P3 adapter integration |
+| P0 Provider feasibility | Done (owner-accepted personal-use GO both providers) | [provider feasibility evidence](provider-feasibility-evidence.md); redacted fixtures in `contracts/fixtures/provider/`; `scripts/provider_probe_skiplagged.py`, `scripts/provider_probe_swoop.py` | None for accepted personal scope; revisit before public/commercial use | P3 adapter integration |
 | P1 Domain + fake provider | Done | `backend/src/cheapwings/{domain,engine,providers}`, 42 passing tests, `python -m cheapwings.cli_demo` offline demo | None | Start P2 — SQLite persistence, durable scheduler, REST API |
 | P2 Durable jobs + API | Done | 72 passing tests at P2, migrations/no schema drift, OpenAPI, runbook. `python scripts/p2_smoke.py` now actually run (see below) — real process launch, worker kill/restart mid-job, 3/3 covered, 6 distinct offers, no duplicate attempts | None | — |
 | P3 Real providers + repricing | Done (offline + live canary); real-world usage still opt-in | 85 passing tests incl. an integration test that replays real redacted P0 fixtures through the production adapters end-to-end; live canary run through the actual adapter classes (not raw SDK) in this session | None blocking; `ENABLED_PROVIDERS` still defaults to `fake` | Owner can flip `ENABLED_PROVIDERS=skiplagged,swoop` for real personal use whenever ready; otherwise start P4 |
@@ -59,4 +59,3 @@
 | 2026-11-09 | Targeted polling-hook repair during P4.5 integration | Browser test proved same-search refresh unmounted result cards and lost expanded details. Preserve cards while fetching the same scope, retain stale-response fencing and clear expired/unauthorized scopes. No API/ranking/provider change. | No — corrective reliability work; owner requested tested live refresh |
 | 2026-11-10 | Extend P1 itinerary with explicit observed airport-change transfers and optional carrier display metadata | Live reproduction shows legitimate NRT→HND surface connection caused whole-date rollback. Keep undeclared gaps invalid; do not invent flight legs, fees or ticket protection. Carrier names remain outside fingerprints. | No — corrective implementation within approved transfer-risk/identity requirements |
 | 2026-11-10 | Separate observation expiry from job budget and return expired metadata with HTTP 200 | Owner approved retention exception and requested visible expired cards; whole-job 410 discarded useful coverage and short-source cutoff stopped other providers. Existing legacy cutoffs preserved; no P1 domain/ranking change. | Approved by owner in conversation |
-

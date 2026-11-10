@@ -1,8 +1,8 @@
 # CheapWings — Worker Implementation Handoff
 
-**Version:** 1.0 · **Prepared:** 2026-11-09 · **Status:** Approved product direction, pending provider feasibility gates
+**Original handoff:** 2026-11-09 · **Current status:** P0–P4.7 completed; P4.8 experiments/planning complete, implementation pending approval. Read [WORK_LOG.md](../WORK_LOG.md) for current decisions and the next task.
 
-> **START HERE.** This is an **implementation assignment**, not the earlier architecture-review-only assignment. The approved design is in the active documents below. A copy of the complete 23-section V4 proposal is included under `reference/` for detailed historical context. The active documents supersede it where instructions differ.
+> Read the short current work log first, then only the specifications and evidence relevant to the authorized task. These numbered documents describe the approved design and original phase gates; their unchecked tasks are not a current progress tracker. The generated [OpenAPI contract](../contracts/openapi.yaml) and [runbook](../README.md) describe implemented interfaces. `reference/` is historical context and does not override current owner decisions.
 
 ## Mission
 
@@ -14,7 +14,7 @@ Build a small, trustworthy service that finds the **cheapest eligible one-way fl
 
 1. **Python backend:** Python 3.12+, FastAPI, Pydantic v2, `httpx`, SQLite, SQLAlchemy/Alembic, `asyncio` and bounded long-running job worker. **No Rust.**
 2. **Web:** React + TypeScript + Vite. **iOS:** SwiftUI + `URLSession`, native UI; both consume the same versioned REST/OpenAPI contract. Do not embed provider clients or Python scrapers in mobile/web frontends.
-3. **Modular provider adapters:** start with feasibility testing Skiplagged MCP and `swoop`; future APIs can be added without editing search orchestration, ranking, or frontend code. Provider availability and permission are unproven until validated.
+3. **Modular provider adapters:** Skiplagged MCP, `swoop` and OctoTrip are integrated for the owner-approved personal scope. Future sources need feasibility and permission checks before enablement; source parsing stays outside core orchestration, ranking and clients.
 4. **Exhaustive *combination* coverage:** schedule every eligible origin × destination × departure-date for the enabled detailed-search providers. Calendar prices **only prioritize**, never prune the matrix. Do not claim exhaustive airline inventory.
 5. **Preserve itinerary and offers separately:** one itinerary can have many seller/provider/fare offers. Deduplicate cautiously; retain provenance and fare restrictions.
 6. **Price accuracy:** store original quoted currency, seller, checked time, fare details and price status; reprice strongest candidates when possible. Never call a cached quote "verified". UI must distinguish `repriced`, `recent_search`, `indicative`, `changed`, and errors.
@@ -27,20 +27,20 @@ Build a small, trustworthy service that finds the **cheapest eligible one-way fl
 
 | File | Purpose / main owner |
 |---|---|
-| `01_PRODUCT_REQUIREMENTS_UX.md` | User behavior, ranking semantics, screens, constraints |
-| `02_SYSTEM_ARCHITECTURE.md` | Boundaries, concurrency, durable jobs, package organization |
-| `03_PROVIDERS_AGGREGATION_PRICING.md` | Required P0 provider proof, integration, dedup, repricing, compliance |
-| `04_DATA_AND_API_CONTRACTS.md` | Concrete canonical schema, database tables, REST DTOs, examples |
-| `05_WEB_AND_NATIVE_IOS.md` | Responsive React UI, SwiftUI app, client states and API parity |
-| `06_IMPLEMENTATION_CHECKPOINTS.md` | Ordered work, tickets, acceptance gates, artifacts and stop conditions |
-| `07_TESTING_AND_OPERATIONS.md` | Test matrix, local setup, privacy/security, reliability, release |
-| `08_AGENT_START_PROMPT.md` | Copy/paste bootstrap prompt for a local coding agent |
-| `reference/V4_FULL_DESIGN_REFERENCE.md` | Complete earlier 23-section specification, retained verbatim |
+| [01_PRODUCT_REQUIREMENTS_UX.md](01_PRODUCT_REQUIREMENTS_UX.md) | User behavior, ranking semantics, screens, constraints |
+| [02_SYSTEM_ARCHITECTURE.md](02_SYSTEM_ARCHITECTURE.md) | Boundaries, concurrency, durable jobs, package organization |
+| [03_PROVIDERS_AGGREGATION_PRICING.md](03_PROVIDERS_AGGREGATION_PRICING.md) | Required P0 provider proof, integration, dedup, repricing, compliance |
+| [04_DATA_AND_API_CONTRACTS.md](04_DATA_AND_API_CONTRACTS.md) | Concrete canonical schema, database tables, REST DTOs, examples |
+| [05_WEB_AND_NATIVE_IOS.md](05_WEB_AND_NATIVE_IOS.md) | Responsive React UI, SwiftUI app, client states and API parity |
+| [06_IMPLEMENTATION_CHECKPOINTS.md](06_IMPLEMENTATION_CHECKPOINTS.md) | Ordered work, tickets, acceptance gates, artifacts and stop conditions |
+| [07_TESTING_AND_OPERATIONS.md](07_TESTING_AND_OPERATIONS.md) | Test matrix, local setup, privacy/security, reliability, release |
+| [08_AGENT_START_PROMPT.md](08_AGENT_START_PROMPT.md) | Copy/paste bootstrap prompt for a local coding agent |
+| [reference/V4_FULL_DESIGN_REFERENCE.md](reference/V4_FULL_DESIGN_REFERENCE.md) | Complete earlier 23-section specification, retained verbatim |
 
 ## Rules for worker agents
 
-- **Do not begin with UI.** First run the provider feasibility gate (P0) and implement a fake-provider vertical slice.
-- **Before changing the stack or architecture**, record the blocker and evidence in `WORK_LOG.md`; keep approved requirements intact.
+- **For a fresh implementation:** complete provider feasibility and a fake-provider vertical slice before UI. For this repository, preserve completed phases and resume the task in WORK_LOG.md; do not rerun live feasibility probes automatically.
+- **Before changing the stack or architecture**, record the blocker and an evidence pointer in `WORK_LOG.md`; detailed measurements belong in `docs/log/`. Keep approved requirements intact.
 - **No optimistic assumptions:** a README claim is not proof that an endpoint works for the route/filters, has permission for use, or returns accurate fares.
 - **Never silently drop errors, dates, providers or fare uncertainty.** Track all in a coverage ledger.
 - **No real airline/provider calls in default CI.** Live canaries are opt-in, low-rate, non-destructive, and compliant.
@@ -59,6 +59,7 @@ SwiftUI iOS ──────┘                                  │
                                                      ├── Provider registry
                                                      │    ├── Skiplagged MCP adapter
                                                      │    ├── swoop adapter
+                                                     │    ├── OctoTrip adapter
                                                      │    └── future adapters
                                                      ├── Canonical normalizer & matching
                                                      └── Pricing/verification/ranking
@@ -70,7 +71,7 @@ SwiftUI iOS ──────┘                                  │
 - Configurable provider registry with at least one **validated usable** source; a second source **only if validated and permitted**.
 - End-to-end tests using fake providers and sanitized contract fixtures; manual live canary evidence separate.
 - API OpenAPI contract, migrations, `.env.example`, setup commands, and reproducible UX screenshots.
-- A completion-report section in `WORK_LOG.md` with what works, what remains unverified, measured coverage, how to run, test results, and known risks.
+- A short current checkpoint and evidence pointer in `WORK_LOG.md`; completion details, validation and known risks belong in the corresponding `docs/log/` entry.
 
 **Definition of success:** a valid request produces an honest ranked set of fares (or an honest empty/partial state), with the exact coverage and price evidence behind each displayed result, and the same results are consumable from web and native iOS.
 
@@ -78,7 +79,8 @@ SwiftUI iOS ──────┘                                  │
 
 The owner accepted the integrated presentation refinement, now merged into main.
 [WORK_LOG.md](../WORK_LOG.md) owns the current status and next task; design-return
-findings and validation are archived in [log/p4.5.md](log/p4.5.md). Integrated synthetic screenshots remain in
+findings and validation are archived in [log/p4.5.md](log/p4.5.md).
+Integrated synthetic screenshots remain in
 [design/p45-qa](design/p45-qa/). Completed handoff prompts have been retired;
 the existing REST/React behavior and native SwiftUI requirement remain in force.
 
@@ -89,3 +91,8 @@ findings, and release summaries in [WORK_LOG.md](../WORK_LOG.md) (short, current
 state only) and append long detail to the matching file in [log/](log/). Do not
 create other report files. Static requirements, design prompts, integration guides,
 code, OpenAPI contracts, fixtures and screenshot artifacts may remain separate.
+
+Use the [evidence index](log/README.md) to find phase history. The P4.8
+[latest follow-up](log/p4.8-throughput-experiment.md#follow-up--requested-c31s-trials-and-swoop-retry-2026-11-11-jakarta)
+contains current experiment candidates; earlier interval-only recommendations
+are historical and do not change production scheduling.

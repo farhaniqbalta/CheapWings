@@ -19,7 +19,7 @@ P0 Provider gate ──┬──→ P1 Canonical domain + fake providers ──�
                                               P6 E2E acceptance + release
 ```
 
-Each phase must have: PR/commit, files changed, tests executed, screenshots if UI, recorded decisions, measured evidence, known blockers and checkbox status in `WORK_LOG.md`.
+Each phase needs a short current checkpoint (at most five lines) and evidence pointer in `WORK_LOG.md`. Record commits, changed files, exact validation, screenshots, decisions and blockers in the matching `docs/log/*.md` entry. The phase tracker in WORK_LOG.md is authoritative; unchecked design tasks below are not live status.
 
 ## P0 — Provider feasibility GO/NO-GO (do first)
 
@@ -108,8 +108,8 @@ Each phase must have: PR/commit, files changed, tests executed, screenshots if U
 - [ ] Re-run automated suite, one clean-room installation, migrations, restart and cancellation recovery.
 - [ ] Capture live low-volume provider canary results/date/permission/quote vs seller comparison; use no unsupported guarantees.
 - [ ] Validate default hidden-city exclusion, unknown baggage, partial sources, duplicate offers and source link behavior.
-- [ ] Deliver `README.md`, `.env.example`, `contracts/openapi.yaml`, screenshots and `WORK_LOG.md` containing provider evidence, test results and known risks.
-- [ ] Append a release-summary section to `WORK_LOG.md` with exact commands, what was validated, what was not validated, remaining work and GO/CONDITIONAL GO/NO-GO per provider.
+- [ ] Deliver `README.md`, `.env.example`, `contracts/openapi.yaml`, screenshots and a short `WORK_LOG.md` checkpoint linking the detailed evidence.
+- [ ] Record the release summary in `docs/log/` with exact commands, validation limits, remaining work and per-provider decisions; replace the current checkpoint and next task in WORK_LOG.md.
 
 **Gate:** user can run end-to-end from documented steps with fake provider even without external credentials, and with validated real provider(s) where permitted.
 
@@ -118,23 +118,23 @@ Each phase must have: PR/commit, files changed, tests executed, screenshots if U
 A lead worker may split work into these independently reviewable streams **after P0**:
 
 - **Backend/domain worker:** query expansion, Money, matching, ranker, tests; must not import external SDKs into domain.
-- **Provider worker:** SDK probe, adapters, fixtures, permission evidence in WORK_LOG.md; must not change canonical schema without an ADR.
+- **Provider worker:** SDK probe, adapters, fixtures, permission evidence in docs/log/ with a WORK_LOG.md pointer; must not change canonical schema without an ADR.
 - **Backend/API worker:** durable jobs, OpenAPI, persistence, restart; must follow domain types.
 - **Frontend worker:** React UI after v1 contract stabilizes; native iOS only after web/API parity.
 
 Do not concurrently edit the same contract/schema files without coordination. QA remains a responsibility of each implementation worker; no separate QA agent required.
 
-## Required task report in WORK_LOG.md at every checkpoint
+## Required checkpoint update
+
+Keep the current WORK_LOG.md update to at most five lines. Put expanded reports
+in the appropriate docs/log/ file and replace the current next task.
 
 ```text
-Phase:
-Files changed:
-Commands run / test results:
-Functional demo:
-Provider evidence / policy decision (if relevant):
-Unresolved failures / assumptions:
-Deviation from handoff (with justification):
-Next smallest task:
+Phase/status/decision:
+Changes:
+Validation and unresolved failures:
+Evidence: docs/log/<phase>.md
+Next task / required approval:
 ```
 
 ## Explicit stop / escalation rules

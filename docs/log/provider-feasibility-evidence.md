@@ -1,6 +1,6 @@
 # Provider feasibility evidence
 
-> Archived verbatim from WORK_LOG.md on 2026-11-10. Historical record; read only when a task needs this phase's detail. Current status lives in [WORK_LOG.md](../../WORK_LOG.md).
+> Historical WORK_LOG archive (2026-11-10). Evidence and decisions remain as recorded; navigation links and whitespace may be normalized. Current status and approvals: [WORK_LOG.md](../../WORK_LOG.md).
 
 ## Provider feasibility evidence
 
@@ -163,4 +163,3 @@ implementation, not just the raw SDK.
 ### Reporting consolidation (2026-11-09)
 - Owner explicitly required all reports to live in WORK_LOG.md. Merged the complete P0 provider evidence and P3 canary addendum here, removed the standalone report, and updated active specifications, bootstrap instructions, README links and the canary docstring. No provider calls or application behavior changes.
 - Updated P4.5 handoff instructions: the UI/UX agent must append its design-return findings here rather than create another report. Release and test summaries likewise belong here. Static UI/UX prompts/integration specifications remain separate assignment artifacts, as requested previously. Historical V4 reference left untouched.
-

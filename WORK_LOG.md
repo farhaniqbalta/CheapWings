@@ -748,3 +748,8 @@ Required synthetic regression cases for C2/C3: exact/key-version/market/currency
 - Publication changes documentation only; prior completed validation remains 126 backend / 4 unit / 65 browser checks, production build and migration schema checks passing. No extra provider traffic needed. Record PR link below once created.
 
 - Publication completed: pushed p4.7-implementation and opened PR #2 against main: https://github.com/farhaniqbalta/CheapWings/pull/2. No merge or auto-merge requested/performed. This link checkpoint is committed and pushed on the same PR branch.
+
+### Live owner search — cross-provider overlap confirmed (2026-11-10)
+- Read-only audit of newest job a4946bf3-cffc-4d96-a265-8c552c1c97c7, created 12:24:36.427 UTC / 19:24:36.427 Jakarta, all three sources selected. No searches triggered by this audit.
+- Actual first upstream attempt offsets from job creation: Skiplagged 0.161–7.677s, swoop 0.167–1.121s, OctoTrip 0.172–14.290s. All three spans overlap; their starts differ by only 11ms. First three repeat starts: Skiplagged 15.308/30.365/45.373s; swoop 15.312/30.368/45.376s; OctoTrip 15.316/30.372/45.380s. This confirms real cross-provider concurrency while retaining approximately 15s start-to-start pacing per provider; it does not authorize higher volume/concurrency.
+- Snapshot during audit: job running, 15 detailed items per source (45 total); successes Skiplagged 4, swoop 5, OctoTrip 4; Skiplagged and OctoTrip had one active request each. Observed attempts succeeded; completion is not yet claimed. Execution deadline is creation +1800s. Counts are a point-in-time observation and may advance immediately.

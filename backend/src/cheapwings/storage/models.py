@@ -20,6 +20,11 @@ class SearchJob(Base):
     completed_at: Mapped[int | None] = mapped_column(Integer)
     deadline_at: Mapped[int] = mapped_column(Integer)
     data_expires_at: Mapped[int | None] = mapped_column(Integer)
+    provider_ids: Mapped[list | None] = mapped_column(JSON)
+    cache_mode: Mapped[str] = mapped_column(
+        String, default="prefer_cache", server_default="prefer_cache"
+    )
+    upstream_work_reserved: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
     reprice_budget: Mapped[int] = mapped_column(Integer, default=0)
     reprice_providers: Mapped[list] = mapped_column(JSON, default=list)
     verification_planned: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -53,6 +58,13 @@ class WorkItem(Base):
     lease_token: Mapped[str | None] = mapped_column(String)
     last_error_code: Mapped[str | None] = mapped_column(String)
     last_error_detail: Mapped[str | None] = mapped_column(Text)
+    operation_id: Mapped[str | None] = mapped_column(
+        ForeignKey("provider_operations.id"), index=True
+    )
+    result_origin: Mapped[str] = mapped_column(String, default="live", server_default="live")
+    observation_retrieved_at: Mapped[int | None] = mapped_column(Integer)
+    reused_at: Mapped[int | None] = mapped_column(Integer)
+    cache_fresh_until: Mapped[int | None] = mapped_column(Integer)
     provider_complete: Mapped[bool | None] = mapped_column(Boolean)
     result_count: Mapped[int | None] = mapped_column(Integer)
     unpriced_candidate_count: Mapped[int] = mapped_column(Integer, default=0)
@@ -135,3 +147,59 @@ class ProviderState(Base):
     __tablename__ = "provider_state"
     provider_id: Mapped[str] = mapped_column(String, primary_key=True)
     next_request_at: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class ProviderOperation(Base):
+    """A durable fetch independent of any subscriber's cancellation state."""
+
+    __tablename__ = "provider_operations"
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    cache_key: Mapped[str] = mapped_column(Text, index=True)
+    provider_id: Mapped[str] = mapped_column(String, index=True)
+    query_json: Mapped[dict] = mapped_column(JSON)
+    origin: Mapped[str] = mapped_column(String)
+    destination: Mapped[str] = mapped_column(String)
+    departure_date: Mapped[str] = mapped_column(String)
+    status: Mapped[str] = mapped_column(String, index=True)
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[int] = mapped_column(Integer)
+    deadline_at: Mapped[int] = mapped_column(Integer)
+    hard_expires_at: Mapped[int] = mapped_column(Integer)
+    next_attempt_at: Mapped[int] = mapped_column(Integer, default=0)
+    leased_until: Mapped[int | None] = mapped_column(Integer)
+    lease_token: Mapped[str | None] = mapped_column(String)
+    primary_work_item_id: Mapped[str] = mapped_column(String)
+    error_code: Mapped[str | None] = mapped_column(String)
+    cache_ttl_seconds: Mapped[int] = mapped_column(Integer)
+
+    @property
+    def work_type(self):
+        return "detailed"
+
+    @property
+    def job_id(self):
+        return "shared_fetch"
+
+
+class OperationAttempt(Base):
+    __tablename__ = "operation_attempts"
+    __table_args__ = (UniqueConstraint("operation_id", "attempt"),)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    operation_id: Mapped[str] = mapped_column(ForeignKey("provider_operations.id"), index=True)
+    attempt: Mapped[int] = mapped_column(Integer)
+    started_at: Mapped[int] = mapped_column(Integer)
+    finished_at: Mapped[int | None] = mapped_column(Integer)
+    outcome: Mapped[str] = mapped_column(String, default="running")
+
+
+class ProviderResultCache(Base):
+    __tablename__ = "provider_result_cache"
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    cache_key: Mapped[str] = mapped_column(Text, index=True)
+    provider_id: Mapped[str] = mapped_column(String, index=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+    retrieved_at: Mapped[int] = mapped_column(Integer)
+    cached_at: Mapped[int] = mapped_column(Integer)
+    fresh_until: Mapped[int] = mapped_column(Integer, index=True)
+    hard_expires_at: Mapped[int] = mapped_column(Integer)
+    byte_size: Mapped[int] = mapped_column(Integer)

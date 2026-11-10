@@ -38,7 +38,13 @@ def main():
         try:
             require_current_schema(engine)
             runner = JobRunner(
-                Repository(engine),
+                Repository(
+                    engine,
+                    cache_enabled=settings.search_cache_enabled,
+                    cache_ttl_seconds=settings.search_cache_ttl_seconds,
+                    cache_max_entries=settings.search_cache_max_entries,
+                    cache_max_bytes=settings.search_cache_max_bytes,
+                ),
                 default_registry(settings),
                 timeout_seconds=settings.call_timeout_seconds,
                 lease_seconds=settings.lease_seconds,

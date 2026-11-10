@@ -289,6 +289,21 @@
       },
       "Capabilities": {
         "properties": {
+          "search_cache_enabled": {
+            "type": "boolean",
+            "title": "Search Cache Enabled",
+            "default": false
+          },
+          "search_cache_ttl_seconds": {
+            "type": "integer",
+            "title": "Search Cache Ttl Seconds",
+            "default": 1200
+          },
+          "max_hourly_requests": {
+            "type": "integer",
+            "title": "Max Hourly Requests",
+            "default": 100
+          },
           "providers": {
             "items": {
               "$ref": "#/components/schemas/ProviderCapability"
@@ -351,6 +366,57 @@
       },
       "Coverage": {
         "properties": {
+          "result_origin": {
+            "type": "string",
+            "enum": [
+              "live",
+              "cache",
+              "shared_inflight"
+            ],
+            "title": "Result Origin",
+            "default": "live"
+          },
+          "observation_retrieved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observation Retrieved At"
+          },
+          "reused_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reused At"
+          },
+          "cache_fresh_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Fresh Until"
+          },
+          "operation_attempts": {
+            "type": "integer",
+            "title": "Operation Attempts",
+            "default": 0
+          },
           "work_item_id": {
             "type": "string",
             "title": "Work Item Id"
@@ -569,6 +635,22 @@
       },
       "Job": {
         "properties": {
+          "provider_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Provider Ids"
+          },
+          "cache_mode": {
+            "type": "string",
+            "enum": [
+              "prefer_cache",
+              "refresh"
+            ],
+            "title": "Cache Mode",
+            "default": "prefer_cache"
+          },
           "job_id": {
             "type": "string",
             "title": "Job Id"
@@ -1007,6 +1089,28 @@
       },
       "PublicOffer": {
         "properties": {
+          "result_origin": {
+            "type": "string",
+            "enum": [
+              "live",
+              "cache",
+              "shared_inflight"
+            ],
+            "title": "Result Origin",
+            "default": "live"
+          },
+          "reused_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reused At"
+          },
           "quote_id": {
             "type": "string",
             "title": "Quote Id"
@@ -1300,6 +1404,31 @@
       },
       "SearchRequest": {
         "properties": {
+          "provider_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 10,
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Ids"
+          },
+          "cache_mode": {
+            "type": "string",
+            "enum": [
+              "prefer_cache",
+              "refresh"
+            ],
+            "title": "Cache Mode",
+            "default": "prefer_cache"
+          },
           "trip_type": {
             "type": "string",
             "const": "one_way",

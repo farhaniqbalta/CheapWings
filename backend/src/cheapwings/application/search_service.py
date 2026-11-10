@@ -23,7 +23,14 @@ from cheapwings.domain.segments import FlightSegment
 from cheapwings.engine.expansion import expand_routes_and_dates
 from cheapwings.engine.matching import ItineraryGroup
 from cheapwings.engine.ranking import best_checked_deal, lowest_advertised
-from cheapwings.storage.models import FareQuote, ItineraryRow, QuoteRevision, SegmentRow
+from cheapwings.storage.models import (
+    FareQuote,
+    ItineraryRow,
+    QuoteRevision,
+    SegmentRow,
+    ProviderOperation,
+    WorkItem,
+)
 from cheapwings.storage.repository import SUCCESS, now_ms
 from cheapwings.storage.verification import ResultsExpired
 
@@ -72,7 +79,15 @@ def status_projection(repo, job_id):
         warnings.append(
             "Some source candidates had no price; see unpriced_candidate_count in coverage."
         )
+    with Session(repo.engine) as session:
+        operation_attempts = {
+            i.operation_id: session.get(ProviderOperation, i.operation_id).attempts
+            for i in items
+            if i.operation_id
+        }
     return dto.Job(
+        provider_ids=job.provider_ids or [],
+        cache_mode=job.cache_mode,
         exact_reprice_attempted=sum(i.attempts for i in reprices),
         exact_reprice_succeeded=_exact_reprice_count(repo, job_id),
         data_expires_at=instant(job.data_expires_at),
@@ -98,6 +113,11 @@ def status_projection(repo, job_id):
         provider_status=providers,
         coverage=[
             dto.Coverage(
+                result_origin=i.result_origin,
+                observation_retrieved_at=instant(i.observation_retrieved_at),
+                reused_at=instant(i.reused_at),
+                cache_fresh_until=instant(i.cache_fresh_until),
+                operation_attempts=operation_attempts.get(i.operation_id, 0),
                 work_item_id=i.id,
                 work_type=i.work_type,
                 unpriced_candidate_count=i.unpriced_candidate_count,
@@ -133,8 +153,10 @@ def _exact_reprice_count(repo, job_id):
         )
 
 
-def public_offer(offer, row_id):
+def public_offer(offer, row_id, work=None):
     evidence_fields = {
+        "result_origin",
+        "reused_at",
         "fee_completeness",
         "source_checked_at",
         "point_of_sale_country",
@@ -175,6 +197,8 @@ def public_offer(offer, row_id):
         data["link"], data["link_scope"] = None, LinkScope.UNAVAILABLE
     return dto.PublicOffer(
         **data,
+        result_origin=work.result_origin if work else "live",
+        reused_at=instant(work.reused_at) if work else None,
         quote_id=str(row_id),
         amount_original=str(offer.amount_original.amount),
         currency_original=offer.amount_original.currency,
@@ -215,7 +239,7 @@ def results_projection(repo, job_id, sort, cursor=None, limit=50):
             .where(FareQuote.job_id == job_id, FareQuote.id <= cutoff)
             .order_by(FareQuote.id)
         ).all()
-        groups, row_ids = {}, {}
+        groups, row_ids, work_rows = {}, {}, {}
         for row in rows:
             if row.itinerary_id not in groups:
                 itin = s.get(ItineraryRow, row.itinerary_id)
@@ -259,6 +283,9 @@ def results_projection(repo, job_id, sort, cursor=None, limit=50):
             offer = replace(offer, quote_id=str(row.id))
             groups[row.itinerary_id].offers.append(offer)
             row_ids[offer.quote_id] = row.id
+            work_rows[offer.quote_id] = (
+                s.get(WorkItem, row.work_item_id) if row.work_item_id else None
+            )
         ranker = best_checked_deal if sort == "best_checked" else lowest_advertised
         # No cross-currency sorting without explicit FX; no stale/invalid or policy-ineligible fare.
         rank_groups = [
@@ -318,7 +345,10 @@ def results_projection(repo, job_id, sort, cursor=None, limit=50):
                         dto.Segment(**TypeAdapter(FlightSegment).dump_python(seg))
                         for seg in itin.segments
                     ],
-                    offers=[public_offer(o, row_ids[o.quote_id]) for o in groups[key].offers],
+                    offers=[
+                        public_offer(o, row_ids[o.quote_id], work_rows[o.quote_id])
+                        for o in groups[key].offers
+                    ],
                     ranked_quote_id=candidate.offer.quote_id,
                 )
             )

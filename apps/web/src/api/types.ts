@@ -43,6 +43,8 @@ export const SUPPORTED_CURRENCIES = ["IDR", "USD", "AUD", "JPY"] as const;
 export type Currency = (typeof SUPPORTED_CURRENCIES)[number];
 
 export interface SearchRequest {
+  provider_ids?: string[] | null;
+  cache_mode?: "prefer_cache" | "refresh";
   trip_type?: "one_way";
   origins: string[];
   destinations: string[];
@@ -77,6 +79,11 @@ export interface ProviderProgress {
 }
 
 export interface Coverage {
+  result_origin?: "live" | "cache" | "shared_inflight";
+  observation_retrieved_at?: string | null;
+  reused_at?: string | null;
+  cache_fresh_until?: string | null;
+  operation_attempts?: number;
   work_item_id: string;
   work_type: string;
   unpriced_candidate_count: number;
@@ -95,6 +102,8 @@ export interface Coverage {
 }
 
 export interface Job {
+  provider_ids?: string[];
+  cache_mode?: "prefer_cache" | "refresh";
   job_id: string;
   query: SearchRequest;
   status: JobStatus;
@@ -133,6 +142,8 @@ export interface Segment {
 }
 
 export interface PublicOffer {
+  result_origin?: "live" | "cache" | "shared_inflight";
+  reused_at?: string | null;
   quote_id: string;
   provider_id: string;
   seller: string | null;
@@ -213,6 +224,9 @@ export interface ProviderCapability {
 }
 
 export interface Capabilities {
+  search_cache_enabled?: boolean;
+  search_cache_ttl_seconds?: number;
+  max_hourly_requests?: number;
   providers: ProviderCapability[];
   supported_currencies: string[];
   max_route_date_combinations: number;

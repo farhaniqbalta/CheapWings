@@ -68,6 +68,9 @@ def local_instant(date_parts, time_parts, code, resolver):
 
 
 class SwoopProvider:
+    cache_dependencies = ('swoop-flights', 'airportsdata')
+    cache_version = "2"
+    cache_options = {'cabin': 'economy'}
     provider_id = "swoop"
     capabilities = ProviderCapabilities(True, False, True, True, False, False)
 

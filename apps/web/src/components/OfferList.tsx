@@ -36,6 +36,10 @@ export function OfferList({ offers, rankedQuoteId }: { offers: PublicOffer[]; ra
               <div className="offer-identification">
                 <strong>{offer.seller ?? "Seller not identified"}</strong>
                 <span className="offer-provider">via {offer.provider_id}</span>
+                {offer.result_origin === "cache" && <span className="offer-provider">
+                  Observed {new Date(offer.retrieved_at).toLocaleString()} · Cached observation
+                </span>}
+                {offer.result_origin === "shared_inflight" && <span className="offer-provider">Shared source observation</span>}
                 {ranked && <span className="ranked-indicator">Ranked quote</span>}
               </div>
               <div className="offer-amount">

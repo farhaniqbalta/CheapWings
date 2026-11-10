@@ -88,6 +88,11 @@ export function SearchProgress({
         </div>
       </div>
 
+      {job.coverage.some(item => item.result_origin === "cache" || item.result_origin === "shared_inflight") && (
+        <p className="inventory-note">
+          Provider work: {job.coverage.filter(item => item.work_type === "detailed" && item.status.startsWith("succeeded") && item.result_origin === "cache").length} cached · {job.coverage.filter(item => item.work_type === "detailed" && item.status.startsWith("succeeded") && item.result_origin === "shared_inflight").length} shared · {job.coverage.filter(item => item.work_type === "detailed" && item.status.startsWith("succeeded") && (!item.result_origin || item.result_origin === "live")).length} newly searched. Original observation times are retained.
+        </p>
+      )}
       {(job.failed_provider_work_items > 0 || unpriced > 0) && (
         <p className="coverage-caution">{job.failed_provider_work_items} source work items failed · {unpriced} candidates had no price</p>
       )}

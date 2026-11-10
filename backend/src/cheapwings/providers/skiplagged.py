@@ -60,6 +60,9 @@ async def mcp_search(arguments):
 
 
 class SkiplaggedProvider:
+    cache_dependencies = ('mcp',)
+    cache_version = "2"
+    cache_options = {'includeHiddenCity': False, 'includeVirtualInterlining': False}
     provider_id = "skiplagged"
     # Calendar tools exist, but no implemented/tested calendar method is advertised.
     capabilities = ProviderCapabilities(True, False, False, True, True, False)

@@ -29,6 +29,8 @@ class Passengers(DTO):
 
 
 class SearchRequest(DTO):
+    provider_ids: list[str] | None = Field(default=None, min_length=1, max_length=10)
+    cache_mode: Literal["prefer_cache", "refresh"] = "prefer_cache"
     trip_type: Literal["one_way"] = "one_way"
     origins: list[str] = Field(min_length=1, max_length=120)
     destinations: list[str] = Field(min_length=1, max_length=120)
@@ -46,7 +48,7 @@ class SearchRequest(DTO):
     def to_domain(self, cap):
         if self.departure_date_from < date.today():
             raise ValueError("Departure window has expired; choose today or a future date")
-        data = self.model_dump(exclude={"passengers", "max_stops"})
+        data = self.model_dump(exclude={"passengers", "max_stops", "provider_ids", "cache_mode"})
         return SearchQuery(
             **data,
             adults=self.passengers.adults,
@@ -82,6 +84,9 @@ class ProviderCapability(DTO):
 
 
 class Capabilities(DTO):
+    search_cache_enabled: bool = False
+    search_cache_ttl_seconds: int = 1200
+    max_hourly_requests: int = 100
     providers: list[ProviderCapability]
     supported_currencies: list[str]
     max_route_date_combinations: int
@@ -97,6 +102,11 @@ class Health(DTO):
 
 
 class Coverage(DTO):
+    result_origin: Literal["live", "cache", "shared_inflight"] = "live"
+    observation_retrieved_at: datetime | None = None
+    reused_at: datetime | None = None
+    cache_fresh_until: datetime | None = None
+    operation_attempts: int = 0
     work_item_id: str
     work_type: str = "detailed"
     unpriced_candidate_count: int = 0
@@ -124,6 +134,8 @@ class ProviderProgress(DTO):
 
 
 class Job(DTO):
+    provider_ids: list[str] = Field(default_factory=list)
+    cache_mode: Literal["prefer_cache", "refresh"] = "prefer_cache"
     job_id: str
     query: SearchRequest
     status: JobStatus
@@ -168,6 +180,8 @@ class AirportTransfer(DTO):
 
 
 class PublicOffer(DTO):
+    result_origin: Literal["live", "cache", "shared_inflight"] = "live"
+    reused_at: datetime | None = None
     quote_id: str
     provider_id: str
     seller: str | None

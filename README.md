@@ -206,3 +206,38 @@ The owner accepted the integrated web design, which is merged into main.
 validation and current next task. Integrated synthetic screenshots remain in
 [docs/design/p45-qa](docs/design/p45-qa/); completed handoff prompts are retired.
 Native SwiftUI P5 remains a separate requirement and needs full Xcode.
+
+## Observation cache and optional OctoTrip source
+
+Set `SEARCH_CACHE_ENABLED=true` in the API and worker environment to reuse
+complete source observations for repeated or overlapping route/date searches.
+Default freshness is 1,200 seconds, bounded by original retention and each
+provider's cache policy. Incomplete, unknown-completeness and unpriced responses
+are not reused. `SEARCH_CACHE_MAX_ENTRIES` and `SEARCH_CACHE_MAX_BYTES` bound
+storage. Apply Alembic migrations before restarting both processes.
+
+Cache hits preserve original prices, FX evidence, observation times and expiry;
+they do not become verified prices. Cached copies omit private repricing handles.
+Matching in-flight requests share a durable fetch, with independent job IDs and
+cancellation. `MAX_HOURLY_SEARCH_REQUESTS` and `MAX_ACTIVE_SEARCH_REQUESTS` also
+bound cached/coalesced requests; existing provider-work job limits still apply to
+new work. Force-refresh requests respect those limits and source pacing.
+
+The backend accepts optional `provider_ids` (distinct enabled source IDs) and
+`cache_mode` (`prefer_cache` or `refresh`) on POST `/api/v1/searches`. Omitting
+provider IDs uses the current configured sources; the resolved set is persisted.
+Source selection remains backend-only. The web shows cache/shared provenance and
+provides **Run fresh search**, which creates a new job with the same selections.
+
+OctoTrip is available for owner-approved personal use by adding `octotrip` to
+`ENABLED_PROVIDERS`, for example `skiplagged,swoop,octotrip`. Install backend live
+extras for the airport timezone reference. It provides an indicative shortlist
+with source-supplied sellers and baggage statements; hidden-city/self-transfer,
+fare products and mandatory costs remain unknown. Nearby-airport candidates are
+excluded from explicit-airport searches. Endpoint times use the validated airport
+reference; complete operating-carrier/segment identity is not inferred.
+OctoTrip caching and exact repricing remain disabled. Its conservative 900-second
+result lifecycle also caps a mixed-source job's expiry/budget; select the existing
+two sources through the API when a longer matrix needs their usual lifecycle.
+Software defaults remain fake-only; source/accuracy evidence and owner approvals
+are recorded solely in WORK_LOG.md.

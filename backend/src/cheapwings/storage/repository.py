@@ -12,6 +12,7 @@ from cheapwings.engine.expansion import expand_routes_and_dates
 from cheapwings.storage.db import write_session
 from cheapwings.storage.models import SearchJob, WorkItem
 from cheapwings.storage.verification import VerificationRepository
+from cheapwings.storage.cache import CacheRepository
 
 ACTIVE = ("pending", "retry_wait", "running")
 SUCCESS = ("succeeded_results", "succeeded_empty")
@@ -26,9 +27,21 @@ class CapacityExceeded(Exception):
     pass
 
 
-class Repository(VerificationRepository):
-    def __init__(self, engine):
+class Repository(CacheRepository, VerificationRepository):
+    def __init__(
+        self,
+        engine,
+        *,
+        cache_enabled=False,
+        cache_ttl_seconds=1200,
+        cache_max_entries=2000,
+        cache_max_bytes=20_000_000,
+    ):
         self.engine = engine
+        self.cache_enabled = cache_enabled
+        self.cache_ttl_seconds = cache_ttl_seconds
+        self.cache_max_entries = cache_max_entries
+        self.cache_max_bytes = cache_max_bytes
 
     def create_job(
         self,
@@ -40,17 +53,22 @@ class Repository(VerificationRepository):
         budget_seconds=1800,
         reprice_budget=0,
         retention_seconds=None,
+        cache_mode="prefer_cache",
+        max_requests=100,
+        max_active_requests=20,
     ):
         now = now_ms()
         with write_session(self.engine) as s:
             jobs = s.scalars(select(SearchJob)).all()
             if (
-                sum(j.status in JOB_ACTIVE for j in jobs) >= max_active
-                or sum(j.created_at > now - 3_600_000 for j in jobs) >= max_hourly
+                sum(j.created_at > now - 3_600_000 for j in jobs) >= max_requests
+                or sum(j.status in JOB_ACTIVE for j in jobs) >= max_active_requests
             ):
-                raise CapacityExceeded("Search creation budget exceeded; wait for capacity")
+                raise CapacityExceeded("Search request limit exceeded; wait for capacity")
             job = SearchJob(
                 id=str(uuid4()),
+                provider_ids=[r.provider.provider_id for r in registry if not r.unavailable_reason],
+                cache_mode=cache_mode,
                 query_json={
                     **query.model_dump(mode="json"),
                     "max_combinations": query.max_combinations,
@@ -86,6 +104,25 @@ class Repository(VerificationRepository):
                         )
                     )
             s.flush()
+            reserved = False
+            for registration in registry:
+                created = self.prepare_cached_work(s, job, registration, now)
+                pending = s.scalars(
+                    select(WorkItem).where(
+                        WorkItem.job_id == job.id,
+                        WorkItem.provider_id == registration.provider.provider_id,
+                        WorkItem.status.in_(ACTIVE),
+                        WorkItem.operation_id.is_(None),
+                    )
+                ).all()
+                reserved = reserved or created or bool(pending)
+            job.upstream_work_reserved = reserved
+            if reserved and (
+                sum(j.status in JOB_ACTIVE and j.upstream_work_reserved for j in jobs) >= max_active
+                or sum(j.created_at > now - 3_600_000 and j.upstream_work_reserved for j in jobs)
+                >= max_hourly
+            ):
+                raise CapacityExceeded("Search creation budget exceeded; wait for capacity")
             self.finalize(s, job, now)
             return job
 
@@ -150,7 +187,7 @@ class Repository(VerificationRepository):
             for item in s.scalars(
                 select(WorkItem).where(WorkItem.job_id == job_id, WorkItem.status.in_(ACTIVE))
             ):
-                if item.status == "running":
+                if item.status == "running" and item.operation_id is None:
                     attempt = s.scalar(
                         select(WorkAttempt).where(
                             WorkAttempt.work_item_id == item.id,
@@ -170,16 +207,21 @@ class Repository(VerificationRepository):
         from cheapwings.storage.models import WorkAttempt
 
         now = now if now is not None else now_ms()
+        self.sweep_operations(now=now, max_attempts=max_attempts)
         with write_session(self.engine) as s:
             for job in s.scalars(select(SearchJob).where(SearchJob.status.in_(JOB_ACTIVE))):
                 for item in s.scalars(
                     select(WorkItem).where(WorkItem.job_id == job.id, WorkItem.status.in_(ACTIVE))
                 ):
-                    expired = item.status == "running" and item.leased_until <= now
+                    expired = (
+                        item.operation_id is None
+                        and item.status == "running"
+                        and item.leased_until <= now
+                    )
                     budget = job.deadline_at <= now
                     if not expired and not budget:
                         continue
-                    if item.status == "running":
+                    if item.status == "running" and item.operation_id is None:
                         attempt = s.scalar(
                             select(WorkAttempt).where(
                                 WorkAttempt.work_item_id == item.id,
@@ -202,7 +244,7 @@ class Repository(VerificationRepository):
                 self.finalize(s, job, now)
 
     def claim(self, registration, *, lease_seconds=40, now=None):
-        from cheapwings.storage.models import ProviderState, WorkAttempt
+        from cheapwings.storage.models import ProviderState, WorkAttempt, ProviderOperation
 
         now = now if now is not None else now_ms()
         provider_id = registration.provider.provider_id
@@ -220,13 +262,25 @@ class Repository(VerificationRepository):
                     WorkItem.provider_id == provider_id, WorkItem.status == "running"
                 )
             ).all()
-            if len(running) >= registration.concurrency:
+            running = [i for i in running if i.operation_id is None]
+            operations = s.scalars(
+                select(ProviderOperation).where(
+                    ProviderOperation.provider_id == provider_id,
+                    ProviderOperation.status == "running",
+                )
+            ).all()
+            if len(running) + len(operations) >= registration.concurrency:
                 return None
+            claimed_operation = self.claim_operation(s, registration, now, lease_seconds)
+            if claimed_operation:
+                state.next_request_at = now + int(registration.minimum_interval_seconds * 1000)
+                return claimed_operation
             item = s.scalar(
                 select(WorkItem)
                 .join(SearchJob)
                 .where(
                     WorkItem.provider_id == provider_id,
+                    WorkItem.operation_id.is_(None),
                     WorkItem.status.in_(("pending", "retry_wait")),
                     WorkItem.next_attempt_at <= now,
                     SearchJob.status.in_(JOB_ACTIVE),
@@ -264,6 +318,16 @@ class Repository(VerificationRepository):
         from cheapwings.storage.models import ProviderState, WorkAttempt
 
         now = now if now is not None else now_ms()
+        if item_id.startswith("fetch-"):
+            return self.finish_operation(
+                item_id,
+                token,
+                result,
+                error_code=error_code,
+                retry_after_seconds=retry_after_seconds,
+                max_attempts=max_attempts,
+                now=now,
+            )
         with write_session(self.engine) as s:
             item = s.get(WorkItem, item_id)
             job = s.get(SearchJob, item.job_id)
@@ -480,12 +544,13 @@ class Repository(VerificationRepository):
 
         reasons = {r.provider.provider_id: r.unavailable_reason for r in registry}
         with write_session(self.engine) as s:
+            self.reconcile_operations(s, registry, now_ms())
             jobs = set()
             for item in s.scalars(select(WorkItem).where(WorkItem.status.in_(ACTIVE))):
                 reason = reasons.get(item.provider_id, "provider removed from worker registry")
                 if not reason:
                     continue
-                if item.status == "running":
+                if item.status == "running" and item.operation_id is None:
                     attempt = s.scalar(
                         select(WorkAttempt).where(
                             WorkAttempt.work_item_id == item.id,

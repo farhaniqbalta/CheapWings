@@ -32,7 +32,13 @@ def create_app(settings=None, registry=None, engine=None):
         raise ValueError("Duplicate provider IDs")
     owns_engine = engine is None
     engine = engine if engine is not None else database(settings.database_url)
-    repo = Repository(engine)
+    repo = Repository(
+        engine,
+        cache_enabled=settings.search_cache_enabled,
+        cache_ttl_seconds=settings.search_cache_ttl_seconds,
+        cache_max_entries=settings.search_cache_max_entries,
+        cache_max_bytes=settings.search_cache_max_bytes,
+    )
 
     @asynccontextmanager
     async def lifespan(app):
@@ -83,7 +89,7 @@ def create_app(settings=None, registry=None, engine=None):
 
     @app.exception_handler(ResultsExpired)
     async def results_expired(request, exc):
-        return JSONResponse({'detail': str(exc)}, status_code=410)
+        return JSONResponse({"detail": str(exc)}, status_code=410)
 
     @app.exception_handler(KeyError)
     async def not_found(request, exc):
@@ -102,13 +108,17 @@ def create_app(settings=None, registry=None, engine=None):
     @secured.get("/capabilities", response_model=dto.Capabilities)
     def capabilities():
         return dto.Capabilities(
+            search_cache_enabled=settings.search_cache_enabled,
+            search_cache_ttl_seconds=settings.search_cache_ttl_seconds,
+            max_hourly_requests=settings.max_hourly_requests,
             providers=[
                 dto.ProviderCapability(
                     provider_id=r.provider.provider_id,
                     enabled=r.unavailable_reason is None,
                     disabled_reason=r.unavailable_reason,
                     **asdict(r.provider.capabilities),
-                    permitted_to_aggregate=r.permitted_to_aggregate, can_cache=r.can_cache,
+                    permitted_to_aggregate=r.permitted_to_aggregate,
+                    can_cache=r.can_cache,
                     attribution_required=r.attribution_required,
                     retention_seconds=r.retention_seconds,
                     usage_policy_reviewed_on=r.usage_policy_reviewed_on,
@@ -136,17 +146,35 @@ def create_app(settings=None, registry=None, engine=None):
             query = payload.to_domain(settings.max_combinations)
         except (ValueError, ValidationError) as exc:
             raise HTTPException(422, str(exc)) from None
+        selected = registry
+        if payload.provider_ids is not None:
+            ids = payload.provider_ids
+            available = {r.provider.provider_id for r in registry if r.unavailable_reason is None}
+            if len(set(ids)) != len(ids) or not set(ids) <= available:
+                raise HTTPException(422, "Choose distinct enabled and approved provider IDs")
+            selected = [r for r in registry if r.provider.provider_id in ids]
+        retention = min(
+            (
+                r.retention_seconds
+                for r in selected
+                if r.live_data and not r.unavailable_reason and r.retention_seconds
+            ),
+            default=settings.live_retention_seconds,
+        )
         try:
             job = repo.create_job(
                 query,
-                registry,
+                selected,
                 max_active=settings.max_active_jobs,
                 max_hourly=settings.max_hourly_jobs,
-                budget_seconds=min(settings.job_budget_seconds, settings.live_retention_seconds)
-                               if any(r.live_data for r in registry) else settings.job_budget_seconds,
+                budget_seconds=min(settings.job_budget_seconds, retention)
+                if any(r.live_data for r in registry)
+                else settings.job_budget_seconds,
+                cache_mode=payload.cache_mode,
+                max_requests=settings.max_hourly_requests,
+                max_active_requests=settings.max_active_requests,
                 reprice_budget=settings.reprice_budget,
-                retention_seconds=settings.live_retention_seconds if any(r.live_data for r in registry)
-                                  else None,
+                retention_seconds=retention if any(r.live_data for r in registry) else None,
             )
         except CapacityExceeded as exc:
             raise HTTPException(429, str(exc)) from None
@@ -158,7 +186,7 @@ def create_app(settings=None, registry=None, engine=None):
             created_at=instant(job.created_at),
             total_route_date_combinations=len(expand_routes_and_dates(query)),
             enabled_detailed_providers=[
-                r.provider.provider_id for r in registry if r.unavailable_reason is None
+                r.provider.provider_id for r in selected if r.unavailable_reason is None
             ],
             job_status_url=url,
         )

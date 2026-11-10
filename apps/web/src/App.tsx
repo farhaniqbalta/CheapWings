@@ -106,6 +106,12 @@ export default function App() {
             &larr; New search
           </button>
 
+          {job && capabilities?.search_cache_enabled && (
+            <button type="button" disabled={submitting} onClick={() => handleSubmit({
+              ...job.query, ...(job.provider_ids?.length ? { provider_ids: job.provider_ids } : {}), cache_mode: "refresh",
+            })}>Run fresh search</button>
+          )}
+          {createError && jobId && <p role="alert">{createError.message}</p>}
           <JobErrorPanel job={job} transportError={cancelError ?? pollError} />
           {(pollError || cancelError) && <button type="button" onClick={() => { clearCancelError(); retry(); }}>Retry search status</button>}
           {job && (

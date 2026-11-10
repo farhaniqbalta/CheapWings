@@ -37,18 +37,22 @@ const browser = await chromium.launch();
 let scenarios = 0;
 try {
  for (const width of [375,768,1440]) {
-  for (const scene of ['search','partial','results','cancelled-empty','empty-success','queued','verifying','polling','airport-change','failed','expired','rate-limit','offline']) {
+  for (const scene of ['search','partial','results','cancelled-empty','empty-success','queued','verifying','polling','airport-change','cached','failed','expired','rate-limit','offline']) {
    const context=await browser.newContext({viewport:{width,height:1000}});
    const page=await context.newPage(); const errors=[];
    page.on('pageerror',e=>errors.push(e.message));
-   let polls=0;
+   let polls=0; const submissions=[];
    await page.route('**/*',async route=> {
     const req=route.request(),url=new URL(req.url());
     if(url.hostname==='127.0.0.1') {
      const send=(json,status=200)=>route.fulfill({json,status,headers:{'Access-Control-Allow-Origin':'*',
       'Access-Control-Allow-Headers':'content-type,authorization','Access-Control-Allow-Methods':'GET,POST,OPTIONS'}});
      if(req.method()==='OPTIONS')return send({});
-     if(url.pathname.endsWith('/capabilities'))return send({synthetic_mode:true,supported_currencies:['IDR'],max_route_date_combinations:120});
+     if(url.pathname.endsWith('/capabilities'))return send({search_cache_enabled:scene==='cached',synthetic_mode:true,supported_currencies:['IDR'],max_route_date_combinations:120});
+     if(req.method()==='POST' && url.pathname.endsWith('/searches')) {
+      submissions.push(req.postDataJSON());
+      return send({job_id:'fresh-test',status:'queued',job_status_url:'/api/v1/searches/fresh-test'},202);
+     }
      if(scene==='offline')return route.abort('failed');
      if(scene==='rate-limit')return send({detail:'SYNTHETIC quota exceeded'},429);
      if(url.pathname.endsWith('/results')) {
@@ -58,7 +62,7 @@ try {
         offers:itinerary.offers.map(offer=>({...offer,comparison_status:'extra_cost_unknown'}))};
       const items=['failed','queued','empty-success'].includes(scene)||
         (scene==='airport-change'&&url.searchParams.get('sort')==='best_checked')||(scene==='cancelled-empty'&&url.searchParams.get('sort')==='best_checked')?[]:[scene==='airport-change'?airportChanged:itinerary];
-      return send({job_id:'p45-test',sort:url.searchParams.get('sort'),status:'completed',as_of:timestamp,next_cursor:null,itineraries:items,warnings:['SYNTHETIC quotes only.']});
+      return send({job_id:'p45-test',sort:url.searchParams.get('sort'),status:'completed',as_of:timestamp,next_cursor:null,itineraries:scene==='cached'?items.map(item=>({...item,offers:item.offers.map(offer=>({...offer,result_origin:'cache',reused_at:timestamp}))})):items,warnings:['SYNTHETIC quotes only.']});
      }
      const status=scene==='partial'?'partial':scene==='cancelled-empty'?'cancelled':scene==='failed'?'failed'
        :scene==='queued'?'queued':['verifying','polling'].includes(scene)?'running':'completed';
@@ -66,13 +70,13 @@ try {
      const noCoverage=['failed','queued'].includes(scene);
      const succeeded=noCoverage?0:partial?4:6,failed=scene==='failed'?6:partial?1:0;
      polls++;
-     return send({...baseJob,status,phase:scene==='verifying'?'verifying':status==='running'||status==='queued'?'searching':'done',
+     return send({...baseJob,provider_ids:['fixture'],status,phase:scene==='verifying'?'verifying':status==='running'||status==='queued'?'searching':'done',
        updated_at:scene==='polling'?`2027-01-10T12:00:${String(polls).padStart(2,'0')}Z`:timestamp,
        covered_route_date_combinations:noCoverage?0:partial?2:3,
        succeeded_provider_work_items:succeeded,failed_provider_work_items:failed,
        succeeded_empty:scene==='empty-success'?6:noCoverage?0:1,cancelled_provider_work_items:partial?1:0,
        provider_status:[{provider_id:'fixture',succeeded,failed,cancelled:partial?1:0,skipped_unsupported:0,disabled_reason:null}],
-       coverage:[{work_type:'detailed',provider_id:'fixture',unpriced_candidate_count:noCoverage?0:2,error_code:failed?'schema_changed':null}],
+       coverage:[{status:'succeeded_results',result_origin:scene==='cached'?'cache':'live',work_type:'detailed',provider_id:'fixture',unpriced_candidate_count:noCoverage?0:2,error_code:failed?'schema_changed':null}],
        warnings:partial?baseJob.warnings:[]});
     }
     const path=decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname);
@@ -87,6 +91,15 @@ try {
      await page.getByRole('button',{name:'Find cheapest flights',exact:true}).click();
      await page.getByText('Add at least one origin and one destination airport.',{exact:true}).waitFor();
     }
+   } else if(scene==='cached') {
+    await page.getByText(/Cached observation/).first().waitFor();
+    await page.getByText(/Provider work: 1 cached/).waitFor();
+    assert.equal(await page.getByRole('group',{name:'Sources'}).count(),0);
+    await page.getByRole('button',{name:'Run fresh search',exact:true}).click();
+    await page.waitForURL('**/?job=fresh-test');
+    assert.equal(submissions.length,1);
+    assert.equal(submissions[0].cache_mode,'refresh');
+    assert.deepEqual(submissions[0].provider_ids,['fixture']);
    } else if(scene==='airport-change') {
     await page.getByRole('button',{name:'Lowest advertised',exact:true}).click();
     await page.getByText('Airport change required:',{exact:true}).waitFor();

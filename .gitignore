@@ -21,6 +21,3 @@ dist/
 /data/
 *.db-wal
 *.db-shm
-
-# Owner-supplied raw design delivery; canonical reports live in WORK_LOG.md.
-/docs/handoff/

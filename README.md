@@ -194,15 +194,15 @@ sandbox restrictions can still prevent starting servers or browsers.
 Web validation (from `apps/web`): `npm test` and `npm run build`. Browser
 regressions: `npm run test:browser` after Chromium is installed with
 `npx playwright install chromium`. This suite uses synthetic intercepted responses
-and makes no provider calls. The four core scenarios and 36 P4.5 state/viewport cases passed during integration; restricted sessions may require permission to start Chromium.
+and makes no provider calls. The four core scenarios and 39 state/viewport cases passed after the carrier/airport-change fix; restricted sessions may require permission to start Chromium.
 
 Full Xcode is still required for P5; command-line tools alone cannot build SwiftUI.
 See [the phase checkpoints](docs/06_IMPLEMENTATION_CHECKPOINTS.md) for remaining work.
 
-## P4.5 UI/UX handoff
+## P4.5 web refinement
 
-Give the design agent [the copy-ready prompt](docs/P4_5_UI_UX_AGENT_PROMPT.md).
-[The integration contract](docs/P4_5_UI_UX_INTEGRATION.md) defines existing file
-boundaries, preserved behavior, validation and the return artifact. The designer
-returns a focused React/CSS branch or patch for later integration; WORK_LOG.md
-continues to own phase status. Native SwiftUI P5 remains a separate requirement.
+The owner accepted the integrated web design, which is merged into main.
+[WORK_LOG.md](WORK_LOG.md) records the design decisions, component map,
+validation and current next task. Integrated synthetic screenshots remain in
+[docs/design/p45-qa](docs/design/p45-qa/); completed handoff prompts are retired.
+Native SwiftUI P5 remains a separate requirement and needs full Xcode.

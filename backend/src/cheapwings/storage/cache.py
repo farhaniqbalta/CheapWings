@@ -37,7 +37,7 @@ def cache_key(job, item, registration):
     # Full canonical key is retained, not a collision-prone truncated digest.
     return json.dumps(
         {
-            "version": 1,
+            "version": 2,
             "provider": item.provider_id,
             "adapter": f"{type(provider).__module__}.{type(provider).__qualname__}",
             "adapter_version": getattr(provider, "cache_version", "1"),
@@ -47,7 +47,6 @@ def cache_key(job, item, registration):
             "policy": registration.usage_policy_reviewed_on,
             "retention": registration.retention_seconds,
             "scope": "personal",
-            "sources": sorted(job.provider_ids or []),
             "origin": item.origin,
             "destination": item.destination,
             "date": item.departure_date,

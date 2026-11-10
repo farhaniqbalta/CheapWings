@@ -269,3 +269,58 @@ async def test_rate_limit_exception_preserves_retry_after(engine, query):
     assert item.next_attempt_at >= start + 90_000
     assert repo.claim(reg, now=start + 89_999) is None
     await runner.close()
+
+
+async def test_three_provider_requests_overlap_without_extra_task_pools(engine, query):
+    """A barrier proves overlap independently of machine scheduling speed."""
+    from time import monotonic
+
+    ready = asyncio.Event()
+    release = asyncio.Event()
+    starts, ends = {}, {}
+
+    class Controlled(FakeProvider):
+        async def search(self, request):
+            starts[self.provider_id] = monotonic()
+            if len(starts) == 3:
+                ready.set()
+            await release.wait()
+            result = await super().search(request)
+            ends[self.provider_id] = monotonic()
+            return result
+
+    regs = [Registration(Controlled(provider_id=name), minimum_interval_seconds=0)
+            for name in ('test-one', 'test-two', 'test-three')]
+    repo = Repository(engine)
+    job = repo.create_job(single(query), regs)
+    runner = JobRunner(repo, regs)
+    try:
+        await runner.tick()
+        await asyncio.wait_for(ready.wait(), timeout=2)
+        assert not ends
+        release.set()
+        await asyncio.gather(*runner.tasks)
+        assert max(starts.values()) < min(ends.values())
+        origin = min(starts.values())
+        print('provider overlap offsets:', {key: (round(starts[key]-origin, 6), round(ends[key]-origin, 6)) for key in starts})
+        assert repo.get_job(job.id)[0].status == 'completed'
+    finally:
+        release.set()
+        await runner.close()
+
+
+async def test_provider_spacing_is_start_to_start_and_other_source_is_independent(engine, query):
+    from cheapwings.providers.base import SingleDateRouteQuery
+    repo = Repository(engine)
+    regs = [Registration(FakeProvider(provider_id=name), minimum_interval_seconds=15)
+            for name in ('paced-one', 'paced-two')]
+    q = single(query).model_copy(update={'destinations': ['DPS', 'CGK']})
+    repo.create_job(q, regs)
+    start = now_ms()
+    item, _ = repo.claim(regs[0], now=start)
+    assert repo.claim(regs[0], now=start + 1) is None
+    assert repo.claim(regs[1], now=start + 1) is not None
+    request = SingleDateRouteQuery(item.origin, item.destination, q.departure_date_from, True, False, 'IDR')
+    result = await regs[0].provider.search(request)
+    repo.finish(item.id, item.lease_token, result, now=start + 20_000)
+    assert repo.claim(regs[0], now=start + 20_001) is not None

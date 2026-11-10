@@ -8,6 +8,6 @@ export function formatMoney(amountDecimalString: string, currency: string): stri
   const unsigned = negative ? amountDecimalString.slice(1) : amountDecimalString;
   const [whole, fraction] = unsigned.split(".");
   const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  const amount = fraction ? `${grouped}.${fraction}` : grouped;
+  const amount = currency === "IDR" ? grouped : fraction ? `${grouped}.${fraction}` : grouped;
   return `${negative ? "-" : ""}${currency} ${amount}`;
 }

@@ -388,3 +388,16 @@ async def test_provider_specific_timeout_extends_lease_without_changing_other_so
     await asyncio.gather(*runner.tasks)
     assert repo.get_job(job.id)[0].status == "completed"
     await runner.close()
+
+
+async def test_cache_reuse_is_independent_of_other_selected_sources(engine, query):
+    repo, reg = setup(engine)
+    first = repo.create_job(single(query), [reg], retention_seconds=3600)
+    await finish(repo, reg, first)
+    other = Registration(FakeProvider(provider_id="other"), minimum_interval_seconds=0)
+    second = repo.create_job(single(query), [reg, other], retention_seconds=3600)
+    items = repo.get_job(second.id)[1]
+    cached = next(i for i in items if i.provider_id == reg.provider.provider_id)
+    assert cached.result_origin == "cache"
+    assert cached.status == "succeeded_results"
+    assert reg.provider.calls == 1

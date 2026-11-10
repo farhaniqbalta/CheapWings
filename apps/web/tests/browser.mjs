@@ -14,7 +14,7 @@ const job = { query: { origins: ['MEL'], destinations: ['DPS'], departure_date_f
   succeeded_provider_work_items: 1, succeeded_empty: 0, failed_provider_work_items: 0,
   skipped_unsupported: 0, cancelled_provider_work_items: 0, inventory_completeness: 'unknown',
   exact_reprice_attempted: 0, exact_reprice_succeeded: 0, provider_status: [], coverage: [], warnings: [] };
-const capabilities = { synthetic_mode: true, supported_currencies: ['IDR'], max_route_date_combinations: 120 };
+const capabilities = { synthetic_mode: true, providers:[{provider_id:'fake',enabled:true,permitted_to_aggregate:true}], supported_currencies: ['IDR'], max_route_date_combinations: 120 };
 const itinerary = id => ({ itinerary_id: id, identity_confidence: 'insufficient_identity',
   origin: 'MEL', destination: 'DPS', departure_local: timestamp, arrival_local: timestamp,
   duration_minutes: 300, stops: 0, segments: [], ranked_quote_id: id, warnings: ['SYNTHETIC TEST'],
@@ -69,12 +69,14 @@ try {
     });
     await page.goto('http://localhost:5173/?job=test-job');
     if (scenario === 'empty-pagination-reload') {
+      await page.getByRole('button', {name:'Best checked deal',exact:true}).click();
       await page.getByText(/No matching fares returned/).waitFor();
       await page.getByRole('button', { name: 'Lowest advertised', exact: true }).click();
       await page.getByText('SYNTHETIC TEST SELLER first', { exact: false }).waitFor();
       await page.getByRole('button', { name: 'Load more results' }).click();
       await page.getByText('SYNTHETIC TEST SELLER second', { exact: false }).waitFor();
       await page.reload();
+      await page.getByRole("button", {name:"Best checked deal",exact:true}).click();
       await page.getByText(/No matching fares returned/).waitFor();
       assert.equal(new URL(page.url()).searchParams.get('job'), 'test-job');
     } else if (scenario === 'runtime-auth') {

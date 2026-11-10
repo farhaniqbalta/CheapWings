@@ -48,7 +48,7 @@ try {
      const send=(json,status=200)=>route.fulfill({json,status,headers:{'Access-Control-Allow-Origin':'*',
       'Access-Control-Allow-Headers':'content-type,authorization','Access-Control-Allow-Methods':'GET,POST,OPTIONS'}});
      if(req.method()==='OPTIONS')return send({});
-     if(url.pathname.endsWith('/capabilities'))return send({search_cache_enabled:scene==='cached',synthetic_mode:true,supported_currencies:['IDR'],max_route_date_combinations:120});
+     if(url.pathname.endsWith('/capabilities'))return send({search_cache_enabled:scene==='cached',synthetic_mode:true,providers:[{provider_id:'fake',enabled:true,permitted_to_aggregate:true}],supported_currencies:['IDR'],max_route_date_combinations:120});
      if(req.method()==='POST' && url.pathname.endsWith('/searches')) {
       submissions.push(req.postDataJSON());
       return send({job_id:'fresh-test',status:'queued',job_status_url:'/api/v1/searches/fresh-test'},202);
@@ -115,6 +115,7 @@ try {
     await page.getByText('The search did not return usable source coverage.',{exact:true}).waitFor();
     assert.equal(await page.getByText(/No matching fares returned/).count(),0);
    } else if(scene==='cancelled-empty') {
+    await page.getByRole('button',{name:'Best checked deal',exact:true}).click();
     await page.getByRole('button',{name:'View lower-confidence advertised offers',exact:true}).waitFor();
     await page.getByRole('button',{name:'View lower-confidence advertised offers',exact:true}).click();
     await page.locator('.itinerary-card').waitFor();

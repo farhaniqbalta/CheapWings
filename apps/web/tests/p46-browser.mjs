@@ -41,7 +41,7 @@ async function fixturePage(width, state) {
     if(url.hostname==='127.0.0.1') {
       const send=(json,status=200)=>route.fulfill({json,status,headers:{'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'content-type,authorization','Access-Control-Allow-Methods':'GET,POST,OPTIONS'}});
       if(req.method()==='OPTIONS')return send({});
-      if(url.pathname.endsWith('/capabilities'))return send({synthetic_mode:true,search_cache_enabled:true,supported_currencies:['IDR','USD','AUD','JPY'],max_route_date_combinations:120});
+      if(url.pathname.endsWith('/capabilities'))return send({synthetic_mode:true,search_cache_enabled:true,providers:state.sources??[{provider_id:'fake',enabled:true,permitted_to_aggregate:true}],supported_currencies:['IDR','USD','AUD','JPY'],max_route_date_combinations:120});
       if(req.method()==='POST'&&url.pathname.endsWith('/searches')) {
         state.submissions.push(req.postDataJSON());state.jobId='p46-fresh';
         return send({job_id:state.jobId,status:'queued',job_status_url:'/api/v1/searches/'+state.jobId},202);
@@ -89,7 +89,7 @@ try {
         providerCalls++;
         const send=(json,status=200)=>route.fulfill({json,status,headers:{'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'content-type,authorization','Access-Control-Allow-Methods':'GET,POST,OPTIONS'}});
         if(req.method()==='OPTIONS')return send({});
-        if(url.pathname.endsWith('/capabilities'))return send({synthetic_mode:true,supported_currencies:['AUD'],max_route_date_combinations:120,inventory_completeness:'unknown',providers:[]});
+        if(url.pathname.endsWith('/capabilities'))return send({synthetic_mode:true,providers:[{provider_id:'fake',enabled:true,permitted_to_aggregate:true}],supported_currencies:['AUD'],max_route_date_combinations:120,inventory_completeness:'unknown'});
         if(url.pathname.endsWith('/results'))return send({job_id:'p46-synthetic',sort:url.searchParams.get('sort'),status:'completed',as_of:now,next_cursor:null,itineraries:all,warnings:[]});
         return send(job);
       }
@@ -124,6 +124,25 @@ try {
     console.log(`PASS p46 master-detail, disclosure, source evidence and search ${width}px`);
   }
 
+  for (const mode of ['all', 'single', 'none']) {
+    const state={sources:['skiplagged','swoop','octotrip'].map(provider_id=>({provider_id,enabled:true,permitted_to_aggregate:true})).concat([{provider_id:'blocked',enabled:false,disabled_reason:'Disabled by owner',permitted_to_aggregate:false}])};
+    const {context,page}=await fixturePage(375,state);
+    await page.goto('http://localhost:5173/');
+    await page.getByLabel('Skiplagged',{exact:true}).waitFor();
+    assert.equal(await page.getByLabel('Skiplagged',{exact:true}).isChecked(),true);
+    assert.equal(await page.getByLabel('swoop (Google Flights)',{exact:true}).isChecked(),true);
+    assert.equal(await page.getByLabel('OctoTrip',{exact:true}).isChecked(),true);
+    assert.equal(await page.getByRole('checkbox',{name:/blocked/}).isDisabled(),true);
+    for(const [label,value] of [['Origin airports','MEL'],['Destination airports','DPS']]) {
+      await page.getByLabel(label,{exact:true}).fill(value);await page.getByLabel(label,{exact:true}).press('Enter');
+    }
+    if(mode!=='all') {await page.getByLabel('Skiplagged',{exact:true}).uncheck();await page.getByLabel('swoop (Google Flights)',{exact:true}).uncheck();}
+    if(mode==='none') await page.getByLabel('OctoTrip',{exact:true}).uncheck();
+    await page.getByRole('button',{name:'Find cheapest flights',exact:true}).click();
+    if(mode==='none') {await page.getByText('Select at least one available flight source.',{exact:true}).waitFor();assert.equal(state.submissions.length,0);}
+    else {await page.waitForURL('**/?job=p46-fresh');assert.deepEqual(state.submissions[0].provider_ids,mode==='all'?['skiplagged','swoop','octotrip']:['octotrip']);}
+    await context.close();console.log('PASS p47 chooser '+mode);
+  }
   for(const width of [375,768,1440]) {
     {
       const state={};const {context,page,errors}=await fixturePage(width,state);
@@ -158,7 +177,7 @@ try {
       await page.getByLabel('Destination airports',{exact:true}).fill('CGK');await page.getByLabel('Destination airports',{exact:true}).press('Enter');
       await page.getByLabel('Earliest departure',{exact:true}).fill('2027-01-12');await page.getByLabel('Latest departure',{exact:true}).fill('2027-01-15');
       await page.screenshot({path:`${shots}/search_${width}.png`,fullPage:true});
-      assert.deepEqual(state.submissions[0],{origins:['MEL'],destinations:['DPS','CGK'],departure_date_from:'2027-01-12',departure_date_through:'2027-01-15',max_stops:1,checked_bags_required:true,include_basic_economy:false,include_hidden_city:true,display_currency:'AUD'});
+      assert.deepEqual(state.submissions[0],{origins:['MEL'],destinations:['DPS','CGK'],departure_date_from:'2027-01-12',departure_date_through:'2027-01-15',max_stops:1,checked_bags_required:true,include_basic_economy:false,include_hidden_city:true,display_currency:'AUD',provider_ids:['fake']});
       assert.deepEqual(errors,[]);await context.close();console.log(`PASS p46 validated search payload ${width}px`);
     }
     {
@@ -205,7 +224,7 @@ try {
       reply=nextResults();state.entries=[all[0]];state.revision++;await reply;await page.locator('.p46-dossier').getByText('SYNTHETIC SELLER one',{exact:true}).waitFor();
       reply=nextResults();state.entries=[all[1],all[0]];state.revision++;await reply;
       assert.match(await selected().innerText(),/DPS/,'Disappearing selection falls back persistently');
-      await page.getByRole('button',{name:'Lowest advertised',exact:true}).click();
+      await page.getByRole('button',{name:'Best checked deal',exact:true}).click();
       await page.locator('.p46-dossier').getByText('SYNTHETIC SELLER two',{exact:true}).waitFor();
       state.entries=all;
       await page.getByRole('button',{name:'Run fresh search',exact:true}).click();await page.waitForURL('**/?job=p46-fresh');

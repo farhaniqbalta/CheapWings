@@ -12,7 +12,7 @@ from datetime import date, datetime
 from typing import Protocol
 
 from cheapwings.domain.coverage import WorkStatus
-from cheapwings.domain.itinerary import ItinerarySummary
+from cheapwings.domain.itinerary import AirportTransfer, ItinerarySummary
 from cheapwings.domain.offer import Offer, ProviderErrorCode
 from cheapwings.domain.segments import FlightSegment
 
@@ -52,8 +52,13 @@ class ProviderSearchResult:
 
     itinerary_summaries: tuple[ItinerarySummary | None, ...] = ()
     unpriced_candidate_count: int = 0
+    airport_transfers_by_itinerary_index: tuple[tuple[AirportTransfer, ...], ...] = ()
 
     def __post_init__(self) -> None:
+        if self.airport_transfers_by_itinerary_index and len(
+            self.airport_transfers_by_itinerary_index
+        ) != len(self.itineraries):
+            raise ValueError("airport transfers must align with itineraries")
         if self.itinerary_summaries and len(self.itinerary_summaries) != len(self.itineraries):
             raise ValueError("summaries must align with itineraries")
         if len(self.itineraries) != len(self.offers_by_itinerary_index):

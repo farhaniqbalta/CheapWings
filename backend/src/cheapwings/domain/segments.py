@@ -29,6 +29,8 @@ class FlightSegment:
     depart_at: datetime
     arrive_at: datetime
     ordinal: int
+    marketing_carrier_name: str | None = None
+    operating_carrier_name: str | None = None
 
     def __post_init__(self) -> None:
         if self.depart_at.tzinfo is None or self.arrive_at.tzinfo is None:

@@ -6,6 +6,7 @@ import hashlib
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+from itertools import pairwise
 
 from cheapwings.domain.segments import FlightSegment
 
@@ -16,11 +17,29 @@ class IdentityConfidence(str, Enum):
 
 
 @dataclass(frozen=True, slots=True)
+class AirportTransfer:
+    """Observed gap between flight airports, without invented ground transport or protection."""
+
+    after_segment: int
+    from_airport: str
+    to_airport: str
+
+
+def airport_transfers(segments: tuple[FlightSegment, ...]) -> tuple[AirportTransfer, ...]:
+    return tuple(
+        AirportTransfer(a.ordinal, a.destination, b.origin)
+        for a, b in pairwise(segments)
+        if a.destination != b.origin
+    )
+
+
+@dataclass(frozen=True, slots=True)
 class ItinerarySummary:
     """Observed routing summary when complete segment identity is unavailable.
 
     Naive local timestamps are preserved as such; no UTC offset is fabricated.
     """
+
     origin: str
     destination: str
     depart_at: datetime
@@ -28,6 +47,7 @@ class ItinerarySummary:
     duration_minutes: int
     stops: int
     warnings: tuple[str, ...] = ()
+    carrier_names: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,24 +60,30 @@ class Itinerary:
     fingerprint: str | None = field(default=None)
 
     summary: ItinerarySummary | None = None
+    airport_transfers: tuple[AirportTransfer, ...] = ()
 
     def __post_init__(self) -> None:
         if self.summary is not None:
-            if (self.segments or self.identity_confidence != IdentityConfidence.INSUFFICIENT_IDENTITY
-                    or self.fingerprint is not None):
-                raise ValueError('Summary-only itineraries must remain unmatched without segments')
+            if (
+                self.segments
+                or self.identity_confidence != IdentityConfidence.INSUFFICIENT_IDENTITY
+                or self.fingerprint is not None
+                or self.airport_transfers
+            ):
+                raise ValueError("Summary-only itineraries must remain unmatched without segments")
             return
         if not self.segments:
             raise ValueError("Itinerary must have at least one segment")
         ordered = sorted(self.segments, key=lambda s: s.ordinal)
         if list(ordered) != list(self.segments):
             raise ValueError("Segments must be supplied in ordinal order")
-        for a, b in zip(self.segments, self.segments[1:]):
-            if a.destination != b.origin:
-                raise ValueError(
-                    f"Segment {a.ordinal} arrives at {a.destination} but segment "
-                    f"{b.ordinal} departs from {b.origin}; not a connected itinerary"
-                )
+        required = airport_transfers(self.segments)
+        if len(set(self.airport_transfers)) != len(self.airport_transfers) or set(required) != set(
+            self.airport_transfers
+        ):
+            raise ValueError(
+                "Disconnected flight airports require explicit matching airport transfers"
+            )
 
     @property
     def origin(self) -> str:

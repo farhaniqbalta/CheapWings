@@ -128,6 +128,8 @@ export interface Segment {
   destination: string;
   depart_at: string;
   arrive_at: string;
+  marketing_carrier_name?: string | null;
+  operating_carrier_name?: string | null;
 }
 
 export interface PublicOffer {
@@ -160,6 +162,12 @@ export interface PublicOffer {
   warnings: string[];
 }
 
+export interface AirportTransfer {
+  after_segment: number;
+  from_airport: string;
+  to_airport: string;
+}
+
 export interface PublicItinerary {
   itinerary_id: string;
   identity_confidence: IdentityConfidence;
@@ -170,6 +178,8 @@ export interface PublicItinerary {
   duration_minutes: number;
   stops: number;
   segments: Segment[];
+  carrier_names?: string[];
+  airport_transfers?: AirportTransfer[];
   offers: PublicOffer[];
   ranked_quote_id: string;
   warnings?: string[];

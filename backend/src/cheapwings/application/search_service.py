@@ -11,7 +11,12 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from cheapwings.application import contracts as dto
-from cheapwings.domain.itinerary import IdentityConfidence, Itinerary, ItinerarySummary
+from cheapwings.domain.itinerary import (
+    AirportTransfer,
+    IdentityConfidence,
+    Itinerary,
+    ItinerarySummary,
+)
 from cheapwings.domain.offer import ComparisonStatus, LinkScope, Offer, PriceStatus
 from cheapwings.domain.query import SearchQuery
 from cheapwings.domain.segments import FlightSegment
@@ -38,8 +43,8 @@ def request_snapshot(data):
 
 def status_projection(repo, job_id):
     job, items = repo.get_job(job_id)
-    detailed = [i for i in items if i.work_type == 'detailed']
-    reprices = [i for i in items if i.work_type == 'reprice']
+    detailed = [i for i in items if i.work_type == "detailed"]
+    reprices = [i for i in items if i.work_type == "reprice"]
     counts = Counter(i.status for i in detailed)
     providers = []
     for provider_id in sorted({i.provider_id for i in detailed}):
@@ -62,9 +67,11 @@ def status_projection(repo, job_id):
     if job.status in ("partial", "failed", "cancelled"):
         warnings.append("Search is incomplete; inspect provider coverage and errors.")
     if job.data_expires_at and job.data_expires_at <= now_ms():
-        warnings.append('Live fare data expired and is no longer available; start a new search.')
+        warnings.append("Live fare data expired and is no longer available; start a new search.")
     if any(i.unpriced_candidate_count for i in detailed):
-        warnings.append('Some source candidates had no price; see unpriced_candidate_count in coverage.')
+        warnings.append(
+            "Some source candidates had no price; see unpriced_candidate_count in coverage."
+        )
     return dto.Job(
         exact_reprice_attempted=sum(i.attempts for i in reprices),
         exact_reprice_succeeded=_exact_reprice_count(repo, job_id),
@@ -115,17 +122,31 @@ def status_projection(repo, job_id):
 
 def _exact_reprice_count(repo, job_id):
     with Session(repo.engine) as s:
-        return s.scalar(select(func.count()).select_from(QuoteRevision).join(FareQuote).where(
-            FareQuote.job_id == job_id, QuoteRevision.reason == 'repriced_exact')) or 0
+        return (
+            s.scalar(
+                select(func.count())
+                .select_from(QuoteRevision)
+                .join(FareQuote)
+                .where(FareQuote.job_id == job_id, QuoteRevision.reason == "repriced_exact")
+            )
+            or 0
+        )
 
 
 def public_offer(offer, row_id):
-    evidence_fields = {'fee_completeness', 'source_checked_at', 'point_of_sale_country',
-                       'attribution', 'fx_rate', 'fx_as_of'}
+    evidence_fields = {
+        "fee_completeness",
+        "source_checked_at",
+        "point_of_sale_country",
+        "attribution",
+        "fx_rate",
+        "fx_as_of",
+    }
     data = {
         name: getattr(offer, name)
         for name in dto.PublicOffer.model_fields
-        if name not in evidence_fields and name
+        if name not in evidence_fields
+        and name
         not in (
             "quote_id",
             "amount_original",
@@ -136,11 +157,14 @@ def public_offer(offer, row_id):
     }
     evidence = offer.evidence
     fx = evidence.fx_snapshot if evidence else None
-    data.update(fee_completeness=evidence.fee_completeness if evidence else 'unknown',
-                source_checked_at=evidence.source_checked_at if evidence else None,
-                point_of_sale_country=evidence.point_of_sale_country if evidence else None,
-                attribution=evidence.attribution if evidence else None,
-                fx_rate=str(fx.rate) if fx else None, fx_as_of=fx.retrieved_at if fx else None)
+    data.update(
+        fee_completeness=evidence.fee_completeness if evidence else "unknown",
+        source_checked_at=evidence.source_checked_at if evidence else None,
+        point_of_sale_country=evidence.point_of_sale_country if evidence else None,
+        attribution=evidence.attribution if evidence else None,
+        fx_rate=str(fx.rate) if fx else None,
+        fx_as_of=fx.retrieved_at if fx else None,
+    )
     # Only HTTP(S) external navigation is supported; userinfo and unsafe schemes rejected.
     try:
         link = urlsplit(offer.link or "")
@@ -165,7 +189,7 @@ def results_projection(repo, job_id, sort, cursor=None, limit=50):
     job, _ = repo.get_job(job_id)
     if job.data_expires_at and job.data_expires_at <= now_ms():
         repo.purge_expired()
-        raise ResultsExpired('Live fare data expired; start a new search')
+        raise ResultsExpired("Live fare data expired; start a new search")
     with Session(repo.engine) as s:
         maximum = s.scalar(select(func.max(FareQuote.id)).where(FareQuote.job_id == job_id)) or 0
         revision_cutoff = s.scalar(select(func.max(QuoteRevision.id))) or 0
@@ -177,7 +201,10 @@ def results_projection(repo, job_id, sort, cursor=None, limit=50):
                 if (
                     cursor_job != job_id
                     or cursor_sort != sort
-                    or any(type(x) is not int or x < 0 for x in (cutoff, offset, as_of, revision_cutoff))
+                    or any(
+                        type(x) is not int or x < 0
+                        for x in (cutoff, offset, as_of, revision_cutoff)
+                    )
                     or cutoff > maximum
                 ):
                     raise ValueError()
@@ -206,14 +233,25 @@ def results_projection(repo, job_id, sort, cursor=None, limit=50):
                         ),
                         identity_confidence=IdentityConfidence(itin.identity_confidence),
                         fingerprint=itin.fingerprint,
+                        airport_transfers=TypeAdapter(tuple[AirportTransfer, ...]).validate_python(
+                            itin.airport_transfers_json or []
+                        ),
                         summary=TypeAdapter(ItinerarySummary).validate_python(itin.summary_json)
-                                if itin.summary_json else None,
+                        if itin.summary_json
+                        else None,
                     )
                 )
-            revision = s.scalar(select(QuoteRevision).where(
-                QuoteRevision.quote_id == row.id, QuoteRevision.id <= revision_cutoff
-            ).order_by(QuoteRevision.id.desc()).limit(1))
-            data = revision.canonical_json if revision and revision.canonical_json else row.canonical_json
+            revision = s.scalar(
+                select(QuoteRevision)
+                .where(QuoteRevision.quote_id == row.id, QuoteRevision.id <= revision_cutoff)
+                .order_by(QuoteRevision.id.desc())
+                .limit(1)
+            )
+            data = (
+                revision.canonical_json
+                if revision and revision.canonical_json
+                else row.canonical_json
+            )
             offer = TypeAdapter(Offer).validate_python(dict(data, provider_quote_handle=None))
             # Internal DB key disambiguates quote identifiers shared by different adapters.
             from dataclasses import replace
@@ -250,10 +288,30 @@ def results_projection(repo, job_id, sort, cursor=None, limit=50):
                     itinerary_id=key,
                     warnings=list(itin.summary.warnings) if itin.summary else [],
                     identity_confidence=itin.identity_confidence,
+                    carrier_names=list(itin.summary.carrier_names)
+                    if itin.summary
+                    else list(
+                        dict.fromkeys(
+                            segment.marketing_carrier_name or segment.marketing_carrier
+                            for segment in itin.segments
+                        )
+                    ),
+                    airport_transfers=[
+                        dto.AirportTransfer(
+                            after_segment=t.after_segment,
+                            from_airport=t.from_airport,
+                            to_airport=t.to_airport,
+                        )
+                        for t in itin.airport_transfers
+                    ],
                     origin=itin.origin,
                     destination=itin.destination,
-                    departure_local=itin.summary.depart_at if itin.summary else itin.segments[0].depart_at,
-                    arrival_local=itin.summary.arrive_at if itin.summary else itin.segments[-1].arrive_at,
+                    departure_local=itin.summary.depart_at
+                    if itin.summary
+                    else itin.segments[0].depart_at,
+                    arrival_local=itin.summary.arrive_at
+                    if itin.summary
+                    else itin.segments[-1].arrive_at,
                     duration_minutes=itin.duration_minutes,
                     stops=itin.stops,
                     segments=[

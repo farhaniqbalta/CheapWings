@@ -29,6 +29,7 @@ const itinerary = {itinerary_id:'synthetic-itin',identity_confidence:'exact_segm
  duration_minutes:360,stops:0,ranked_quote_id:'ranked',warnings:[],
  segments:[{ordinal:0,marketing_carrier:'FX',operating_carrier:'FX',flight_number:'100',origin:'MEL',
  destination:'DPS',depart_at:'2027-01-10T07:00:00+11:00',arrive_at:'2027-01-10T10:00:00+08:00'}],
+ carrier_names:['SYNTHETIC Airline'],
  offers:[{...commonOffer,quote_id:'ranked'}, {...commonOffer,quote_id:'cheaper',seller:'SYNTHETIC Alternate',
  amount_original:'3990000',comparable_amount:'3990000',is_estimate:true,price_status:'indicative',
  hidden_city:'unknown',checked_bag:'unknown',comparison_status:'extra_cost_unknown',basic_economy:null}]};
@@ -36,7 +37,7 @@ const browser = await chromium.launch();
 let scenarios = 0;
 try {
  for (const width of [375,768,1440]) {
-  for (const scene of ['search','partial','results','cancelled-empty','empty-success','queued','verifying','polling','failed','expired','rate-limit','offline']) {
+  for (const scene of ['search','partial','results','cancelled-empty','empty-success','queued','verifying','polling','airport-change','failed','expired','rate-limit','offline']) {
    const context=await browser.newContext({viewport:{width,height:1000}});
    const page=await context.newPage(); const errors=[];
    page.on('pageerror',e=>errors.push(e.message));
@@ -52,7 +53,11 @@ try {
      if(scene==='rate-limit')return send({detail:'SYNTHETIC quota exceeded'},429);
      if(url.pathname.endsWith('/results')) {
       if(scene==='expired')return send({detail:'SYNTHETIC fare evidence expired'},410);
-      const items=['failed','queued','empty-success'].includes(scene)||(scene==='cancelled-empty'&&url.searchParams.get('sort')==='best_checked')?[]:[itinerary];
+      const airportChanged={...itinerary,stops:1,airport_transfers:[{after_segment:0,from_airport:'NRT',to_airport:'HND'}],
+        segments:[{...itinerary.segments[0],destination:'NRT'}, {...itinerary.segments[0],ordinal:1,origin:'HND',flight_number:'200'}],
+        offers:itinerary.offers.map(offer=>({...offer,comparison_status:'extra_cost_unknown'}))};
+      const items=['failed','queued','empty-success'].includes(scene)||
+        (scene==='airport-change'&&url.searchParams.get('sort')==='best_checked')||(scene==='cancelled-empty'&&url.searchParams.get('sort')==='best_checked')?[]:[scene==='airport-change'?airportChanged:itinerary];
       return send({job_id:'p45-test',sort:url.searchParams.get('sort'),status:'completed',as_of:timestamp,next_cursor:null,itineraries:items,warnings:['SYNTHETIC quotes only.']});
      }
      const status=scene==='partial'?'partial':scene==='cancelled-empty'?'cancelled':scene==='failed'?'failed'
@@ -82,6 +87,12 @@ try {
      await page.getByRole('button',{name:'Find cheapest flights',exact:true}).click();
      await page.getByText('Add at least one origin and one destination airport.',{exact:true}).waitFor();
     }
+   } else if(scene==='airport-change') {
+    await page.getByRole('button',{name:'Lowest advertised',exact:true}).click();
+    await page.getByText('Airport change required:',{exact:true}).waitFor();
+    await page.getByText(/NRT → HND/).waitFor();
+    assert.match(await page.locator('.carrier-summary').innerText(),/SYNTHETIC Airline/);
+    assert.match(await page.locator('.flight-numbers').innerText(),/FX100 · FX200/);
    } else if(scene==='offline')await page.getByText('Could not update this search',{exact:true}).waitFor();
    else if(scene==='queued')await page.getByText(/Source searches are still in progress/).waitFor();
    else if(scene==='empty-success')await page.getByText(/No matching fares returned/).waitFor();
@@ -97,6 +108,8 @@ try {
    } else {
     await page.locator('.itinerary-card').waitFor();
     assert.equal(await page.locator('.itinerary-best-price').innerText(),'IDR 4,250,000');
+    assert.equal(await page.locator('.carrier-summary').innerText(),'SYNTHETIC Airline');
+    assert.equal(await page.locator('.flight-numbers').innerText(),'FX100');
     await page.getByRole('button',{name:'View 1 flight leg',exact:true}).click();
     assert.equal(await page.locator('.segments').isVisible(),true);
     if(scene==='polling') {

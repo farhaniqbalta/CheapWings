@@ -39,5 +39,5 @@ def require_current_schema(engine):
     from alembic.migration import MigrationContext
 
     with engine.connect() as connection:
-        if MigrationContext.configure(connection).get_current_heads() != ("1cf9a06e0e54",):
+        if MigrationContext.configure(connection).get_current_heads() != ("7a2c9e103f41",):
             raise RuntimeError("Run alembic -c backend/alembic.ini upgrade head first")

@@ -31,7 +31,15 @@ class Repository(VerificationRepository):
         self.engine = engine
 
     def create_job(
-        self, query: SearchQuery, registry, *, max_active=2, max_hourly=20, budget_seconds=1800, reprice_budget=0, retention_seconds=None
+        self,
+        query: SearchQuery,
+        registry,
+        *,
+        max_active=2,
+        max_hourly=20,
+        budget_seconds=1800,
+        reprice_budget=0,
+        retention_seconds=None,
     ):
         now = now_ms()
         with write_session(self.engine) as s:
@@ -52,8 +60,11 @@ class Repository(VerificationRepository):
                 deadline_at=now + budget_seconds * 1000,
                 data_expires_at=now + retention_seconds * 1000 if retention_seconds else None,
                 reprice_budget=reprice_budget,
-                reprice_providers=[r.provider.provider_id for r in registry if
-                                   not r.unavailable_reason and r.provider.capabilities.exact_reprice],
+                reprice_providers=[
+                    r.provider.provider_id
+                    for r in registry
+                    if not r.unavailable_reason and r.provider.capabilities.exact_reprice
+                ],
             )
             s.add(job)
             s.flush()
@@ -104,10 +115,14 @@ class Repository(VerificationRepository):
             return
         if job.deadline_at <= now:
             job.verification_planned = True
-        if (not job.cancel_requested and job.reprice_budget and job.reprice_providers
-                and not job.verification_planned):
-            job.status = 'running'
-            job.phase = 'verifying'
+        if (
+            not job.cancel_requested
+            and job.reprice_budget
+            and job.reprice_providers
+            and not job.verification_planned
+        ):
+            job.status = "running"
+            job.phase = "verifying"
             return
         counts = Counter(i.status for i in items)
         successes = sum(counts[k] for k in SUCCESS)
@@ -288,19 +303,22 @@ class Repository(VerificationRepository):
                     state = s.get(ProviderState, item.provider_id)
                     state.next_request_at = max(state.next_request_at, now + delay_ms)
                 attempt.error_code = error_code
-                if item.work_type == 'reprice' and item.status == 'failed_terminal':
+                if item.work_type == "reprice" and item.status == "failed_terminal":
                     job.verification_planned = False
             else:
-                if item.work_type == 'reprice':
+                if item.work_type == "reprice":
                     self._store_reprice(s, job, item, result, now)
-                    item.status = 'succeeded_results' if result.available else 'succeeded_empty'
+                    item.status = "succeeded_results" if result.available else "succeeded_empty"
                 else:
                     self._store_results(s, job, item, result, now)
                     item.status = result.status.value
-                item.provider_complete = getattr(result, 'provider_complete', None)
-                item.result_count = (len(result.offers) if item.work_type == 'reprice' else
-                                    sum(len(o) for o in result.offers_by_itinerary_index))
-                item.unpriced_candidate_count = getattr(result, 'unpriced_candidate_count', 0)
+                item.provider_complete = getattr(result, "provider_complete", None)
+                item.result_count = (
+                    len(result.offers)
+                    if item.work_type == "reprice"
+                    else sum(len(o) for o in result.offers_by_itinerary_index)
+                )
+                item.unpriced_candidate_count = getattr(result, "unpriced_candidate_count", 0)
                 item.last_error_code = None
                 item.last_error_detail = None
             attempt.outcome = item.status
@@ -318,7 +336,12 @@ class Repository(VerificationRepository):
 
         from pydantic import TypeAdapter
 
-        from cheapwings.domain.itinerary import IdentityConfidence, Itinerary, ItinerarySummary
+        from cheapwings.domain.itinerary import (
+            AirportTransfer,
+            IdentityConfidence,
+            Itinerary,
+            ItinerarySummary,
+        )
         from cheapwings.domain.offer import ComparisonStatus, Offer, ThreeValued
         from cheapwings.domain.segments import FlightSegment
         from cheapwings.engine.matching import build_itinerary
@@ -330,10 +353,22 @@ class Repository(VerificationRepository):
             SegmentRow,
         )
 
-        for index, (segments, offers) in enumerate(zip(result.itineraries, result.offers_by_itinerary_index)):
+        for index, (segments, offers) in enumerate(
+            zip(result.itineraries, result.offers_by_itinerary_index)
+        ):
             summary = result.itinerary_summaries[index] if result.itinerary_summaries else None
-            itin = (Itinerary(str(uuid4()), (), IdentityConfidence.INSUFFICIENT_IDENTITY,
-                              summary=summary) if summary else build_itinerary(segments, str(uuid4())))
+            transfers = (
+                result.airport_transfers_by_itinerary_index[index]
+                if result.airport_transfers_by_itinerary_index
+                else ()
+            )
+            itin = (
+                Itinerary(
+                    str(uuid4()), (), IdentityConfidence.INSUFFICIENT_IDENTITY, summary=summary
+                )
+                if summary
+                else build_itinerary(segments, str(uuid4()), transfers)
+            )
             row = (
                 s.scalar(
                     select(ItineraryRow).where(
@@ -349,8 +384,12 @@ class Repository(VerificationRepository):
                     job_id=job.id,
                     fingerprint=itin.fingerprint,
                     identity_confidence=itin.identity_confidence.value,
-                    summary_json=TypeAdapter(ItinerarySummary).dump_python(summary, mode='json')
-                                 if summary else None,
+                    airport_transfers_json=TypeAdapter(tuple[AirportTransfer, ...]).dump_python(
+                        transfers, mode="json"
+                    ),
+                    summary_json=TypeAdapter(ItinerarySummary).dump_python(summary, mode="json")
+                    if summary
+                    else None,
                 )
                 s.add(row)
                 s.flush()
@@ -374,6 +413,8 @@ class Repository(VerificationRepository):
                     continue
                 query = job.query_json
                 comparison = offer.comparison_status
+                if transfers and comparison == ComparisonStatus.ELIGIBLE_TOTAL_KNOWN:
+                    comparison = ComparisonStatus.EXTRA_COST_UNKNOWN
                 if query["checked_bags_required"] and offer.checked_bag != ThreeValued.YES:
                     comparison = ComparisonStatus.MISSING_REQUIRED_BAGGAGE
                 if (query["max_stops"] != "any" and itin.stops > int(query["max_stops"])) or (
@@ -392,9 +433,14 @@ class Repository(VerificationRepository):
                 if offer.evidence and offer.evidence.fx_snapshot:
                     fx = offer.evidence.fx_snapshot
                     from datetime import datetime
-                    fx_row = FXRow(base=fx.base_currency, quote=fx.quote_currency,
-                                   rate_decimal_text=str(fx.rate), source=fx.source,
-                                   observed_at=int(datetime.fromisoformat(fx.retrieved_at).timestamp()*1000))
+
+                    fx_row = FXRow(
+                        base=fx.base_currency,
+                        quote=fx.quote_currency,
+                        rate_decimal_text=str(fx.rate),
+                        source=fx.source,
+                        observed_at=int(datetime.fromisoformat(fx.retrieved_at).timestamp() * 1000),
+                    )
                     s.add(fx_row)
                     s.flush()
                 quote = FareQuote(

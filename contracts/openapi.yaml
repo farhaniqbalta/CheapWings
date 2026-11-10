@@ -263,6 +263,30 @@
   },
   "components": {
     "schemas": {
+      "AirportTransfer": {
+        "properties": {
+          "after_segment": {
+            "type": "integer",
+            "title": "After Segment"
+          },
+          "from_airport": {
+            "type": "string",
+            "title": "From Airport"
+          },
+          "to_airport": {
+            "type": "string",
+            "title": "To Airport"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "after_segment",
+          "from_airport",
+          "to_airport"
+        ],
+        "title": "AirportTransfer"
+      },
       "Capabilities": {
         "properties": {
           "providers": {
@@ -931,6 +955,20 @@
             "type": "array",
             "title": "Segments"
           },
+          "carrier_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Carrier Names"
+          },
+          "airport_transfers": {
+            "items": {
+              "$ref": "#/components/schemas/AirportTransfer"
+            },
+            "type": "array",
+            "title": "Airport Transfers"
+          },
           "offers": {
             "items": {
               "$ref": "#/components/schemas/PublicOffer"
@@ -1405,6 +1443,28 @@
             "type": "string",
             "format": "date-time",
             "title": "Arrive At"
+          },
+          "marketing_carrier_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Marketing Carrier Name"
+          },
+          "operating_carrier_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operating Carrier Name"
           }
         },
         "additionalProperties": false,

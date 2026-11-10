@@ -9,12 +9,21 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from cheapwings.domain.itinerary import IdentityConfidence, Itinerary, compute_fingerprint
+from cheapwings.domain.itinerary import (
+    AirportTransfer,
+    IdentityConfidence,
+    Itinerary,
+    compute_fingerprint,
+)
 from cheapwings.domain.offer import Offer
 from cheapwings.domain.segments import FlightSegment
 
 
-def build_itinerary(segments: tuple[FlightSegment, ...], itinerary_id: str) -> Itinerary:
+def build_itinerary(
+    segments: tuple[FlightSegment, ...],
+    itinerary_id: str,
+    airport_transfers: tuple[AirportTransfer, ...] = (),
+) -> Itinerary:
     """Build an itinerary, fingerprinting only when every segment has complete identity."""
     try:
         fingerprint = compute_fingerprint(segments)
@@ -27,6 +36,7 @@ def build_itinerary(segments: tuple[FlightSegment, ...], itinerary_id: str) -> I
         segments=segments,
         identity_confidence=confidence,
         fingerprint=fingerprint,
+        airport_transfers=airport_transfers,
     )
 
 

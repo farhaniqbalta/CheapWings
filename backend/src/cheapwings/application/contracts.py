@@ -157,6 +157,14 @@ class Segment(DTO):
     destination: str
     depart_at: datetime
     arrive_at: datetime
+    marketing_carrier_name: str | None = None
+    operating_carrier_name: str | None = None
+
+
+class AirportTransfer(DTO):
+    after_segment: int
+    from_airport: str
+    to_airport: str
 
 
 class PublicOffer(DTO):
@@ -180,7 +188,7 @@ class PublicOffer(DTO):
     repriced_at: datetime | None
     link: str | None
     link_scope: LinkScope
-    fee_completeness: str = 'unknown'
+    fee_completeness: str = "unknown"
     source_checked_at: datetime | None = None
     point_of_sale_country: str | None = None
     attribution: str | None = None
@@ -199,6 +207,8 @@ class PublicItinerary(DTO):
     duration_minutes: int
     stops: int
     segments: list[Segment]
+    carrier_names: list[str] = Field(default_factory=list)
+    airport_transfers: list[AirportTransfer] = Field(default_factory=list)
     offers: list[PublicOffer]
     ranked_quote_id: str
     warnings: list[str] = Field(default_factory=list)

@@ -80,6 +80,7 @@ class ItineraryRow(Base):
     fingerprint: Mapped[str | None] = mapped_column(String)
     identity_confidence: Mapped[str] = mapped_column(String)
     summary_json: Mapped[dict | None] = mapped_column(JSON)
+    airport_transfers_json: Mapped[list | None] = mapped_column(JSON)
 
 
 class SegmentRow(Base):

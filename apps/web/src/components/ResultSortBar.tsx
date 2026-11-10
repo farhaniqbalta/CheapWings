@@ -20,7 +20,7 @@ export function ResultSortBar({ sort, onChange }: { sort: SortMode; onChange: (s
         Lowest advertised
       </button>
       {sort === "lowest_advertised" && (
-        <span className="sort-caveat">Includes unverified/indicative prices - not guaranteed available.</span>
+        <span className="sort-caveat">Advertised prices may be estimates. Fees, restrictions and final availability must be checked with the seller.</span>
       )}
     </div>
   );

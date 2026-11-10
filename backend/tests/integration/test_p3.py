@@ -164,7 +164,7 @@ async def test_recorded_real_adapters_api_summary_fx_and_expiry(engine):
         assert status["covered_route_date_combinations"] == 1
         assert status["exact_reprice_attempted"] == 1
         assert status["exact_reprice_succeeded"] == 0
-        assert status["data_expires_at"] is not None
+        assert status["data_expires_at"] is None  # no global source-expiry clock
         safe = client.get(f"/api/v1/searches/{job_id}/results").json()
         assert safe["itineraries"] == []
         advertised = client.get(f"/api/v1/searches/{job_id}/results?sort=lowest_advertised").json()
@@ -182,7 +182,10 @@ async def test_recorded_real_adapters_api_summary_fx_and_expiry(engine):
             assert s.scalar(select(func.count()).select_from(FXRow)) == 5
         with write_session(engine) as s:
             s.get(SearchJob, job_id).data_expires_at = now_ms() - 1
-        assert client.get(f"/api/v1/searches/{job_id}/results").status_code == 410
+        expired = client.get(f"/api/v1/searches/{job_id}/results")
+        assert expired.status_code == 200
+        assert expired.json()["expired_observations"]
+        assert expired.json()["itineraries"] == []
         with Session(engine) as s:
             assert s.scalar(select(func.count()).select_from(FareQuote)) == 0
             assert s.scalar(select(func.count()).select_from(QuoteRevision)) == 0

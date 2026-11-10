@@ -401,3 +401,8 @@ button:disabled { cursor: not-allowed; opacity: .62; }
 .results-heading-row { flex:1; }
 @media(max-width:900px) { .results-heading-row { flex-basis:100%; } }
 @media(pointer:coarse) { .p46-header-action, .sort-button, .p46-offer-evidence summary, .p46-seller-tools a, .p46-advanced summary, .p46-search-form .chip button { min-height:44px !important; } .p46-seller-tools a { display:inline-flex;align-items:center; } .p46-search-form .chip button { min-width:44px; } }
+
+.expired-fare-card { border: 1px solid #bc8c39; border-left: 4px solid #f4b544; border-radius: 8px; background: #17140f; padding: 1rem; margin-block: .75rem; overflow-wrap: anywhere; }
+.expired-fare-badge { color: #f4c875; }
+.expired-fare-card p { color: #d5d1c8; }
+.expired-fare-card button { min-height: 44px; padding: .5rem 1rem; }

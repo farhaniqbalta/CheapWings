@@ -1,6 +1,6 @@
 import { useId, useMemo, useState } from "react";
 import { ApiError } from "../api/client";
-import type { Currency, SearchRequest } from "../api/types";
+import type { Currency, SearchRequest, ProviderCapability } from "../api/types";
 import { AirportMultiSelect } from "./AirportMultiSelect";
 
 interface Props {
@@ -9,6 +9,7 @@ interface Props {
   error: ApiError | Error | null;
   maxCombinations: number | null;
   supportedCurrencies: string[];
+  providers: ProviderCapability[];
 }
 function todayIso() { return new Date().toISOString().slice(0, 10); }
 function combinationCount(origins: string[], destinations: string[], from: string, through: string) {
@@ -22,7 +23,11 @@ function combinationCount(origins: string[], destinations: string[], from: strin
 }
 
 /** P4.6 replaces visuals, not the SearchRequest contract or its validation. */
-export function SearchForm({ onSubmit, submitting, error, maxCombinations, supportedCurrencies }: Props) {
+export function SearchForm({ onSubmit, submitting, error, maxCombinations, supportedCurrencies, providers }: Props) {
+  const [excludedSources, setExcludedSources] = useState<string[]>([]);
+  const eligible = providers.filter(p => p.enabled && p.permitted_to_aggregate === true);
+  const selectedSources = eligible.filter(p => !excludedSources.includes(p.provider_id)).map(p => p.provider_id);
+  const sourceNames: Record<string, string> = {skiplagged: "Skiplagged", swoop: "swoop (Google Flights)", octotrip: "OctoTrip"};
   const [origins, setOrigins] = useState<string[]>([]);
   const [destinations, setDestinations] = useState<string[]>([]);
   const [from, setFrom] = useState(todayIso());
@@ -57,7 +62,12 @@ export function SearchForm({ onSubmit, submitting, error, maxCombinations, suppo
       setClientError(`${combos} origin x destination x date combinations exceeds the server limit of ${maxCombinations}. Narrow the airports or date range.`);
       return;
     }
+    if (!selectedSources.length) {
+      setClientError("Select at least one available flight source.");
+      return;
+    }
     onSubmit({
+      provider_ids: selectedSources,
       origins, destinations,
       departure_date_from: from,
       departure_date_through: through,
@@ -99,6 +109,20 @@ export function SearchForm({ onSubmit, submitting, error, maxCombinations, suppo
             <div className="p46-flight-profile"><span>FLIGHT PROFILE</span><strong>Economy <em>·</em> One-way</strong><small>One adult · Available one-way fares only</small></div>
           </div>
         </div>
+        <fieldset>
+          <legend>Flight sources</legend>
+          {providers.map(provider => {
+            const available = eligible.some(p => p.provider_id === provider.provider_id);
+            return <label className="checkbox" key={provider.provider_id}>
+              <input type="checkbox" disabled={!available} checked={available && !excludedSources.includes(provider.provider_id)}
+                onChange={event => setExcludedSources(previous => event.target.checked ? previous.filter(id => id !== provider.provider_id) : [...previous, provider.provider_id])} />
+              {sourceNames[provider.provider_id] ?? provider.provider_id}
+              {!available && <small>{provider.disabled_reason ?? "Source is unavailable or not approved."}</small>}
+            </label>;
+          })}
+          <p>{selectedSources.length} sources selected · Route/date combinations remain independent of source count.</p>
+          {!providers.length && <p>Source availability is loading or unavailable. Retry capabilities before searching.</p>}
+        </fieldset>
         <div className="p46-preferences">
           <div className="p46-section-legend"><span>☷</span> FARE PREFERENCES</div>
           <div className="p46-checkbox-strip">

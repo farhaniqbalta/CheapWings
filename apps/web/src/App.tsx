@@ -4,6 +4,7 @@ import { api } from "./api/client";
 import { setOwnerToken } from "./api/session";
 import type { Capabilities, SearchRequest, SortMode } from "./api/types";
 import { P46ResultsWorkspace } from "./components/P46ResultsWorkspace";
+import { ExpiredFareCard } from "./components/ExpiredFareCard";
 import { JobErrorPanel } from "./components/JobErrorPanel";
 import { ResultSortBar } from "./components/ResultSortBar";
 import { SearchForm } from "./components/SearchForm";
@@ -28,7 +29,7 @@ export default function App() {
   const [accessVersion, setAccessVersion] = useState(0);
   const [tokenDraft, setTokenDraft] = useState("");
   const [capabilitiesError, setCapabilitiesError] = useState<Error | null>(null);
-  const [sort, setSort] = useState<SortMode>("best_checked");
+  const [sort, setSort] = useState<SortMode>("lowest_advertised");
   const [capabilities, setCapabilities] = useState<Capabilities | null>(null);
 
   const { createSearch, submitting, error: createError } = useCreateSearch();
@@ -57,7 +58,7 @@ export default function App() {
   const startNewSearch = () => { clearCancelError(); setJobId(null); };
 
   const hasRetainedCoverage = job && (job.status === "completed" || job.status === "partial" || job.status === "cancelled");
-  const zeroEligibleFares = hasRetainedCoverage && results && results.itineraries.length === 0 && (job?.succeeded_provider_work_items ?? 0) > 0;
+  const zeroEligibleFares = hasRetainedCoverage && results && !results.expired_observations?.length && results.itineraries.length === 0 && (job?.succeeded_provider_work_items ?? 0) > 0;
 
   return (
     <div className="app">
@@ -71,7 +72,7 @@ export default function App() {
             &larr; New search
           </button>
 
-          {job && capabilities?.search_cache_enabled && (
+          {job && (
             <button type="button" className="p46-header-action" disabled={submitting} onClick={() => handleSubmit({
               ...job.query, ...(job.provider_ids?.length ? { provider_ids: job.provider_ids } : {}), cache_mode: "refresh",
             })}>Run fresh search</button>
@@ -118,6 +119,7 @@ export default function App() {
           submitting={submitting}
           error={createError}
           maxCombinations={capabilities?.max_route_date_combinations ?? null}
+          providers={capabilities?.providers ?? []}
           supportedCurrencies={capabilities?.supported_currencies ?? ["IDR", "USD", "AUD", "JPY"]}
         />
       )}
@@ -142,12 +144,21 @@ export default function App() {
 
           {!job && !pollError && <p aria-live="polite" role="status">Restoring your search…</p>}
           {job && (job.status === "queued" || job.status === "running") &&
-            results && results.itineraries.length === 0 && (
+            results && !results.expired_observations?.length && results.itineraries.length === 0 && (
               <p className="empty-state" role="status">
                 Source searches are still in progress. No matching quotes have arrived in this view yet;
                 results may appear while the search continues. Lowest advertised can include indicative fares.
               </p>
             )}
+
+          {!!results?.expired_observations?.length && <section aria-label="Expired fare observations">
+            <h2>Expired fare observations</h2>
+            {job?.status === "running" && <p>Other source searches are still progressing.</p>}
+            {results.expired_observations.map(observation => <ExpiredFareCard
+              key={`${observation.provider_id}:${observation.origin}:${observation.destination}:${observation.departure_date}`}
+              observation={observation} refreshing={submitting}
+              onRefresh={() => { if (job) void handleSubmit({...job.query, provider_ids:job.provider_ids, cache_mode:"refresh"}); }} />)}
+          </section>}
 
           {zeroEligibleFares ? (
             <p className="empty-state">

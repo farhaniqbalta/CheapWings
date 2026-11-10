@@ -295,6 +295,8 @@ class Repository(CacheRepository, VerificationRepository):
             item.status = "running"
             item.attempts += 1
             item.started_at = now
+            if item.data_expires_at is None and registration.retention_seconds:
+                item.data_expires_at = now + registration.retention_seconds * 1000
             item.lease_token = str(uuid4())
             item.leased_until = now + int(lease_seconds * 1000)
             s.add(WorkAttempt(work_item_id=item.id, attempt=item.attempts, started_at=now))
@@ -374,6 +376,7 @@ class Repository(CacheRepository, VerificationRepository):
                     self._store_reprice(s, job, item, result, now)
                     item.status = "succeeded_results" if result.available else "succeeded_empty"
                 else:
+                    item.observation_retrieved_at = int(result.retrieved_at.timestamp() * 1000)
                     self._store_results(s, job, item, result, now)
                     item.status = result.status.value
                 item.provider_complete = getattr(result, "provider_complete", None)

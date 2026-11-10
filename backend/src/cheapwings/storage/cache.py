@@ -37,7 +37,7 @@ def cache_key(job, item, registration):
     # Full canonical key is retained, not a collision-prone truncated digest.
     return json.dumps(
         {
-            "version": 1,
+            "version": 2,
             "provider": item.provider_id,
             "adapter": f"{type(provider).__module__}.{type(provider).__qualname__}",
             "adapter_version": getattr(provider, "cache_version", "1"),
@@ -47,7 +47,6 @@ def cache_key(job, item, registration):
             "policy": registration.usage_policy_reviewed_on,
             "retention": registration.retention_seconds,
             "scope": "personal",
-            "sources": sorted(job.provider_ids or []),
             "origin": item.origin,
             "destination": item.destination,
             "date": item.departure_date,
@@ -195,8 +194,9 @@ class CacheRepository:
         if item.result_origin in ("cache", "shared_inflight"):
             result = without_handles(result)
             item.reused_at = now
-        job.data_expires_at = min(job.data_expires_at or hard, hard)
-        job.deadline_at = min(job.deadline_at, hard)
+        item.data_expires_at = min(item.data_expires_at or hard, hard)
+        if job.data_expires_at is not None:  # preserve legacy explicit retention bounds
+            job.data_expires_at = min(job.data_expires_at, hard)
         self._store_results(s, job, item, result, now)
         item.observation_retrieved_at = int(result.retrieved_at.timestamp() * 1000)
         item.cache_fresh_until = fresh_until

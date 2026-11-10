@@ -309,7 +309,6 @@ async def test_cache_eviction_bytes_policy_revocation_and_filter_reapplication(e
 async def test_absolute_retention_deadline_expires_inherited_job_and_purges(
     engine, query, monkeypatch
 ):
-    from cheapwings.storage.verification import ResultsExpired
 
     repo, reg = setup(engine)
     first = repo.create_job(single(query), [reg], retention_seconds=60)
@@ -319,8 +318,9 @@ async def test_absolute_retention_deadline_expires_inherited_job_and_purges(
     monkeypatch.setattr(
         "cheapwings.application.search_service.now_ms", lambda: first.data_expires_at
     )
-    with pytest.raises(ResultsExpired):
-        results_projection(repo, second.id, "lowest_advertised")
+    expired = results_projection(repo, second.id, "lowest_advertised")
+    assert expired.itineraries == []
+    assert expired.expired_observations
     repo.purge_expired(now=first.data_expires_at)
     repo.sweep(now=first.data_expires_at)
     with Session(engine) as s:
@@ -388,3 +388,16 @@ async def test_provider_specific_timeout_extends_lease_without_changing_other_so
     await asyncio.gather(*runner.tasks)
     assert repo.get_job(job.id)[0].status == "completed"
     await runner.close()
+
+
+async def test_cache_reuse_is_independent_of_other_selected_sources(engine, query):
+    repo, reg = setup(engine)
+    first = repo.create_job(single(query), [reg], retention_seconds=3600)
+    await finish(repo, reg, first)
+    other = Registration(FakeProvider(provider_id="other"), minimum_interval_seconds=0)
+    second = repo.create_job(single(query), [reg, other], retention_seconds=3600)
+    items = repo.get_job(second.id)[1]
+    cached = next(i for i in items if i.provider_id == reg.provider.provider_id)
+    assert cached.result_origin == "cache"
+    assert cached.status == "succeeded_results"
+    assert reg.provider.calls == 1

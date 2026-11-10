@@ -27,3 +27,12 @@ test("flight dates preserve origin-local offsets rather than the browser timezon
   assert.equal(flightLocalTime("2026-12-16T10:00:00"), "2026-12-16 10:00 (timezone unknown)");
   assert.equal(flightLocalTime("2026-12-16T07:00:00Z"), "2026-12-16 07:00 UTC");
 });
+
+
+import { formatMoney } from "../src/lib/money.ts";
+test("IDR truncates without changing precision or other currencies", () => {
+  for (const [amount, expected] of [["1234567.99", "IDR 1,234,567"], ["-123.99", "-IDR 123"], ["0.99", "IDR 0"], ["1234567", "IDR 1,234,567"], ["900719925474099312345.00", "IDR 900,719,925,474,099,312,345"]]) {
+    assert.equal(formatMoney(amount, "IDR"), expected);
+  }
+  assert.equal(formatMoney("123.99", "USD"), "USD 123.99");
+});

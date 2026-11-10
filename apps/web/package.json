@@ -9,7 +9,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "node --experimental-strip-types --test tests/api.test.ts",
-    "test:browser": "npm run build && node tests/browser.mjs && node tests/p45-browser.mjs"
+    "test:browser": "npm run build && node tests/browser.mjs && node tests/p45-browser.mjs && node tests/p46-browser.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",

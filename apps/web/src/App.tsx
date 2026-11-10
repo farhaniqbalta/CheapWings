@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
-import "./p45.css";
+import "./p46.css";
 import { api } from "./api/client";
 import { setOwnerToken } from "./api/session";
 import type { Capabilities, SearchRequest, SortMode } from "./api/types";
-import { ItineraryCard } from "./components/ItineraryCard";
+import { P46ResultsWorkspace } from "./components/P46ResultsWorkspace";
 import { JobErrorPanel } from "./components/JobErrorPanel";
 import { ResultSortBar } from "./components/ResultSortBar";
 import { SearchForm } from "./components/SearchForm";
-import { SearchProgress } from "./components/SearchProgress";
+import { P46SearchProgress } from "./components/P46SearchProgress";
 import { useCancelSearch } from "./hooks/useCancelSearch";
 import { useCreateSearch } from "./hooks/useCreateSearch";
 import { useJobPolling } from "./hooks/useJobPolling";
@@ -62,13 +62,35 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1><span className="brand-mark" aria-hidden="true">↗</span>CheapWings</h1>
-        <p>Compare source-reported one-way fares across airports and flexible departure dates.</p>
-        {capabilities?.synthetic_mode && (
-          <p className="synthetic-banner">
-            SYNTHETIC · Demonstration fares only. These are not real flights or prices.
-          </p>
-        )}
+        <div className="p46-header-line">
+          <div className="p46-brand"><h1>CHEAPWINGS</h1><span className="p46-brand-sub">◉ SOURCE-REPORTED FARES</span></div>
+          <div className="p46-header-nav">
+            <span className="p46-header-active">{jobId ? "FARE RESULTS" : "FLIGHT SEARCH"}</span>
+            {jobId && <>
+          <button type="button" className="new-search-button p46-header-action" onClick={startNewSearch}>
+            &larr; New search
+          </button>
+
+          {job && capabilities?.search_cache_enabled && (
+            <button type="button" className="p46-header-action" disabled={submitting} onClick={() => handleSubmit({
+              ...job.query, ...(job.provider_ids?.length ? { provider_ids: job.provider_ids } : {}), cache_mode: "refresh",
+            })}>Run fresh search</button>
+          )}
+            </>}
+            {!jobId && <span>FLEXIBLE DATES</span>}
+            <span className="p46-header-muted">ONE-WAY · ECONOMY</span>
+          </div>
+        </div>
+        <div className="p46-meta-bar">
+          <span className="p46-meta-tag">CHEAPWINGS // OBSIDIAN AMBER</span>
+          {job?.query && <>
+            <span>ROUTE: <b>{job.query.origins.join(", ")} → {job.query.destinations.join(", ")}</b></span>
+            <span>WINDOW: <b>{job.query.departure_date_from} – {job.query.departure_date_through}</b></span>
+            <span>CURRENCY: <b>{job.query.display_currency ?? "IDR"}</b></span>
+          </>}
+          <span>SCOPE: <b>ENABLED SOURCES ONLY</b></span>
+          {capabilities?.synthetic_mode && <span className="synthetic-banner">SYNTHETIC · Demonstration fares only. These are not real flights or prices.</span>}
+        </div>
       </header>
 
       <details className="access-settings">
@@ -102,20 +124,11 @@ export default function App() {
 
       {jobId && (
         <>
-          <button type="button" className="new-search-button" onClick={startNewSearch}>
-            &larr; New search
-          </button>
-
-          {job && capabilities?.search_cache_enabled && (
-            <button type="button" disabled={submitting} onClick={() => handleSubmit({
-              ...job.query, ...(job.provider_ids?.length ? { provider_ids: job.provider_ids } : {}), cache_mode: "refresh",
-            })}>Run fresh search</button>
-          )}
           {createError && jobId && <p role="alert">{createError.message}</p>}
           <JobErrorPanel job={job} transportError={cancelError ?? pollError} />
           {(pollError || cancelError) && <button type="button" onClick={() => { clearCancelError(); retry(); }}>Retry search status</button>}
           {job && (
-            <SearchProgress job={job} onCancel={async () => { await cancelSearch(jobId); retry(); }} cancelling={cancelling} />
+            <P46SearchProgress job={job} onCancel={async () => { await cancelSearch(jobId); retry(); }} cancelling={cancelling} />
           )}
           {job && (
             <section className="results-section" aria-labelledby="results-heading">
@@ -156,11 +169,7 @@ export default function App() {
                 <p className="results-as-of">
                   As of {new Date(results.as_of).toLocaleString()}. {results.warnings.join(" ")}
                 </p>
-                <div className="itinerary-list">
-                  {results.itineraries.map((it) => (
-                    <ItineraryCard key={it.itinerary_id} itinerary={it} />
-                  ))}
-                </div>
+                <P46ResultsWorkspace key={`${jobId}:${sort}`} itineraries={results.itineraries} />
                 {results.next_cursor && <button type="button" onClick={loadMore} disabled={loadingMore}>
                   {loadingMore ? "Loading more..." : "Load more results"}
                 </button>}

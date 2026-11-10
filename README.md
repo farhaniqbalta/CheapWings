@@ -166,7 +166,14 @@ uses the server calendar date. Current display currencies: IDR/USD/AUD/JPY.
 
 No raw provider payloads or passenger PII are stored. Live normalized fares, FX
 evidence, selectors, and revisions expire after the configured retention window
-and are purged by the worker or on an expired results request. Fake jobs persist
+and are purged independently per source observation by the worker or results request.
+Expiry does not shorten the job execution budget or remove another source's fresh
+quotes. Results return HTTP 200 with `expired_observations` metadata cards after
+restricted fare details are removed; no old price or expired booking link remains.
+`next_expiry_at` and `server_time` let clients refresh even completed searches.
+The legacy job-level `data_expires_at` is nullable for new searches; migration
+preserves existing cutoffs. Indefinite archival of live prices is not enabled:
+only permitted search/coverage metadata survives expiry. Fake jobs persist
 until the owner removes the local DB with both services stopped.
 Back up SQLite with its backup API or with both services stopped; copying only
 the main file while WAL writes are active is unsafe. No upstream network calls or paid services

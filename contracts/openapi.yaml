@@ -593,6 +593,61 @@
         ],
         "title": "Created"
       },
+      "ExpiredObservation": {
+        "properties": {
+          "provider_id": {
+            "type": "string",
+            "title": "Provider Id"
+          },
+          "origin": {
+            "type": "string",
+            "title": "Origin"
+          },
+          "destination": {
+            "type": "string",
+            "title": "Destination"
+          },
+          "departure_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Departure Date"
+          },
+          "observed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed At"
+          },
+          "expired_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expired At"
+          },
+          "state": {
+            "type": "string",
+            "const": "expired_details_unavailable",
+            "title": "State",
+            "default": "expired_details_unavailable"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider_id",
+          "origin",
+          "destination",
+          "departure_date",
+          "observed_at",
+          "expired_at"
+        ],
+        "title": "ExpiredObservation"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1089,6 +1144,18 @@
       },
       "PublicOffer": {
         "properties": {
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
           "result_origin": {
             "type": "string",
             "enum": [
@@ -1334,6 +1401,37 @@
       },
       "Results": {
         "properties": {
+          "server_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Time"
+          },
+          "expired_observations": {
+            "items": {
+              "$ref": "#/components/schemas/ExpiredObservation"
+            },
+            "type": "array",
+            "title": "Expired Observations"
+          },
+          "next_expiry_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Expiry At"
+          },
           "job_id": {
             "type": "string",
             "title": "Job Id"

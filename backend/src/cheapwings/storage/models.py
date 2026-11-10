@@ -62,6 +62,7 @@ class WorkItem(Base):
         ForeignKey("provider_operations.id"), index=True
     )
     result_origin: Mapped[str] = mapped_column(String, default="live", server_default="live")
+    data_expires_at: Mapped[int | None] = mapped_column(Integer)
     observation_retrieved_at: Mapped[int | None] = mapped_column(Integer)
     reused_at: Mapped[int | None] = mapped_column(Integer)
     cache_fresh_until: Mapped[int | None] = mapped_column(Integer)

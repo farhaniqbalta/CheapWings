@@ -142,6 +142,7 @@ export interface Segment {
 }
 
 export interface PublicOffer {
+  expires_at?: string | null;
   result_origin?: "live" | "cache" | "shared_inflight";
   reused_at?: string | null;
   quote_id: string;
@@ -196,7 +197,19 @@ export interface PublicItinerary {
   warnings?: string[];
 }
 
+export interface ExpiredObservation {
+  provider_id: string;
+  origin: string;
+  destination: string;
+  departure_date: string;
+  observed_at: string | null;
+  expired_at: string;
+  state: "expired_details_unavailable";
+}
 export interface Results {
+  server_time?: string | null;
+  next_expiry_at?: string | null;
+  expired_observations?: ExpiredObservation[];
   job_id: string;
   status: JobStatus;
   sort: SortMode;

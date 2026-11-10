@@ -309,7 +309,6 @@ async def test_cache_eviction_bytes_policy_revocation_and_filter_reapplication(e
 async def test_absolute_retention_deadline_expires_inherited_job_and_purges(
     engine, query, monkeypatch
 ):
-    from cheapwings.storage.verification import ResultsExpired
 
     repo, reg = setup(engine)
     first = repo.create_job(single(query), [reg], retention_seconds=60)
@@ -319,8 +318,9 @@ async def test_absolute_retention_deadline_expires_inherited_job_and_purges(
     monkeypatch.setattr(
         "cheapwings.application.search_service.now_ms", lambda: first.data_expires_at
     )
-    with pytest.raises(ResultsExpired):
-        results_projection(repo, second.id, "lowest_advertised")
+    expired = results_projection(repo, second.id, "lowest_advertised")
+    assert expired.itineraries == []
+    assert expired.expired_observations
     repo.purge_expired(now=first.data_expires_at)
     repo.sweep(now=first.data_expires_at)
     with Session(engine) as s:

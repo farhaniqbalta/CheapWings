@@ -153,28 +153,18 @@ def create_app(settings=None, registry=None, engine=None):
             if len(set(ids)) != len(ids) or not set(ids) <= available:
                 raise HTTPException(422, "Choose distinct enabled and approved provider IDs")
             selected = [r for r in registry if r.provider.provider_id in ids]
-        retention = min(
-            (
-                r.retention_seconds
-                for r in selected
-                if r.live_data and not r.unavailable_reason and r.retention_seconds
-            ),
-            default=settings.live_retention_seconds,
-        )
         try:
             job = repo.create_job(
                 query,
                 selected,
                 max_active=settings.max_active_jobs,
                 max_hourly=settings.max_hourly_jobs,
-                budget_seconds=min(settings.job_budget_seconds, retention)
-                if any(r.live_data for r in registry)
-                else settings.job_budget_seconds,
+                budget_seconds=settings.job_budget_seconds,
                 cache_mode=payload.cache_mode,
                 max_requests=settings.max_hourly_requests,
                 max_active_requests=settings.max_active_requests,
                 reprice_budget=settings.reprice_budget,
-                retention_seconds=retention if any(r.live_data for r in registry) else None,
+                retention_seconds=None,  # each observation has its own source cutoff
             )
         except CapacityExceeded as exc:
             raise HTTPException(429, str(exc)) from None

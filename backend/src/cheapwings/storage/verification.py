@@ -294,13 +294,21 @@ class VerificationRepository:
 
         now = now if now is not None else now_ms()
         with write_session(self.engine) as s:
-            for job in s.scalars(select(SearchJob).where(SearchJob.data_expires_at <= now)):
-                quotes = s.scalars(select(FareQuote).where(FareQuote.job_id == job.id)).all()
-                ids = [q.id for q in quotes]
-                fx_ids = [q.fx_snapshot_id for q in quotes if q.fx_snapshot_id is not None]
-                s.execute(delete(QuoteRevision).where(QuoteRevision.quote_id.in_(ids)))
-                s.execute(delete(FareQuote).where(FareQuote.id.in_(ids)))
-                s.execute(delete(FXRow).where(FXRow.id.in_(fx_ids)))
-                itins = select(ItineraryRow.id).where(ItineraryRow.job_id == job.id)
-                s.execute(delete(SegmentRow).where(SegmentRow.itinerary_id.in_(itins)))
-                s.execute(delete(ItineraryRow).where(ItineraryRow.job_id == job.id))
+            # Fare details are restricted; keep only search/coverage metadata after expiry.
+            jobs = {job.id: job for job in s.scalars(select(SearchJob))}
+            expired = set()
+            for item in s.scalars(select(WorkItem)):
+                job = jobs[item.job_id]
+                cutoffs = [x for x in (item.data_expires_at, job.data_expires_at) if x is not None]
+                if cutoffs and min(cutoffs) <= now:
+                    expired.add(item.id)
+            quotes = s.scalars(select(FareQuote).where(FareQuote.work_item_id.in_(expired))).all()
+            ids = [q.id for q in quotes]
+            fx_ids = [q.fx_snapshot_id for q in quotes if q.fx_snapshot_id is not None]
+            s.execute(delete(QuoteRevision).where(QuoteRevision.quote_id.in_(ids)))
+            s.execute(delete(FareQuote).where(FareQuote.id.in_(ids)))
+            s.execute(delete(FXRow).where(FXRow.id.in_(fx_ids)))
+            for itinerary_id in {q.itinerary_id for q in quotes}:
+                if s.scalar(select(FareQuote.id).where(FareQuote.itinerary_id == itinerary_id).limit(1)) is None:
+                    s.execute(delete(SegmentRow).where(SegmentRow.itinerary_id == itinerary_id))
+                    s.execute(delete(ItineraryRow).where(ItineraryRow.id == itinerary_id))

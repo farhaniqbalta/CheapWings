@@ -41,13 +41,13 @@ async function fixturePage(width, state) {
     if(url.hostname==='127.0.0.1') {
       const send=(json,status=200)=>route.fulfill({json,status,headers:{'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'content-type,authorization','Access-Control-Allow-Methods':'GET,POST,OPTIONS'}});
       if(req.method()==='OPTIONS')return send({});
-      if(url.pathname.endsWith('/capabilities'))return send({synthetic_mode:true,search_cache_enabled:true,providers:state.sources??[{provider_id:'fake',enabled:true,permitted_to_aggregate:true}],supported_currencies:['IDR','USD','AUD','JPY'],max_route_date_combinations:120});
+      if(url.pathname.endsWith('/capabilities'))return send({synthetic_mode:true,search_cache_enabled:state.cacheEnabled??true,providers:state.sources??[{provider_id:'fake',enabled:true,permitted_to_aggregate:true}],supported_currencies:['IDR','USD','AUD','JPY'],max_route_date_combinations:120});
       if(req.method()==='POST'&&url.pathname.endsWith('/searches')) {
         state.submissions.push(req.postDataJSON());state.jobId='p46-fresh';
         return send({job_id:state.jobId,status:'queued',job_status_url:'/api/v1/searches/'+state.jobId},202);
       }
       const id=url.pathname.split('/')[4];
-      if(url.pathname.endsWith('/results'))return send({job_id:id,sort:url.searchParams.get('sort'),status:state.status??'completed',as_of:now,next_cursor:null,itineraries:state.entries??all,warnings:['SYNTHETIC test observations only.']});
+      if(url.pathname.endsWith('/results'))return send({job_id:id,sort:url.searchParams.get('sort'),status:state.status??'completed',as_of:now,next_cursor:null,itineraries:state.entries??all,expired_observations:state.expired??[],next_expiry_at:state.nextExpiry??null,server_time:new Date().toISOString(),warnings:['SYNTHETIC test observations only.']});
       return send({...job,...state.job,job_id:id,status:state.status??'completed',provider_ids:['fake'],updated_at:`2027-01-10T12:00:${String(state.revision??0).padStart(2,'0')}Z`});
     }
     if(url.hostname!=='localhost')return route.fulfill({contentType:'text/html',body:'<h1>SYNTHETIC external destination</h1>'});
@@ -124,6 +124,36 @@ try {
     console.log(`PASS p46 master-detail, disclosure, source evidence and search ${width}px`);
   }
 
+  for(const width of [375,768,1440]) {
+    const state={entries:[],cacheEnabled:false,status:'running',expired:[{provider_id:'fake',origin:'MEL',destination:'DPS',departure_date:'2027-01-12',observed_at:now,expired_at:now,state:'expired_details_unavailable'}]};
+    const {context,page}=await fixturePage(width,state);
+    await page.goto('http://localhost:5173/?job=p46-synthetic');
+    await page.getByRole('article',{name:'Expired fares from fake',exact:true}).waitFor();
+    await page.getByText('Expired · Price details unavailable',{exact:true}).waitFor();
+    await page.getByText('Other source searches are still progressing.',{exact:true}).waitFor();
+    assert.equal(await page.locator('.expired-fare-card time').count(),2);
+    assert.equal(await page.locator('.expired-fare-card a').count(),0);
+    assert.equal(await page.locator('.p46-ledger-row').count(),0);
+    await noOverflow(page,'expired card '+width);
+    await page.screenshot({path:`${shots}/expired_${width}.png`,fullPage:true});
+    await page.locator('.expired-fare-card').getByRole('button',{name:'Run fresh search',exact:true}).click();
+    await page.waitForURL('**/?job=p46-fresh');
+    assert.deepEqual(state.submissions[0].provider_ids,['fake']);
+    assert.equal(state.submissions[0].cache_mode,'refresh');
+    await context.close();console.log('PASS p47 expired visual card and cache-off refresh '+width);
+  }
+  {
+    const state={entries:all,nextExpiry:new Date(Date.now()+3000).toISOString()};
+    const {context,page}=await fixturePage(375,state);
+    await page.goto('http://localhost:5173/?job=p46-synthetic');
+    await page.locator('.p46-ledger-row').first().waitFor();
+    state.entries=[];state.nextExpiry=null;
+    state.expired=[{provider_id:'fake',origin:'MEL',destination:'DPS',departure_date:'2027-01-12',observed_at:now,expired_at:now,state:'expired_details_unavailable'}];
+    await page.getByRole('article',{name:'Expired fares from fake',exact:true}).waitFor();
+    assert.equal(await page.locator('.p46-ledger-row').count(),0);
+    assert.equal(state.submissions.length,0);
+    await context.close();console.log('PASS p47 completed job automatically replaces expired prices');
+  }
   for (const mode of ['all', 'single', 'none']) {
     const state={sources:['skiplagged','swoop','octotrip'].map(provider_id=>({provider_id,enabled:true,permitted_to_aggregate:true})).concat([{provider_id:'blocked',enabled:false,disabled_reason:'Disabled by owner',permitted_to_aggregate:false}])};
     const {context,page}=await fixturePage(375,state);

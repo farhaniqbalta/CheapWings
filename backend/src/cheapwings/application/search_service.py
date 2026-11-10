@@ -32,7 +32,6 @@ from cheapwings.storage.models import (
     WorkItem,
 )
 from cheapwings.storage.repository import SUCCESS, now_ms
-from cheapwings.storage.verification import ResultsExpired
 
 
 def instant(ms):
@@ -155,6 +154,7 @@ def _exact_reprice_count(repo, job_id):
 
 def public_offer(offer, row_id, work=None):
     evidence_fields = {
+        "expires_at",
         "result_origin",
         "reused_at",
         "fee_completeness",
@@ -197,6 +197,7 @@ def public_offer(offer, row_id, work=None):
         data["link"], data["link_scope"] = None, LinkScope.UNAVAILABLE
     return dto.PublicOffer(
         **data,
+        expires_at=instant(work.data_expires_at) if work else None,
         result_origin=work.result_origin if work else "live",
         reused_at=instant(work.reused_at) if work else None,
         quote_id=str(row_id),
@@ -210,10 +211,17 @@ def public_offer(offer, row_id, work=None):
 
 
 def results_projection(repo, job_id, sort, cursor=None, limit=50):
-    job, _ = repo.get_job(job_id)
-    if job.data_expires_at and job.data_expires_at <= now_ms():
-        repo.purge_expired()
-        raise ResultsExpired("Live fare data expired; start a new search")
+    repo.purge_expired(now=now_ms())
+    job, items = repo.get_job(job_id)
+    now = now_ms()
+    expired = []
+    for item in items:
+        cutoffs = [x for x in (item.data_expires_at, job.data_expires_at) if x is not None]
+        if item.work_type == "detailed" and item.result_count and cutoffs and min(cutoffs) <= now:
+            expired.append(dto.ExpiredObservation(provider_id=item.provider_id, origin=item.origin,
+                destination=item.destination, departure_date=item.departure_date,
+                observed_at=instant(item.observation_retrieved_at), expired_at=instant(min(cutoffs))))
+    future = [i.data_expires_at for i in items if i.result_count and i.data_expires_at and i.data_expires_at > now]
     with Session(repo.engine) as s:
         maximum = s.scalar(select(func.max(FareQuote.id)).where(FareQuote.job_id == job_id)) or 0
         revision_cutoff = s.scalar(select(func.max(QuoteRevision.id))) or 0
@@ -358,6 +366,9 @@ def results_projection(repo, job_id, sort, cursor=None, limit=50):
                 json.dumps([job_id, sort, cutoff, offset + limit, as_of, revision_cutoff]).encode()
             ).decode()
         return dto.Results(
+            server_time=instant(now),
+            expired_observations=expired,
+            next_expiry_at=instant(min(future)) if future else None,
             job_id=job_id,
             status=job.status,
             sort=sort,

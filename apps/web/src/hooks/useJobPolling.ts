@@ -68,6 +68,20 @@ export function useJobPolling(jobId: string | null, sort: SortMode, accessVersio
   }, [jobId, sort, updatedAt, status, accessVersion, revision]);
 
   const currentResults = results?.job_id === jobId && results.sort === sort ? results : null;
+  // Even terminal jobs need a fresh server snapshot when an observation expires.
+  const nextExpiry = currentResults?.next_expiry_at;
+  const expiryServerTime = currentResults?.server_time;
+  useEffect(() => {
+    if (!nextExpiry) return;
+    const delay = Date.parse(nextExpiry) - (expiryServerTime ? Date.parse(expiryServerTime) : Date.now());
+    if (!Number.isFinite(delay)) return;
+    const timer = setTimeout(() => {
+      setResults(null); // do not leave an expired price/link visible during the request
+      setRevision(value => value + 1);
+    }, Math.max(MIN_INTERVAL_MS, Math.min(delay, 2_147_483_647)));
+    return () => clearTimeout(timer);
+  }, [nextExpiry, expiryServerTime, jobId, sort, accessVersion]);
+
   const loadMore = useCallback(async () => {
     if (!jobId || !currentResults?.next_cursor || moreInFlight.current) return;
     const currentGeneration = generation.current;

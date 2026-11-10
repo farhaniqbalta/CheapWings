@@ -180,6 +180,7 @@ class AirportTransfer(DTO):
 
 
 class PublicOffer(DTO):
+    expires_at: datetime | None = None
     result_origin: Literal["live", "cache", "shared_inflight"] = "live"
     reused_at: datetime | None = None
     quote_id: str
@@ -228,7 +229,20 @@ class PublicItinerary(DTO):
     warnings: list[str] = Field(default_factory=list)
 
 
+class ExpiredObservation(DTO):
+    provider_id: str
+    origin: str
+    destination: str
+    departure_date: date
+    observed_at: datetime | None
+    expired_at: datetime
+    state: Literal["expired_details_unavailable"] = "expired_details_unavailable"
+
+
 class Results(DTO):
+    server_time: datetime | None = None
+    expired_observations: list[ExpiredObservation] = Field(default_factory=list)
+    next_expiry_at: datetime | None = None
     job_id: str
     status: JobStatus
     sort: Sort

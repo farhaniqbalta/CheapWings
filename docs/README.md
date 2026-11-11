@@ -1,6 +1,6 @@
 # CheapWings — Worker Implementation Handoff
 
-**Original handoff:** 2026-11-09 · **Current status:** P0–P4.7 completed; P4.8 experiments/planning complete, implementation pending approval. Read [WORK_LOG.md](../WORK_LOG.md) for current decisions and the next task.
+**Original handoff:** 2026-11-09 · **Current status:** P4.9 merged; P4.10 implemented for owner review. Read [WORK_LOG.md](../WORK_LOG.md) for current decisions and the next task.
 
 > Read the short current work log first, then only the specifications and evidence relevant to the authorized task. These numbered documents describe the approved design and original phase gates; their unchecked tasks are not a current progress tracker. The generated [OpenAPI contract](../contracts/openapi.yaml) and [runbook](../README.md) describe implemented interfaces. `reference/` is historical context and does not override current owner decisions.
 

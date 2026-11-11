@@ -1,0 +1,35 @@
+{
+  "checks": 75,
+  "evidence": [
+    {
+      "width": 375,
+      "scenario": "Specific, Major, unmapped, mode-switch, over-cap, dates, overlap, keyboard, mobile",
+      "codes": [
+        "HND",
+        "NRT"
+      ],
+      "autoSubmissions": 0,
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "scenario": "Specific, Major, unmapped, mode-switch, over-cap, dates, overlap, keyboard, mobile",
+      "codes": [
+        "HND",
+        "NRT"
+      ],
+      "autoSubmissions": 0,
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "scenario": "Specific, Major, unmapped, mode-switch, over-cap, dates, overlap, keyboard, mobile",
+      "codes": [
+        "HND",
+        "NRT"
+      ],
+      "autoSubmissions": 0,
+      "overflow": false
+    }
+  ]
+}

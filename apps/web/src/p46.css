@@ -406,3 +406,28 @@ button:disabled { cursor: not-allowed; opacity: .62; }
 .expired-fare-badge { color: #f4c875; }
 .expired-fare-card p { color: #d5d1c8; }
 .expired-fare-card button { min-height: 44px; padding: .5rem 1rem; }
+
+/* P4.10: compact typed location rows within the existing query console. */
+.location-picker { min-width: 0; position: relative; }
+.location-hint { font-size: .75rem; color: var(--text-muted); margin: .35rem 0; }
+.location-results { border: 1px solid var(--p46-line); border-radius: 2px; background: var(--p46-input); margin-top: .35rem; }
+.location-results [role=listbox] { max-height: 260px; overflow-y: auto; }
+.location-row { display: grid; gap: .2rem; padding: .65rem .7rem; min-height: 44px; cursor: pointer; border-bottom: 1px solid var(--p46-line); overflow-wrap: anywhere; }
+.location-row.active { background: var(--p46-amber-dim); outline: 2px solid var(--accent); outline-offset: -2px; }
+.location-row[aria-selected=true] { background: #18382b; }
+.location-row strong { font-size: .85rem; }
+.location-row span, .location-row small { font-size: .75rem; }
+.location-results > p { padding: .5rem; }
+.location-results button, .location-context button, .location-picker .chip button { min-height: 44px; min-width: 44px; }
+.location-context { font-size: .8rem; overflow-wrap: anywhere; }
+.location-selection { font-size: .75rem; padding-left: 1.1rem; margin: .35rem 0; overflow-wrap: anywhere; max-height: 150px; overflow-y: auto; }
+.location-mode { display: flex; flex-wrap: wrap; gap: .4rem; margin: .4rem 0; }
+.location-mode button { min-height: 44px; font-size: .75rem; }
+.location-mode button[aria-pressed=true] { background: var(--p46-amber-dim); color: #ffd495; border-color: var(--accent); }
+.location-major { font-size: .8rem; padding: .65rem; background: var(--p46-soft); color: var(--text); border: 1px solid var(--p46-line); border-radius: 2px; overflow-wrap: anywhere; }
+
+.location-picker button { color: var(--text); background: var(--p46-raised); border: 1px solid var(--p46-line); border-radius: 2px; padding: .45rem; }
+.location-picker .chip-input input { background: transparent; color: var(--text); min-width: 90px; }
+.location-major p { color: var(--text-muted); }
+/* Keep autocomplete opening/closing from moving controls under a pointer click. */
+.location-results { position: absolute; z-index: 20; left: 0; right: 0; box-shadow: 0 8px 22px rgb(0 0 0 / 40%); }

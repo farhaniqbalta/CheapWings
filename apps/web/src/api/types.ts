@@ -42,7 +42,11 @@ export type ProviderErrorCode =
 export const SUPPORTED_CURRENCIES = ["IDR", "USD", "AUD", "JPY"] as const;
 export type Currency = (typeof SUPPORTED_CURRENCIES)[number];
 
+import type { MajorSelection } from "../lib/locations";
+
 export interface SearchRequest {
+  origin_selection?: MajorSelection | null;
+  destination_selection?: MajorSelection | null;
   provider_ids?: string[] | null;
   cache_mode?: "prefer_cache" | "refresh";
   trip_type?: "one_way";

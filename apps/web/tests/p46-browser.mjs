@@ -180,11 +180,11 @@ try {
       const submit=page.getByRole('button',{name:'Find cheapest flights',exact:true});
       const origin=page.getByLabel('Origin airports',{exact:true}),destination=page.getByLabel('Destination airports',{exact:true});
       await origin.fill('BADCODE');await origin.press('Enter');
-      await page.getByText(/not a 3-letter airport code/).waitFor();
+      await page.getByText('No matching location. Choose an airport from the catalog.',{exact:true}).waitFor();
       await origin.fill('mel');await origin.press('Enter');await origin.fill('MEL');await origin.press('Enter');
       assert.equal(await page.getByRole('button',{name:'Remove MEL',exact:true}).count(),1);
       await destination.fill('MEL');await destination.press('Enter');await submit.click();
-      await page.getByText('Origin and destination airports cannot overlap.',{exact:true}).waitFor();
+      await page.getByText('No valid routes. Choose different origin and destination airports.',{exact:true}).waitFor();
       await page.locator('.p46-route-fields .field').nth(1).getByRole('button',{name:'Remove MEL'}).click();
       await destination.fill('DPS');await destination.press('Enter');await destination.fill('CGK');await destination.press('Enter');
       await page.getByLabel('Earliest departure',{exact:true}).fill('2027-01-12');

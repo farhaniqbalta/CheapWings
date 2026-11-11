@@ -15,7 +15,8 @@ their original sessions; they are not current instructions or deployment state.
 | [P4.8 interval review](p4.8.md) | Earlier concurrency-1 interval samples and initial scheduling proposal |
 | [P4.8 throughput experiment](p4.8-throughput-experiment.md) | Concurrency/interval comparison, Python stress tests, failure injection and architecture assessment |
 | [Latest P4.8 follow-up](p4.8-throughput-experiment.md#follow-up--requested-c31s-trials-and-swoop-retry-2026-11-11-jakarta) | Requested C3/1s trials and two successful swoop parallel retry batches; latest experimental candidates and remaining gates |
-| [P4.9 scheduler](p4.9.md) | Architecture comparison, approved C3 implementation, performance/failure verification and local live-test setup |
+| [P4.9 scheduler](p4.9.md) | C3 scheduling implementation, performance/reliability evidence, owner merge handoff and deferred Google Flights transport issue |
+| [P4.10 smart locations](p4.10.md) | Offline typed lookup, curated Major coverage, scope validation, tests and UI evidence |
 
 ## Reporting convention
 

@@ -1,7 +1,11 @@
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { ApiError } from "../api/client";
 import type { Currency, SearchRequest, ProviderCapability } from "../api/types";
 import { AirportMultiSelect } from "./AirportMultiSelect";
+
+import { createLocationService } from "../lib/locations";
+import type { LocationService, MajorSelection } from "../lib/locations";
+import { planScope } from "../lib/scope";
 
 interface Props {
   onSubmit: (request: SearchRequest) => void;
@@ -12,22 +16,26 @@ interface Props {
   providers: ProviderCapability[];
 }
 function todayIso() { return new Date().toISOString().slice(0, 10); }
-function combinationCount(origins: string[], destinations: string[], from: string, through: string) {
-  if (!from || !through) return 0;
-  const start = new Date(`${from}T00:00:00Z`);
-  const end = new Date(`${through}T00:00:00Z`);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return 0;
-  const days = Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1;
-  // Display preview only. Backend decides and validates the actual query scope.
-  return origins.length * destinations.length * days;
-}
-
 /** P4.6 replaces visuals, not the SearchRequest contract or its validation. */
 export function SearchForm({ onSubmit, submitting, error, maxCombinations, supportedCurrencies, providers }: Props) {
+  const [locations, setLocations] = useState<LocationService | null>(null);
+  const [catalogError, setCatalogError] = useState(false);
+  const [catalogAttempt, setCatalogAttempt] = useState(0);
+  useEffect(() => {
+    let active = true;
+    fetch(`${import.meta.env.BASE_URL}locations.json`).then(response => {
+      if (!response.ok) throw new Error("Catalog unavailable");
+      return response.json();
+    }).then(data => {if (active) setLocations(createLocationService(data));})
+      .catch(() => {if (active) setCatalogError(true);});
+    return () => {active = false;};
+  }, [catalogAttempt]);
   const [excludedSources, setExcludedSources] = useState<string[]>([]);
   const eligible = providers.filter(p => p.enabled && p.permitted_to_aggregate === true);
   const selectedSources = eligible.filter(p => !excludedSources.includes(p.provider_id)).map(p => p.provider_id);
   const sourceNames: Record<string, string> = {skiplagged: "Skiplagged", swoop: "swoop (Google Flights)", octotrip: "OctoTrip"};
+  const [originSelection, setOriginSelection] = useState<MajorSelection | null>(null);
+  const [destinationSelection, setDestinationSelection] = useState<MajorSelection | null>(null);
   const [origins, setOrigins] = useState<string[]>([]);
   const [destinations, setDestinations] = useState<string[]>([]);
   const [from, setFrom] = useState(todayIso());
@@ -39,8 +47,8 @@ export function SearchForm({ onSubmit, submitting, error, maxCombinations, suppo
   const [displayCurrency, setDisplayCurrency] = useState<Currency>("IDR");
   const [clientError, setClientError] = useState<string | null>(null);
   const formId = useId();
-  const combos = useMemo(() => combinationCount(origins, destinations, from, through),
-    [origins, destinations, from, through]);
+  const plan = planScope(origins, destinations, from, through, selectedSources);
+  const combos = plan.combinations;
   const overCap = maxCombinations != null && combos > maxCombinations;
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -50,14 +58,15 @@ export function SearchForm({ onSubmit, submitting, error, maxCombinations, suppo
       setClientError("Add at least one origin and one destination airport.");
       return;
     }
-    if (origins.some(origin => destinations.includes(origin))) {
-      setClientError("Origin and destination airports cannot overlap.");
+    if (plan.pairs === 0) {
+      setClientError("No valid routes. Choose different origin and destination airports.");
       return;
     }
     if (through < from) {
       setClientError("Latest departure date cannot be before earliest departure date.");
       return;
     }
+    if (maxCombinations == null) {setClientError("Wait for the server search limit before submitting."); return;}
     if (overCap) {
       setClientError(`${combos} origin x destination x date combinations exceeds the server limit of ${maxCombinations}. Narrow the airports or date range.`);
       return;
@@ -67,6 +76,8 @@ export function SearchForm({ onSubmit, submitting, error, maxCombinations, suppo
       return;
     }
     onSubmit({
+      ...(originSelection ? {origin_selection:originSelection} : {}),
+      ...(destinationSelection ? {destination_selection:destinationSelection} : {}),
       provider_ids: selectedSources,
       origins, destinations,
       departure_date_from: from,
@@ -86,11 +97,12 @@ export function SearchForm({ onSubmit, submitting, error, maxCombinations, suppo
         <span className="p46-console-meta">ONE-WAY / 1 ADULT / ECONOMY</span>
       </div>
       <div className="p46-console-body">
+        {catalogError && <p role="alert">Location catalog unavailable. <button type="button" onClick={() => {setCatalogError(false);setCatalogAttempt(n => n+1);}}>Retry location catalog</button></p>}
         <div className="p46-route-section">
           <div className="p46-section-legend"><span>✈</span> ROUTE SELECTION <small>Multi-airport search supported</small></div>
           <div className="p46-route-fields">
-            <AirportMultiSelect label="Origin airports" codes={origins} onChange={setOrigins} />
-            <AirportMultiSelect label="Destination airports" codes={destinations} onChange={setDestinations} />
+            <AirportMultiSelect label="Origin airports" codes={origins} onChange={(codes, selection) => {setOrigins(codes);setOriginSelection(selection ?? null);}} locations={locations} />
+            <AirportMultiSelect label="Destination airports" codes={destinations} onChange={(codes, selection) => {setDestinations(codes);setDestinationSelection(selection ?? null);}} locations={locations} />
           </div>
         </div>
         <div className="p46-parameters">
@@ -157,11 +169,13 @@ export function SearchForm({ onSubmit, submitting, error, maxCombinations, suppo
         </div>
         <div className="p46-search-footer">
           <div className="p46-query-scope">
-            <strong className="combo-preview" aria-live="polite">◉ {combos > 0 ? `${combos} route-date combinations` : "Add origin and destination airports"}</strong>
-            <span>Enabled sources may return results gradually.</span>
-            {overCap && <strong className="field-error">Exceeds the server limit of {maxCombinations}; narrow your search.</strong>}
+            <strong className="combo-preview" aria-live="polite">◉ {origins.length && destinations.length ? `${combos} route-date combinations` : "Add origin and destination airports"}</strong>
+            <span>{origins.length} origin airports · {destinations.length} destination airports · {plan.days} dates · Server limit: {maxCombinations ?? "loading"}</span>
+            <span>{plan.providerCount} providers · Estimated upper bound: {plan.estimatedWorkItems} provider work items. Cache and provider support can reduce actual calls.</span>
+            {!!origins.length && !!destinations.length && plan.pairs === 0 && <strong className="field-error">Same-airport pairs are excluded. Choose airports with at least one valid route.</strong>}
+            {overCap && <strong className="field-error">Exceeds the server limit of {maxCombinations}; remove airports, shorten the date range or switch to Specific Airports.</strong>}
           </div>
-          <button type="submit" disabled={submitting || overCap}>{submitting ? "Starting search..." : <>Find cheapest flights <span aria-hidden="true">→</span></>}</button>
+          <button type="submit" disabled={submitting || overCap || maxCombinations == null}>{submitting ? "Starting search..." : <>Find cheapest flights <span aria-hidden="true">→</span></>}</button>
         </div>
       </div>
       <p className="product-limitation">Source-reported comparison only. Not all flight inventory is covered; displayed prices and booking availability can change.</p>

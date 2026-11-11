@@ -8,7 +8,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 - At phase close: collapse its detail into `docs/log/`, leave one tracker row. Replace (don't append to) "Latest checkpoint" and "Next task".
 
 ## Project basics
-- Repo `farhaniqbalta/CheapWings`, review branch `p4.9-scheduler-review` from `5d72be4`, personal single-owner use. Python 3.12 backend (`backend/src/cheapwings`), React web (`apps/web`), SQLite + Alembic. Native iOS (P5) needs full Xcode (only CLT present).
+- Repo `farhaniqbalta/CheapWings`, development branch `p4.10-smart-locations` from merged main `a932900`, personal single-owner use. Python 3.12 backend (`backend/src/cheapwings`), React web (`apps/web`), SQLite + Alembic. Native iOS (P5) needs full Xcode (only CLT present).
 - Owner merges PRs; never merge/push automatically. Confirm before toolchain installs or live provider probes.
 - Baseline/environment history: [baseline-and-old-summary](docs/log/baseline-and-old-summary.md).
 
@@ -25,7 +25,8 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | P4.6 Web UI update | Done; PR #1 merged 32190a1 | same file |
 | P4.7 Source controls + historical lifecycle | Done; PR #2 merged 229fa3f; 126 backend / 4 web / 65 browser checks | same file |
 | P4.8 Provider intervals + staggered scheduling | Experiments complete; scheduling delivered through P4.9 | [interval review](docs/log/p4.8.md), [throughput experiment](docs/log/p4.8-throughput-experiment.md) |
-| P4.9 Scheduler architecture | Option A implemented; offline verification passed; owner requested C3 defaults | [P4.9 review and implementation](docs/log/p4.9.md) |
+| P4.9 Scheduler architecture | Done; PR #3 merged a932900; Google Flights transport restoration deferred | [P4.9 review and implementation](docs/log/p4.9.md) |
+| P4.10 Smart locations | Implemented, verified and owner-tested; PR publication approved | [P4.10 implementation](docs/log/p4.10.md) |
 | P5 SwiftUI native iOS | Not started; needs full Xcode | |
 | P6 Release acceptance | Not started | |
 
@@ -37,14 +38,14 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | OctoTrip | GO, opt-in personal use (owner 2026-11-10) | Indicative only, no exact reprice, cache disabled; fare/fees/risk/source-age unknown; 900s lifecycle; nearby airports filtered. |
 
 ## Latest checkpoint
-- Corrected Skiplagged HTTP 429 detection to preserve Retry-After through MCP wrapping; raised its default/local interval to 3s (C3 retained).
-- Swoop false-empty fixed with strict RPC validation and cache namespace v3; 173 backend tests pass. Actual retrieval remains blocked: RPC 13/null payload; public-page control redirects to unsupported. [Evidence](docs/log/p4.9.md).
-- Existing API/web services remain available for owner testing; durable worker restarted with the fix.
-- Diagnosed latest cross-provider failures: worker was restarted inside a network-restricted sandbox. DNS failed for all provider hosts; restarted outside sandbox. [Evidence](docs/log/p4.9.md#confirmed-runtime-cause-and-correction--2026-11-11).
-- Prior offline verification and P4.9 evidence: [scheduler log](docs/log/p4.9.md); merge remains owner-controlled.
+- P4.10 implemented in an isolated worktree from owner-confirmed merged P4.9 (`a932900`); [implementation and evidence](docs/log/p4.10.md).
+- Offline typed lookup; Specific default; curated Major opt-in; authoritative metadata validation and runtime scope cap.
+- Backend 211 + isolated scheduler/failure 42 passed (253 total); web 9 tests + 75 new browser assertions; evidence in the phase log.
+- Scheduler/provider/search limits preserved; owner-authorized live P4.10 testing at http://localhost:5173/ with existing providers/database.
+- Owner confirmed live testing okay and authorized push/PR; owner controls merge. Existing swoop transport limitation remains deferred.
 
 ## Next task
-Evaluate a working supported Google Flights transport before claiming swoop retrieval restored; current guard reports failures honestly. API/worker restarted with network access. Keep Skiplagged C3/3s and local OctoTrip C3/1s. P5 still needs full Xcode.
+Publish the owner-tested P4.10 branch and PR for final review; owner handles merge. Live testing remains at http://localhost:5173/. P5 still needs full Xcode; transport restoration remains separate work.
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

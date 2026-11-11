@@ -19,6 +19,7 @@ from cheapwings.application.search_service import (
 )
 from cheapwings.config import Settings
 from cheapwings.engine.expansion import expand_routes_and_dates
+from cheapwings.locations.catalog import MajorResolution, MajorSelection, catalog
 from cheapwings.providers.registry import default_registry
 from cheapwings.storage.db import database, require_current_schema
 from cheapwings.storage.repository import CapacityExceeded, Repository
@@ -131,6 +132,14 @@ def create_app(settings=None, registry=None, engine=None):
             max_hourly_jobs=settings.max_hourly_jobs,
             synthetic_mode=not any(r.live_data for r in registry if r.unavailable_reason is None),
         )
+
+    @secured.post("/locations/resolve", response_model=MajorResolution)
+    def resolve_location(selection: MajorSelection):
+        # Pure metadata resolution: never creates jobs or invokes providers.
+        try:
+            return catalog().resolve(selection)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from None
 
     @secured.post(
         "/searches",

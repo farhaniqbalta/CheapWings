@@ -27,7 +27,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | P4.8 Provider intervals + staggered scheduling | Experiments complete; scheduling delivered through P4.9 | [interval review](docs/log/p4.8.md), [throughput experiment](docs/log/p4.8-throughput-experiment.md) |
 | P4.9 Scheduler architecture | Done; PR #3 merged a932900; Google Flights transport restoration deferred | [P4.9 review and implementation](docs/log/p4.9.md) |
 | P4.10 Smart locations | Done; PR #4 merged `9a160d9` | [P4.10 implementation](docs/log/p4.10.md) |
-| P4.11 Fli provider | Implemented as fourth source; C3/1s approved; live site wired for owner testing | [P4.11 implementation and verification](docs/log/p4.11.md) |
+| P4.11 Fli provider | Implemented; owner-tested; [PR #5](https://github.com/farhaniqbalta/CheapWings/pull/5) open for owner merge | [P4.11 implementation and verification](docs/log/p4.11.md) |
 | P5 SwiftUI native iOS | Not started; needs full Xcode | |
 | P6 Release acceptance | Not started | |
 
@@ -44,7 +44,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 - Pinned tested Fli 0.10.0 source commit `881aee5` and curl-cffi 0.17.0. Explicit HTTP/2: two C3/1s batches succeeded 6/6 with 62 persisted offers; earlier TLS failures remain documented. [Evidence](docs/log/p4.11.md).
 - Live site http://localhost:5173/ runs P4.11: all four sources enabled; Fli-only API test returned 11 priced itineraries in 1.168s; cache reuse and actual browser rendering verified.
 - Regression verification: 275 backend/isolated tests, 9 web unit tests and complete browser suites passed; final counts are in the phase log. Missing/error payloads fail; priced cache uses original Decimal amounts.
-- Owner is testing the real site. Generic Google search links are labeled; baggage/fees/risk and exact bookability remain unverified. Owner requested push and PR; merge remains owner-controlled.
+- Owner is testing the real site. Generic Google search links are labeled; baggage/fees/risk and exact bookability remain unverified. [PR #5](https://github.com/farhaniqbalta/CheapWings/pull/5) published; owner reports fast/good results; merge remains owner-controlled.
 
 ## Next task
 Owner tests Fli on http://localhost:5173/ (select Fli alone, include basic economy, Lowest advertised). Owner reviews the P4.11 PR; address findings. No automatic merge. Swoop itself remains unresolved.

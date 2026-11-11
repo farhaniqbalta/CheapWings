@@ -1,0 +1,108 @@
+{
+  "scope": "P4.11 controlled live metadata; no raw payloads",
+  "fli_source_commit": "881aee5ff4321e81ea2157cb44be94ce6a21dc1b",
+  "fli_source_version": "0.10.0",
+  "curl_cffi_version": "0.17.0",
+  "configuration": {
+    "concurrency": 3,
+    "interval_seconds": 1,
+    "global_capacity": 9
+  },
+  "workload": {
+    "origin": "HND",
+    "destination": "CGK",
+    "dates": [
+      "2026-11-20",
+      "2026-11-21",
+      "2026-11-22"
+    ],
+    "currency": "IDR",
+    "adults": 1,
+    "cabin": "economy"
+  },
+  "trials": [
+    {
+      "transport": "original_negotiation",
+      "max_attempts": 1,
+      "successful": 1,
+      "searches": 3,
+      "fetches": 3,
+      "batch_seconds": 12.552,
+      "offers": 11,
+      "peak": 3,
+      "first_result_seconds": 12.539,
+      "gaps": [
+        1.0099,
+        1.0097
+      ]
+    },
+    {
+      "transport": "original_negotiation",
+      "max_attempts": 3,
+      "successful": 0,
+      "searches": 3,
+      "fetches": 9,
+      "batch_seconds": 40.188,
+      "offers": 0,
+      "peak": 3,
+      "transport_error_code": 35
+    },
+    {
+      "transport": "explicit_http2",
+      "max_attempts": 1,
+      "successful": 3,
+      "searches": 3,
+      "fetches": 3,
+      "batch_seconds": 2.857,
+      "offers": 31,
+      "peak": 2,
+      "first_result_seconds": 1.47,
+      "gaps": [
+        1.0105,
+        1.0278
+      ],
+      "latencies": [
+        1.333,
+        0.995,
+        0.763
+      ]
+    },
+    {
+      "transport": "explicit_http2",
+      "max_attempts": 1,
+      "successful": 3,
+      "searches": 3,
+      "fetches": 3,
+      "batch_seconds": 2.651,
+      "offers": 31,
+      "peak": 1,
+      "first_result_seconds": 0.962,
+      "gaps": [
+        1.0112,
+        1.005
+      ],
+      "latencies": [
+        0.835,
+        0.878,
+        0.58
+      ]
+    }
+  ],
+  "live_api_ui": {
+    "elapsed_seconds": 1.168,
+    "priced_itineraries": 11,
+    "succeeded_empty": 0,
+    "cache_reused_itineraries": 11,
+    "browser_priced_rows": 11,
+    "browser_errors": 0,
+    "link_scope": "generic_search",
+    "bookability_verified": false,
+    "checked_bags_verified": false
+  },
+  "limitations": [
+    "Small repeated corpus",
+    "Not proof of sustained safe rate",
+    "Fast final responses did not occupy all three slots",
+    "Network variability confounds causal transport comparison"
+  ]
+}

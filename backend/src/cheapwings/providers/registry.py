@@ -43,6 +43,7 @@ def default_registry(settings=None):
     from importlib.util import find_spec
 
     from cheapwings.config import Settings
+    from cheapwings.providers.fli import FliProvider
     from cheapwings.providers.octotrip import OctotripProvider
     from cheapwings.providers.skiplagged import SkiplaggedProvider
     from cheapwings.providers.swoop import SwoopProvider
@@ -55,6 +56,7 @@ def default_registry(settings=None):
         (SkiplaggedProvider(), ("mcp", "httpx2")),
         (SwoopProvider(concurrency=settings.swoop_concurrency), ("swoop", "airportsdata")),
         (OctotripProvider(), ("airportsdata",)),
+        (FliProvider(concurrency=settings.fli_concurrency), ("fli", "airportsdata")),
     ):
         selected = provider.provider_id in settings.enabled_providers
         missing = [name for name in dependencies if find_spec(name) is None]
@@ -82,7 +84,9 @@ def default_registry(settings=None):
                 retention_seconds=min(settings.live_retention_seconds, 900)
                 if provider.provider_id == "octotrip"
                 else settings.live_retention_seconds,
-                usage_policy_reviewed_on="2026-11-10"
+                usage_policy_reviewed_on="2026-11-11"
+                if provider.provider_id == "fli"
+                else "2026-11-10"
                 if provider.provider_id == "octotrip"
                 else "2026-11-09",
             )

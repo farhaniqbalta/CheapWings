@@ -8,7 +8,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 - At phase close: collapse its detail into `docs/log/`, leave one tracker row. Replace (don't append to) "Latest checkpoint" and "Next task".
 
 ## Project basics
-- Repo `farhaniqbalta/CheapWings`, development branch `p4.10-smart-locations` from merged main `a932900`, personal single-owner use. Python 3.12 backend (`backend/src/cheapwings`), React web (`apps/web`), SQLite + Alembic. Native iOS (P5) needs full Xcode (only CLT present).
+- Repo `farhaniqbalta/CheapWings`, development branch `p4.11-fli` from merged main `9a160d9`, personal single-owner use. Python 3.12 backend (`backend/src/cheapwings`), React web (`apps/web`), SQLite + Alembic. Native iOS (P5) needs full Xcode (only CLT present).
 - Owner merges PRs; never merge/push automatically. Confirm before toolchain installs or live provider probes.
 - Baseline/environment history: [baseline-and-old-summary](docs/log/baseline-and-old-summary.md).
 
@@ -26,7 +26,8 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | P4.7 Source controls + historical lifecycle | Done; PR #2 merged 229fa3f; 126 backend / 4 web / 65 browser checks | same file |
 | P4.8 Provider intervals + staggered scheduling | Experiments complete; scheduling delivered through P4.9 | [interval review](docs/log/p4.8.md), [throughput experiment](docs/log/p4.8-throughput-experiment.md) |
 | P4.9 Scheduler architecture | Done; PR #3 merged a932900; Google Flights transport restoration deferred | [P4.9 review and implementation](docs/log/p4.9.md) |
-| P4.10 Smart locations | Owner-tested; [PR #4](https://github.com/farhaniqbalta/CheapWings/pull/4) open, awaiting owner merge | [P4.10 implementation](docs/log/p4.10.md) |
+| P4.10 Smart locations | Done; PR #4 merged `9a160d9` | [P4.10 implementation](docs/log/p4.10.md) |
+| P4.11 Fli provider | Implemented; owner-tested; [PR #5](https://github.com/farhaniqbalta/CheapWings/pull/5) open for owner merge | [P4.11 implementation and verification](docs/log/p4.11.md) |
 | P5 SwiftUI native iOS | Not started; needs full Xcode | |
 | P6 Release acceptance | Not started | |
 
@@ -36,16 +37,17 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | Skiplagged MCP | GO, personal use only (owner 2026-11-09) | Terms ban commercial/redistribution; revisit before any public launch. No exact reprice; no per-segment identity for connections; hidden-city tag unconfirmed. |
 | swoop | GO, personal/low-volume (owner 2026-11-09) | Undocumented Google RPC, ToS risk accepted; no hidden-city signal; price often an estimate; key offers off `booking_options`. |
 | OctoTrip | GO, opt-in personal use (owner 2026-11-10) | Indicative only, no exact reprice, cache disabled; fare/fees/risk/source-age unknown; 900s lifecycle; nearby airports filtered. |
+| Fli | Owner-requested personal-use integration (2026-11-12) | Google Flights public page; indicative quotes/search links; basic-economy exclusion unsupported; same inventory as swoop. |
 
 ## Latest checkpoint
-- P4.10 implemented in an isolated worktree from owner-confirmed merged P4.9 (`a932900`); [implementation and evidence](docs/log/p4.10.md).
-- Offline typed lookup; Specific default; curated Major opt-in; authoritative metadata validation and runtime scope cap.
-- Backend 211 + isolated scheduler/failure 42 passed (253 total); web 9 tests + 75 new browser assertions; evidence in the phase log.
-- Scheduler/provider/search limits preserved; owner-authorized live P4.10 testing at http://localhost:5173/ with existing providers/database.
-- Owner confirmed live testing okay; branch pushed and PR #4 opened; owner controls merge. Existing swoop transport limitation remains deferred.
+- P4.11 uses Fli, superseding the proposed Viajante integration. Added fourth selectable provider; owner approved C3/1s; global 9 and existing durable architecture preserved.
+- Pinned tested Fli 0.10.0 source commit `881aee5` and curl-cffi 0.17.0. Explicit HTTP/2: two C3/1s batches succeeded 6/6 with 62 persisted offers; earlier TLS failures remain documented. [Evidence](docs/log/p4.11.md).
+- Live site http://localhost:5173/ runs P4.11: all four sources enabled; Fli-only API test returned 11 priced itineraries in 1.168s; cache reuse and actual browser rendering verified.
+- Regression verification: 275 backend/isolated tests, 9 web unit tests and complete browser suites passed; final counts are in the phase log. Missing/error payloads fail; priced cache uses original Decimal amounts.
+- Owner is testing the real site. Generic Google search links are labeled; baggage/fees/risk and exact bookability remain unverified. [PR #5](https://github.com/farhaniqbalta/CheapWings/pull/5) published; owner reports fast/good results; merge remains owner-controlled.
 
 ## Next task
-Owner reviews and merges [PR #4](https://github.com/farhaniqbalta/CheapWings/pull/4). No automatic merge. Live testing remains at http://localhost:5173/. P5 still needs full Xcode; transport restoration remains separate work.
+Owner tests Fli on http://localhost:5173/ (select Fli alone, include basic economy, Lowest advertised). Owner reviews the P4.11 PR; address findings. No automatic merge. Swoop itself remains unresolved.
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

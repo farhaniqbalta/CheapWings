@@ -37,13 +37,13 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | OctoTrip | GO, opt-in personal use (owner 2026-11-10) | Indicative only, no exact reprice, cache disabled; fare/fees/risk/source-age unknown; 900s lifecycle; nearby airports filtered. |
 
 ## Latest checkpoint
-- Option A implemented; owner approved C3 for all providers: Skiplagged 1s, swoop 0.1s, OctoTrip 5s; global capacity 9. OctoTrip HTTP gate remains ≥1.10s.
-- Backend/reliability verification: 200 tests passed; detailed measurements and limitations are in [P4.9](docs/log/p4.9.md).
-- Live manual-test site is ready at http://localhost:5173; API :8000 and durable worker use all three providers. Local database backed up/migrated; page, capabilities, CORS and worker ownership verified. [Setup evidence](docs/log/p4.9.md#local-live-site-wiring--2026-11-11). No agent flight probes; owner reports faster live searches.
-- Owner authorized pushing this branch and creating a PR; merging remains owner-controlled. Standing decisions: expired observations retain metadata only; city/country lookup deferred; existing job deadlines stay fixed.
+- Corrected Skiplagged HTTP 429 detection to preserve Retry-After through MCP wrapping; raised its default/local interval to 3s (C3 retained).
+- Coverage dropdown now shows queued, running and retry-wait source work while jobs are active.
+- Existing API/web services remain available for owner testing; restart the durable worker to load the fix.
+- Prior offline verification and P4.9 evidence: [scheduler log](docs/log/p4.9.md); merge remains owner-controlled.
 
 ## Next task
-Owner reviews the P4.9 changes and PR; address reported issues without automatic merge. Live site remains available at http://localhost:5173. P5 still needs full Xcode.
+Restart the local worker and review the provider cooldown behavior and progress dropdown at http://localhost:5173; then review the P4.9 PR. P5 still needs full Xcode.
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

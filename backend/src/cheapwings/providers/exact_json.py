@@ -53,6 +53,12 @@ def exact_http_client(capture):
             await self.stream.aclose()
 
     async def observe(response):
+        if response.status_code == 429:
+            from cheapwings.providers.rate_limit import retry_after
+
+            raise ProviderFailure(
+                'http_rate_limited', retry_after(response.headers.get('Retry-After'))
+            )
         kind = response.headers.get('content-type', '')
         if 'application/json' in kind:
             capture.capture(await response.aread())

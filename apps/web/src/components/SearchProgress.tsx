@@ -104,13 +104,18 @@ export function SearchProgress({
           {job.provider_status.map((p) => (
             <li key={p.provider_id}>
               <strong>{p.provider_id}</strong>
-              <span>{p.succeeded} succeeded · {p.failed} failed · {p.cancelled} cancelled · {p.skipped_unsupported} skipped</span>
+              <span>{p.succeeded} succeeded · {p.pending ?? 0} queued · {p.running ?? 0} running · {p.retry_wait ?? 0} waiting to retry · {p.failed} failed · {p.cancelled} cancelled · {p.skipped_unsupported} skipped</span>
               {p.disabled_reason && <small>Unavailable: {p.disabled_reason}</small>}
             </li>
           ))}
         </ul>
       ) : <p className="inventory-note">Provider work has not started yet.</p>}
 
+      {job.status === "queued" || job.status === "running" ? (
+        <p className="inventory-note">
+          The background worker continues eligible searches while this job is active. Queued work may be waiting for provider pacing or cooldowns.
+        </p>
+      ) : null}
       {errorSummary.length > 0 && <ul className="source-errors">{errorSummary.map(([label, count]) =>
         <li key={label}>{label}: {count} work items</li>)}</ul>}
       {job.warnings.length > 0 && (

@@ -72,6 +72,9 @@ export interface Created {
 export interface ProviderProgress {
   provider_id: string;
   succeeded: number;
+  pending?: number;
+  running?: number;
+  retry_wait?: number;
   failed: number;
   cancelled: number;
   skipped_unsupported: number;

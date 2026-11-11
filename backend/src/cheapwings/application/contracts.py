@@ -127,6 +127,9 @@ class Coverage(DTO):
 class ProviderProgress(DTO):
     provider_id: str
     succeeded: int
+    pending: int = 0
+    running: int = 0
+    retry_wait: int = 0
     failed: int
     cancelled: int
     skipped_unsupported: int

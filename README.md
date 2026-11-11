@@ -131,7 +131,7 @@ view does not prove no flights: inspect coverage and the advertised view.
   source quote keys prevent duplicates. A failed transaction leaves the lease
   recoverable and no partial fares.
 - One asyncio queue owner admits eligible work fairly across jobs, with at most
-  nine active executions globally. Defaults: Skiplagged C3/1s, swoop C3/0.1s,
+  nine active executions globally. Defaults: Skiplagged C3/3s, swoop C3/0.1s,
   OctoTrip C3/5s. Each provider has independent start-to-start pacing and cooldowns;
   a slow response adds no mandatory cooldown after completion. Live providers
   remain opt-in. Override `WORKER_MAX_IN_FLIGHT`, `<PROVIDER>_CONCURRENCY`, and

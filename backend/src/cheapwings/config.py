@@ -22,7 +22,7 @@ class Settings:
     use_scope: str = "personal"
     worker_max_in_flight: int = 9
     skiplagged_concurrency: int = 3
-    skiplagged_interval_seconds: float = 1
+    skiplagged_interval_seconds: float = 3
     swoop_concurrency: int = 3
     swoop_interval_seconds: float = 0.1
     octotrip_concurrency: int = 3

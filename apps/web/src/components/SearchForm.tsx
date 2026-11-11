@@ -33,7 +33,7 @@ export function SearchForm({ onSubmit, submitting, error, maxCombinations, suppo
   const [excludedSources, setExcludedSources] = useState<string[]>([]);
   const eligible = providers.filter(p => p.enabled && p.permitted_to_aggregate === true);
   const selectedSources = eligible.filter(p => !excludedSources.includes(p.provider_id)).map(p => p.provider_id);
-  const sourceNames: Record<string, string> = {skiplagged: "Skiplagged", swoop: "swoop (Google Flights)", octotrip: "OctoTrip"};
+  const sourceNames: Record<string, string> = {skiplagged: "Skiplagged", swoop: "swoop (Google Flights)", octotrip: "OctoTrip", fli: "Fli (Google Flights)"};
   const [originSelection, setOriginSelection] = useState<MajorSelection | null>(null);
   const [destinationSelection, setDestinationSelection] = useState<MajorSelection | null>(null);
   const [origins, setOrigins] = useState<string[]>([]);
@@ -133,6 +133,7 @@ export function SearchForm({ onSubmit, submitting, error, maxCombinations, suppo
             </label>;
           })}
           <p>{selectedSources.length} sources selected · Route/date combinations remain independent of source count.</p>
+          {selectedSources.includes("fli") && selectedSources.includes("swoop") && <p>Fli and swoop both query Google Flights and may show the same inventory.</p>}
           {!providers.length && <p>Source availability is loading or unavailable. Retry capabilities before searching.</p>}
         </fieldset>
         <div className="p46-preferences">

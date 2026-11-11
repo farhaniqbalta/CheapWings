@@ -2,7 +2,7 @@
 
 Personal-use, flexible-date, one-way flight comparison with a Python 3.12+
 backend and React/TypeScript web client. Durable SQLite jobs, a separate worker,
-REST v1, and Skiplagged/swoop/OctoTrip adapters are implemented. Development defaults to
+REST v1, and Skiplagged/swoop/OctoTrip/Fli adapters are implemented. Development defaults to
 **synthetic fake fares**; live providers are opt-in for accepted personal use.
 Native SwiftUI iOS remains planned and requires full Xcode.
 
@@ -101,7 +101,7 @@ install the pinned extras and change the backend `.env` in both service shells:
 ```
 
 ```dotenv
-ENABLED_PROVIDERS=skiplagged,swoop
+ENABLED_PROVIDERS=skiplagged,swoop,octotrip,fli
 CHEAPWINGS_USE_SCOPE=personal
 JOB_REPRICE_BUDGET=20
 LIVE_RETENTION_SECONDS=3600
@@ -121,6 +121,20 @@ errors in controlled checks. The adapter now reports these as failures and
 invalidates earlier false-empty cache entries; live swoop fare retrieval is
 not restored. Transport replacement is deferred beyond P4.9 scheduling work.
 See the [diagnosis and phase handoff](docs/log/p4.9.md).
+
+Fli is a fourth, independent scheduling option using Google's public search
+page. Its current 0.10.0 source is pinned to commit
+`881aee5ff4321e81ea2157cb44be94ce6a21dc1b` (PyPI's older 0.9.0 is not used),
+with curl-cffi 0.17.0 and explicit HTTP/2. Installing the live extra requires
+Git to fetch that commit. Set `FLI_CONCURRENCY=3` and
+`FLI_INTERVAL_SECONDS=1` in both API/worker environments.
+
+Fli offers appear under **Lowest advertised** as indicative shopping quotes;
+links open a Google Flights search, not a confirmed seller fare. Basic-economy
+exclusion is rejected before any provider request. Baggage, fees and hidden-city
+risk remain unknown; exact repricing is not advertised. Fli and swoop both use
+Google Flights and do not constitute independent inventory confirmation.
+[P4.11 measurements and limits](docs/log/p4.11.md).
 
 ## Try the API
 
@@ -159,7 +173,7 @@ view does not prove no flights: inspect coverage and the advertised view.
   recoverable and no partial fares.
 - One asyncio queue owner admits eligible work fairly across jobs, with at most
   nine active executions globally. Defaults: Skiplagged C3/3s, swoop C3/0.1s,
-  OctoTrip C3/5s. Each provider has independent start-to-start pacing and cooldowns;
+  OctoTrip C3/5s, Fli C3/1s. Each provider has independent start-to-start pacing and cooldowns;
   a slow response adds no mandatory cooldown after completion. Live providers
   remain opt-in. Override `WORKER_MAX_IN_FLIGHT`, `<PROVIDER>_CONCURRENCY`, and
   `<PROVIDER>_INTERVAL_SECONDS` in both shells (see `.env.example`).

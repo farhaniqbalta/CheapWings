@@ -27,6 +27,8 @@ class Settings:
     swoop_interval_seconds: float = 0.1
     octotrip_concurrency: int = 3
     octotrip_interval_seconds: float = 5
+    fli_concurrency: int = 3
+    fli_interval_seconds: float = 1
     reprice_budget: int = 20
     live_retention_seconds: int = 3600
     search_cache_enabled: bool = False
@@ -39,7 +41,7 @@ class Settings:
     def __post_init__(self):
         if not 1 <= self.worker_max_in_flight <= 64:
             raise ValueError("Worker capacity must be 1..64")
-        for pid in ("skiplagged", "swoop", "octotrip"):
+        for pid in ("skiplagged", "swoop", "octotrip", "fli"):
             interval = getattr(self, pid + "_interval_seconds")
             if (
                 not 1 <= getattr(self, pid + "_concurrency") <= 16
@@ -54,6 +56,7 @@ class Settings:
             "skiplagged",
             "swoop",
             "octotrip",
+            "fli",
         }:
             raise ValueError("Unknown or empty provider configuration")
         if "fake" in self.enabled_providers and len(self.enabled_providers) != 1:
@@ -97,7 +100,7 @@ class Settings:
             ),
             **{
                 name: cast(os.getenv(name.upper(), str(default)))
-                for pid in ("skiplagged", "swoop", "octotrip")
+                for pid in ("skiplagged", "swoop", "octotrip", "fli")
                 for name, cast, default in [
                     (pid + "_concurrency", int, getattr(cls, pid + "_concurrency")),
                     (pid + "_interval_seconds", float, getattr(cls, pid + "_interval_seconds")),

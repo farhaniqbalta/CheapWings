@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-live = ["mcp==2.3.0", "swoop-flights==0.7.0", "airportsdata==20261103"]
+live = ["mcp==2.3.0", "swoop-flights==0.7.0", "airportsdata==20261103", "curl-cffi==0.17.0", "flights @ git+https://github.com/punitarani/fli.git@881aee5ff4321e81ea2157cb44be94ce6a21dc1b"]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",

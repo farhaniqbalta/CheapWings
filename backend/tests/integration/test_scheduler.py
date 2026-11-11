@@ -11,6 +11,9 @@ from time import monotonic
 
 import httpx
 import pytest
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
+
 from cheapwings.application.job_runner import JobRunner
 from cheapwings.config import Settings
 from cheapwings.domain.evidence import ProviderFailure
@@ -22,8 +25,6 @@ from cheapwings.providers.registry import Registration, default_registry
 from cheapwings.providers.swoop import BoundedCall
 from cheapwings.storage.models import FareQuote, ProviderState, SearchJob, WorkItem
 from cheapwings.storage.repository import Repository, now_ms
-from sqlalchemy import func, select
-from sqlalchemy.orm import Session
 
 
 def small(query, n=1, offset=0):
@@ -75,8 +76,13 @@ async def drain(runner, repo, jobs):
 
 
 @pytest.mark.parametrize("capacity", [5, 9])
-async def test_c3_independent_sources_global_bound_spacing_and_progress(engine, query, capacity):
-    providers = [Recorded(pid, 0.12) for pid in ("one", "two", "three")]
+@pytest.mark.parametrize(
+    "provider_ids", [("one", "two", "three"), ("skiplagged", "swoop", "octotrip", "fli")]
+)
+async def test_c3_independent_sources_global_bound_spacing_and_progress(
+    engine, query, capacity, provider_ids
+):
+    providers = [Recorded(pid, 0.12) for pid in provider_ids]
     regs = [Registration(p, concurrency=3, minimum_interval_seconds=0.012) for p in providers]
     repo = Repository(engine, global_capacity=capacity)
     job = repo.create_job(small(query, 6), regs)
@@ -377,8 +383,8 @@ def test_retry_after_dates_nested_mcp_errors_and_defaults(monkeypatch):
     ]
     monkeypatch.setenv("ENABLED_PROVIDERS", "skiplagged,swoop,octotrip")
     registry = default_registry(Settings.from_env())
-    assert [r.concurrency for r in registry] == [3, 3, 3]
-    assert [r.minimum_interval_seconds for r in registry] == [3, 0.1, 5]
+    assert [r.concurrency for r in registry] == [3, 3, 3, 3]
+    assert [r.minimum_interval_seconds for r in registry] == [3, 0.1, 5, 1]
     for reg in registry:
         if hasattr(reg.provider, "blocking"):
             assert reg.provider.blocking.capacity == 3

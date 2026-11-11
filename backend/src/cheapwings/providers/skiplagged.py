@@ -1,6 +1,7 @@
 """Skiplagged MCP adapter pinned to P0 FlightCard evidence, never invented legs."""
 
 from datetime import UTC, datetime
+from typing import ClassVar
 from urllib.parse import urlsplit
 
 from cheapwings.domain.coverage import WorkStatus
@@ -15,7 +16,6 @@ ENDPOINT = "https://mcp.skiplagged.com/mcp"
 
 
 async def mcp_search(arguments):
-    import httpx2 as httpx
     from mcp import ClientSession
     from mcp.client.streamable_http import streamable_http_client
 
@@ -24,45 +24,43 @@ async def mcp_search(arguments):
     capture = ExactCapture()
     async with exact_http_client(capture) as client:
         try:
-            async with streamable_http_client(ENDPOINT, http_client=client) as (read, write):
-                async with ClientSession(read, write) as session:
-                    await session.initialize()
-                    result = await session.call_tool("sk_flights_search", arguments)
-                    if result.is_error:
-                        raise ProviderFailure("provider_unavailable")
-                    if capture.result is not None:
-                        return capture.result
-                    # Prefer raw JSON text to avoid binary floats in structured_content.
-                    for block in result.content:
-                        if getattr(block, "type", None) == "text":
-                            try:
-                                payload = json_payload(block.text)
-                            except ValueError:
-                                continue
-                            if isinstance(payload, dict) and "flights" in payload:
-                                return payload
-                    # Some MCP servers wrap the tool JSON in structured_content.
-                    # Integer-only structured prices are safe; floats fail closed in normalization.
-                    if result.structured_content is not None:
-                        return result.structured_content
-                    raise ProviderFailure("schema_changed")
-        except httpx.HTTPStatusError as exc:
-            status = exc.response.status_code
-            retry = exc.response.headers.get("Retry-After", "0")
-            raise ProviderFailure(
-                "http_rate_limited"
-                if status == 429
-                else "auth_denied"
-                if status in (401, 403)
-                else "provider_unavailable",
-                int(retry) if retry.isdigit() else 0,
-            ) from None
+            async with (
+                streamable_http_client(ENDPOINT, http_client=client) as (read, write),
+                ClientSession(read, write) as session,
+            ):
+                await session.initialize()
+                result = await session.call_tool("sk_flights_search", arguments)
+                if result.is_error:
+                    raise ProviderFailure("provider_unavailable")
+                if capture.result is not None:
+                    return capture.result
+                # Prefer raw JSON text to avoid binary floats in structured_content.
+                for block in result.content:
+                    if getattr(block, "type", None) == "text":
+                        try:
+                            payload = json_payload(block.text)
+                        except ValueError:
+                            continue
+                        if isinstance(payload, dict) and "flights" in payload:
+                            return payload
+                # Some MCP servers wrap the tool JSON in structured_content.
+                # Integer-only structured prices are safe; floats fail closed in normalization.
+                if result.structured_content is not None:
+                    return result.structured_content
+                raise ProviderFailure("schema_changed")
+        except Exception as exc:
+            from cheapwings.providers.rate_limit import provider_failure
+
+            failure = provider_failure(exc)
+            if failure is not None:
+                raise failure from None
+            raise
 
 
 class SkiplaggedProvider:
-    cache_dependencies = ('mcp',)
+    cache_dependencies = ("mcp",)
     cache_version = "2"
-    cache_options = {'includeHiddenCity': False, 'includeVirtualInterlining': False}
+    cache_options: ClassVar[dict] = {"includeHiddenCity": False, "includeVirtualInterlining": False}
     provider_id = "skiplagged"
     # Calendar tools exist, but no implemented/tested calendar method is advertised.
     capabilities = ProviderCapabilities(True, False, False, True, True, False)
@@ -76,7 +74,7 @@ class SkiplaggedProvider:
             raise ProviderFailure("unsupported_query")  # no observed basic-economy filter
         if query.point_of_sale_country:
             raise ProviderFailure("unsupported_query")  # no observed POS control
-        args = dict(
+        args = dict(  # noqa: C408 - preserve existing transport argument construction
             origin=query.origin,
             destination=query.destination,
             departureDate=str(query.departure_date),

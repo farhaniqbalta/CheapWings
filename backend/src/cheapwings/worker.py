@@ -40,12 +40,14 @@ def main():
             runner = JobRunner(
                 Repository(
                     engine,
+                    global_capacity=settings.worker_max_in_flight,
                     cache_enabled=settings.search_cache_enabled,
                     cache_ttl_seconds=settings.search_cache_ttl_seconds,
                     cache_max_entries=settings.search_cache_max_entries,
                     cache_max_bytes=settings.search_cache_max_bytes,
                 ),
                 default_registry(settings),
+                max_in_flight=settings.worker_max_in_flight,
                 timeout_seconds=settings.call_timeout_seconds,
                 lease_seconds=settings.lease_seconds,
                 max_attempts=settings.max_attempts,

@@ -12,6 +12,9 @@ class SearchJob(Base):
     __tablename__ = "search_jobs"
     id: Mapped[str] = mapped_column(String, primary_key=True)
     query_json: Mapped[dict] = mapped_column(JSON)
+    dispatch_sequence: Mapped[int] = mapped_column(
+        Integer, default=0, server_default="0", index=True
+    )
     status: Mapped[str] = mapped_column(String, default="queued", index=True)
     phase: Mapped[str] = mapped_column(String, default="searching")
     cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False)

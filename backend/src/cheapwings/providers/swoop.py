@@ -4,6 +4,7 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from datetime import UTC, datetime
+from typing import ClassVar
 from zoneinfo import ZoneInfo
 
 from cheapwings.domain.coverage import WorkStatus
@@ -20,16 +21,36 @@ from cheapwings.providers.common import json_payload, money, obj_dict, stable_id
 
 
 class BoundedCall:
-    """One actual thread slot, retained after await timeout/cancellation; no unbounded queue."""
+    """Bounded actual thread slots retained after timeout/cancellation; no queued overflow."""
 
-    def __init__(self):
-        self.pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="cheapwings-provider")
+    def __init__(self, capacity=1):
+        if capacity < 1:
+            raise ValueError("Executor capacity must be positive")
+        self.capacity = capacity
+        self.pool = ThreadPoolExecutor(
+            max_workers=capacity, thread_name_prefix="cheapwings-provider"
+        )
         self.future = None
+        self.futures = set()
+
+    @property
+    def busy(self):
+        return sum(not f.done() for f in self.futures)
+
+    async def drain(self):
+        if self.futures:
+            return await asyncio.gather(
+                *(asyncio.shield(asyncio.wrap_future(f)) for f in self.futures),
+                return_exceptions=True,
+            )
+        return []
 
     async def run(self, function, *args):
-        if self.future is not None and not self.future.done():
+        self.futures = {f for f in self.futures if not f.done()}
+        if len(self.futures) >= self.capacity:
             raise ProviderFailure("provider_unavailable")
         self.future = self.pool.submit(function, *args)
+        self.futures.add(self.future)
         return await asyncio.shield(asyncio.wrap_future(self.future))
 
     def close(self):
@@ -68,17 +89,19 @@ def local_instant(date_parts, time_parts, code, resolver):
 
 
 class SwoopProvider:
-    cache_dependencies = ('swoop-flights', 'airportsdata')
+    cache_dependencies = ("swoop-flights", "airportsdata")
     cache_version = "2"
-    cache_options = {'cabin': 'economy'}
+    cache_options: ClassVar[dict] = {"cabin": "economy"}
     provider_id = "swoop"
     capabilities = ProviderCapabilities(True, False, True, True, False, False)
 
-    def __init__(self, search_transport=None, price_transport=None, zone_resolver=None):
+    def __init__(
+        self, search_transport=None, price_transport=None, zone_resolver=None, *, concurrency=1
+    ):
         self.search_transport = search_transport
         self.price_transport = price_transport
         self.zone_resolver = zone_resolver or airport_zone
-        self.blocking = BoundedCall()
+        self.blocking = BoundedCall(concurrency)
 
     @staticmethod
     def country(query):

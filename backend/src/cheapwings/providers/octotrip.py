@@ -1,6 +1,5 @@
 """OctoTrip stateless MCP v1.30: advertised prices, never exact fare confirmation."""
 
-import asyncio
 import codecs
 from dataclasses import replace
 from datetime import UTC, datetime
@@ -14,6 +13,7 @@ from cheapwings.domain.itinerary import ItinerarySummary
 from cheapwings.domain.offer import ComparisonStatus, LinkScope, Offer, PriceStatus, ThreeValued
 from cheapwings.providers.base import ProviderCapabilities, ProviderSearchResult
 from cheapwings.providers.common import json_payload, money, stable_id
+from cheapwings.providers.rate_limit import HttpStartGate, retry_after
 from cheapwings.providers.swoop import airport_zone, local_instant
 
 ENDPOINT = "https://mcp.octotrip.app/flights/mcp"
@@ -23,10 +23,12 @@ class OctotripProvider:
     provider_id = "octotrip"
     capabilities = ProviderCapabilities(True, False, False, True, False, False)
 
-    def __init__(self, transport=None):
+    def __init__(self, transport=None, *, http_gate=None):
         self.transport = transport
+        self.http_gate = http_gate or HttpStartGate()
 
     async def _rpc(self, client, ident, method, params):
+        await self.http_gate.wait()
         async with client.stream(
             "POST",
             ENDPOINT,
@@ -38,11 +40,9 @@ class OctotripProvider:
             },
         ) as response:
             if response.status_code == 429:
-                try:
-                    retry = max(15, int(response.headers.get("Retry-After", "60")))
-                except ValueError:
-                    retry = 60
-                raise ProviderFailure("http_rate_limited", retry)
+                delay = max(15, retry_after(response.headers.get("Retry-After")))
+                self.http_gate.defer(delay)
+                raise ProviderFailure("http_rate_limited", delay)
             if response.status_code in (401, 403):
                 raise ProviderFailure("auth_denied")
             if response.status_code != 200:
@@ -105,7 +105,6 @@ class OctotripProvider:
                     "clientInfo": {"name": "cheapwings", "version": "0.1"},
                 },
             )
-            await asyncio.sleep(1.05)  # published 1 request/second includes MCP requests
             result = await self._rpc(
                 client,
                 2,

@@ -1,9 +1,10 @@
 # WORK_LOG.md — Current State Template
 
 > For initialization only: never overwrite an existing root WORK_LOG.md. Keep it
-> under about 120 lines. Each update is at most five lines with an evidence
-> pointer; long reports and measurements belong in docs/log/. Replace the current
-> checkpoint and next task instead of appending a transcript.
+> under about 80 lines. Latest checkpoint has at most five short bullets with an evidence
+> pointer; benchmark tables, architecture reasoning and detailed test results belong
+> in docs/log/<phase>.md. Replace the checkpoint and next task instead of appending
+> a transcript.
 
 ## Project basics
 

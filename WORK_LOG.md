@@ -1,14 +1,14 @@
-# WORK_LOG.md — Current State (keep under ~120 lines)
+# WORK_LOG.md — Current State (keep under ~80 lines)
 
 Source of truth for **current** phase status, approvals, and the exact next task. History and long evidence live in [`docs/log/`](docs/log/) (read only when a task needs it). Do not create other report files elsewhere.
 
 ## Rules for editing this file
-- Keep it short. Each update: ≤5 lines, stating the decision/result plus an evidence pointer (commit, test command, `docs/log/` file).
-- Long transcripts, timings, validation detail → append to the relevant `docs/log/*.md` and link from here.
+- Keep this file under ~80 lines. Latest checkpoint: at most five short bullets; replace old status instead of appending.
+- Put benchmark tables, timings, architecture reasoning and detailed test results in `docs/log/<phase>.md`; root updates contain only status, approvals, blockers and evidence links.
 - At phase close: collapse its detail into `docs/log/`, leave one tracker row. Replace (don't append to) "Latest checkpoint" and "Next task".
 
 ## Project basics
-- Repo `farhaniqbalta/CheapWings`, branch `main`, personal single-owner use. Python 3.12 backend (`backend/src/cheapwings`), React web (`apps/web`), SQLite + Alembic. Native iOS (P5) needs full Xcode (only CLT present).
+- Repo `farhaniqbalta/CheapWings`, review branch `p4.9-scheduler-review` from `5d72be4`, personal single-owner use. Python 3.12 backend (`backend/src/cheapwings`), React web (`apps/web`), SQLite + Alembic. Native iOS (P5) needs full Xcode (only CLT present).
 - Owner merges PRs; never merge/push automatically. Confirm before toolchain installs or live provider probes.
 - Baseline/environment history: [baseline-and-old-summary](docs/log/baseline-and-old-summary.md).
 
@@ -24,7 +24,8 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | Provider/cache + OctoTrip | Done; merged 37a536b; source picker added in P4.7 | [research-cache-p4.6-p4.7](docs/log/research-cache-p4.6-p4.7.md) |
 | P4.6 Web UI update | Done; PR #1 merged 32190a1 | same file |
 | P4.7 Source controls + historical lifecycle | Done; PR #2 merged 229fa3f; 126 backend / 4 web / 65 browser checks | same file |
-| P4.8 Provider intervals + staggered scheduling | Interval review + throughput/concurrency/reliability experiments complete; **implementation NOT started** | [interval review](docs/log/p4.8.md), [throughput experiment](docs/log/p4.8-throughput-experiment.md) |
+| P4.8 Provider intervals + staggered scheduling | Experiments complete; scheduling delivered through P4.9 | [interval review](docs/log/p4.8.md), [throughput experiment](docs/log/p4.8-throughput-experiment.md) |
+| P4.9 Scheduler architecture | Option A implemented; offline verification passed; owner requested C3 defaults | [P4.9 review and implementation](docs/log/p4.9.md) |
 | P5 SwiftUI native iOS | Not started; needs full Xcode | |
 | P6 Release acceptance | Not started | |
 
@@ -36,13 +37,13 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | OctoTrip | GO, opt-in personal use (owner 2026-11-10) | Indicative only, no exact reprice, cache disabled; fare/fees/risk/source-age unknown; 900s lifecycle; nearby airports filtered. |
 
 ## Latest checkpoint
-- Publication: experiment/archive commit `0c93892` pushed to main; documentation cleanup aligns the runbook, resume prompt and compact template, fixes moved links and labels historical recommendations. Evidence/checks: [docs log index](docs/log/README.md). Production unchanged.
-- P4.8 follow-up 2026-11-11: C3/1s passed 8/8 each for Skiplagged (23.94s) and OctoTrip (131.61s); swoop C2/0.1s retry passed two 8/8 batches (1.47/1.57s). Prior failures remain unresolved; 190 total live searches, 21 offline passes + 1 known cooldown xfail, 126 backend baseline. Production unchanged. Evidence/candidates/gates: [follow-up log](docs/log/p4.8-throughput-experiment.md#follow-up--requested-c31s-trials-and-swoop-retry-2026-11-11-jakarta).
-- Standing decisions: metadata-only retention for expired observations (no old amounts/links retained; no indefinite live-price archive); city/country lookup deferred; existing jobs keep original deadlines, new jobs get independent execution budgets.
-- Test baseline: 126 backend, 4 web unit, 65 browser checks; lint exits 0 with 4 known App/hook warnings.
+- Option A implemented; owner approved C3 for all providers: Skiplagged 1s, swoop 0.1s, OctoTrip 5s; global capacity 9. OctoTrip HTTP gate remains ≥1.10s.
+- Backend/reliability verification: 200 tests passed; detailed measurements and limitations are in [P4.9](docs/log/p4.9.md).
+- Live manual-test site is ready at http://localhost:5173; API :8000 and durable worker use all three providers. Local database backed up/migrated; page, capabilities, CORS and worker ownership verified. [Setup evidence](docs/log/p4.9.md#local-live-site-wiring--2026-11-11). No agent flight probes; owner reports faster live searches.
+- Owner authorized pushing this branch and creating a PR; merging remains owner-controlled. Standing decisions: expired observations retain metadata only; city/country lookup deferred; existing job deadlines stay fixed.
 
 ## Next task
-Owner reviews P4.8 throughput recommendations and correctness gates; fix cooldown/error classification before any approved rollout. Production implementation still requires explicit approval; P5 waits for full Xcode.
+Owner reviews the P4.9 changes and PR; address reported issues without automatic merge. Live site remains available at http://localhost:5173. P5 still needs full Xcode.
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

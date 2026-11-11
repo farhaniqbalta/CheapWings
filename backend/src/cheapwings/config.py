@@ -1,5 +1,6 @@
 """Explicit environment configuration; .env is optional shell input, never auto-loaded."""
 
+import math
 import os
 from dataclasses import dataclass
 
@@ -19,6 +20,13 @@ class Settings:
     max_attempts: int = 3
     enabled_providers: tuple[str, ...] = ("fake",)
     use_scope: str = "personal"
+    worker_max_in_flight: int = 9
+    skiplagged_concurrency: int = 3
+    skiplagged_interval_seconds: float = 1
+    swoop_concurrency: int = 3
+    swoop_interval_seconds: float = 0.1
+    octotrip_concurrency: int = 3
+    octotrip_interval_seconds: float = 5
     reprice_budget: int = 20
     live_retention_seconds: int = 3600
     search_cache_enabled: bool = False
@@ -29,6 +37,18 @@ class Settings:
     max_active_requests: int = 20
 
     def __post_init__(self):
+        if not 1 <= self.worker_max_in_flight <= 64:
+            raise ValueError("Worker capacity must be 1..64")
+        for pid in ("skiplagged", "swoop", "octotrip"):
+            interval = getattr(self, pid + "_interval_seconds")
+            if (
+                not 1 <= getattr(self, pid + "_concurrency") <= 16
+                or not math.isfinite(interval)
+                or interval < 0
+            ):
+                raise ValueError(
+                    "Provider concurrency must be 1..16 and interval finite/nonnegative"
+                )
         if not self.enabled_providers or set(self.enabled_providers) - {
             "fake",
             "skiplagged",
@@ -72,6 +92,17 @@ class Settings:
     @classmethod
     def from_env(cls):
         return cls(
+            worker_max_in_flight=int(
+                os.getenv("WORKER_MAX_IN_FLIGHT", str(cls.worker_max_in_flight))
+            ),
+            **{
+                name: cast(os.getenv(name.upper(), str(default)))
+                for pid in ("skiplagged", "swoop", "octotrip")
+                for name, cast, default in [
+                    (pid + "_concurrency", int, getattr(cls, pid + "_concurrency")),
+                    (pid + "_interval_seconds", float, getattr(cls, pid + "_interval_seconds")),
+                ]
+            },
             search_cache_enabled=os.getenv("SEARCH_CACHE_ENABLED", "false").lower() == "true",
             search_cache_ttl_seconds=int(os.getenv("SEARCH_CACHE_TTL_SECONDS", "1200")),
             search_cache_max_entries=int(os.getenv("SEARCH_CACHE_MAX_ENTRIES", "2000")),

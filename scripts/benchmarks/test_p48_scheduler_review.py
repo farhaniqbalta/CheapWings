@@ -130,19 +130,7 @@ def test_restart_waits_for_lease_and_fences_duplicate_claims(engine, query, cach
     )
 
 
-@pytest.mark.parametrize(
-    "cache",
-    [
-        pytest.param(
-            False,
-            marks=pytest.mark.xfail(
-                strict=True,
-                reason="Existing direct finish fences away late 429 cooldown after cancellation",
-            ),
-        ),
-        True,
-    ],
-)
+@pytest.mark.parametrize("cache", [False, True])
 def test_cancelled_result_still_must_preserve_provider_feedback(engine, query, cache):
     repo = Repository(engine, cache_enabled=cache)
     reg = Registration(FakeProvider(), minimum_interval_seconds=5)

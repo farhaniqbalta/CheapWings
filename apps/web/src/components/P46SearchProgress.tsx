@@ -54,10 +54,11 @@ export function P46SearchProgress({ job, onCancel, cancelling }: {
             <p>Fare preferences: {job.query.max_stops == null ? "Any stops" : `Up to ${job.query.max_stops} stops`} · {job.query.checked_bags_required ? "Checked bag required" : "Checked bag not required"} · {job.query.include_basic_economy === false ? "Basic economy excluded" : "Basic economy included"}. Dates are inclusive.</p>
             <p>Route/date coverage counts unique pairs with a successful source response. Provider work counts source tasks independently. Neither measures the completeness of flight inventory.</p>
             <p>{job.succeeded_empty} source work items returned no matching fares · {job.failed_provider_work_items} failed · {job.skipped_unsupported} skipped · {job.cancelled_provider_work_items} cancelled.</p>
+            {job.status === "queued" || job.status === "running" ? <p>The background worker continues eligible searches while this job is active. Queued work may be waiting for provider pacing or cooldowns.</p> : null}
             {job.exact_reprice_attempted > 0 && <p>Exact reprice successes: {job.exact_reprice_succeeded} / {job.exact_reprice_attempted} attempts.</p>}
             {job.query.include_hidden_city && <p>Hidden-city inclusion requested. Classification depends on individual sources and is not presumed safe.</p>}
             {job.provider_status.length > 0 && <ul>{job.provider_status.map(source => (
-              <li key={source.provider_id}><strong>{source.provider_id}</strong>: {source.succeeded} succeeded, {source.failed} failed, {source.cancelled} cancelled, {source.skipped_unsupported} skipped
+              <li key={source.provider_id}><strong>{source.provider_id}</strong>: {source.succeeded} succeeded, {source.pending ?? 0} queued, {source.running ?? 0} running, {source.retry_wait ?? 0} waiting to retry, {source.failed} failed, {source.cancelled} cancelled, {source.skipped_unsupported} skipped
                 {source.disabled_reason && ` · disabled: ${source.disabled_reason}`}</li>
             ))}</ul>}
             {errors.length > 0 && <ul>{errors.map(([label, count]) => <li key={label}>{label}: {count} work items</li>)}</ul>}

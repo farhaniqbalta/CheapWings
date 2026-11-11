@@ -1014,6 +1014,21 @@
             "type": "integer",
             "title": "Succeeded"
           },
+          "pending": {
+            "type": "integer",
+            "title": "Pending",
+            "default": 0
+          },
+          "running": {
+            "type": "integer",
+            "title": "Running",
+            "default": 0
+          },
+          "retry_wait": {
+            "type": "integer",
+            "title": "Retry Wait",
+            "default": 0
+          },
           "failed": {
             "type": "integer",
             "title": "Failed"

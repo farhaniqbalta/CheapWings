@@ -4,15 +4,15 @@ from collections import Counter
 from time import time_ns
 from uuid import uuid4
 
-from sqlalchemy import select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
 from cheapwings.domain.query import SearchQuery
 from cheapwings.engine.expansion import expand_routes_and_dates
+from cheapwings.storage.cache import CacheRepository
 from cheapwings.storage.db import write_session
 from cheapwings.storage.models import SearchJob, WorkItem
 from cheapwings.storage.verification import VerificationRepository
-from cheapwings.storage.cache import CacheRepository
 
 ACTIVE = ("pending", "retry_wait", "running")
 SUCCESS = ("succeeded_results", "succeeded_empty")
@@ -32,12 +32,16 @@ class Repository(CacheRepository, VerificationRepository):
         self,
         engine,
         *,
+        global_capacity=9,
         cache_enabled=False,
         cache_ttl_seconds=1200,
         cache_max_entries=2000,
         cache_max_bytes=20_000_000,
     ):
         self.engine = engine
+        if global_capacity < 1:
+            raise ValueError("Global capacity must be positive")
+        self.global_capacity = global_capacity
         self.cache_enabled = cache_enabled
         self.cache_ttl_seconds = cache_ttl_seconds
         self.cache_max_entries = cache_max_entries
@@ -67,6 +71,9 @@ class Repository(CacheRepository, VerificationRepository):
                 raise CapacityExceeded("Search request limit exceeded; wait for capacity")
             job = SearchJob(
                 id=str(uuid4()),
+                # New arrivals join the current round instead of repeatedly
+                # jumping ahead of jobs that have already received service.
+                dispatch_sequence=s.scalar(select(func.max(SearchJob.dispatch_sequence))) or 0,
                 provider_ids=[r.provider.provider_id for r in registry if not r.unavailable_reason],
                 cache_mode=cache_mode,
                 query_json={
@@ -243,8 +250,10 @@ class Repository(CacheRepository, VerificationRepository):
                         item.finished_at = now
                 self.finalize(s, job, now)
 
-    def claim(self, registration, *, lease_seconds=40, now=None):
-        from cheapwings.storage.models import ProviderState, WorkAttempt, ProviderOperation
+    def claim(
+        self, registration, *, lease_seconds=40, now=None, exclude_ids=(), exclude_cache_keys=()
+    ):
+        from cheapwings.storage.models import ProviderOperation, ProviderState, WorkAttempt
 
         now = now if now is not None else now_ms()
         provider_id = registration.provider.provider_id
@@ -257,41 +266,75 @@ class Repository(CacheRepository, VerificationRepository):
                 s.add(state)
             if state.next_request_at > now:
                 return None
-            running = s.scalars(
+            # Shared subscribers are not extra execution slots. These checks and
+            # the selected claim share one BEGIN IMMEDIATE transaction.
+            direct = s.scalars(
                 select(WorkItem).where(
-                    WorkItem.provider_id == provider_id, WorkItem.status == "running"
+                    WorkItem.status == "running", WorkItem.operation_id.is_(None)
                 )
             ).all()
-            running = [i for i in running if i.operation_id is None]
             operations = s.scalars(
-                select(ProviderOperation).where(
-                    ProviderOperation.provider_id == provider_id,
-                    ProviderOperation.status == "running",
-                )
+                select(ProviderOperation).where(ProviderOperation.status == "running")
             ).all()
-            if len(running) + len(operations) >= registration.concurrency:
+            if len(direct) + len(operations) >= self.global_capacity:
                 return None
-            claimed_operation = self.claim_operation(s, registration, now, lease_seconds)
-            if claimed_operation:
-                state.next_request_at = now + int(registration.minimum_interval_seconds * 1000)
-                return claimed_operation
+            if (
+                sum(i.provider_id == provider_id for i in direct + operations)
+                >= registration.concurrency
+            ):
+                return None
             item = s.scalar(
                 select(WorkItem)
                 .join(SearchJob)
+                .outerjoin(ProviderOperation, WorkItem.operation_id == ProviderOperation.id)
                 .where(
                     WorkItem.provider_id == provider_id,
-                    WorkItem.operation_id.is_(None),
+                    WorkItem.id.not_in(exclude_ids),
+                    or_(WorkItem.operation_id.is_(None), WorkItem.operation_id.not_in(exclude_ids)),
+                    or_(
+                        WorkItem.operation_id.is_(None),
+                        ProviderOperation.cache_key.not_in(exclude_cache_keys),
+                    ),
                     WorkItem.status.in_(("pending", "retry_wait")),
-                    WorkItem.next_attempt_at <= now,
                     SearchJob.status.in_(JOB_ACTIVE),
                     SearchJob.cancel_requested.is_(False),
                     SearchJob.deadline_at > now,
+                    or_(
+                        and_(WorkItem.operation_id.is_(None), WorkItem.next_attempt_at <= now),
+                        and_(
+                            ProviderOperation.status.in_(("pending", "retry_wait")),
+                            ProviderOperation.next_attempt_at <= now,
+                            ProviderOperation.deadline_at > now,
+                        ),
+                    ),
                 )
-                .order_by(SearchJob.created_at, WorkItem.departure_date, WorkItem.id)
+                .order_by(
+                    SearchJob.dispatch_sequence,
+                    SearchJob.created_at,
+                    SearchJob.id,
+                    WorkItem.departure_date,
+                    WorkItem.id,
+                )
                 .limit(1)
             )
             if item is None:
                 return None
+            sequence = (s.scalar(select(func.max(SearchJob.dispatch_sequence))) or 0) + 1
+            if item.operation_id:
+                claimed = self.claim_operation(
+                    s, registration, now, lease_seconds, operation_id=item.operation_id
+                )
+                if claimed is None:
+                    return None
+                # Every active subscriber benefits from this dispatch.
+                for subscriber in s.scalars(
+                    select(WorkItem).where(WorkItem.operation_id == item.operation_id)
+                ):
+                    s.get(SearchJob, subscriber.job_id).dispatch_sequence = sequence
+                state.next_request_at = now + int(registration.minimum_interval_seconds * 1000)
+                claimed[0].dispatch_reserved_until = state.next_request_at
+                return claimed
+            s.get(SearchJob, item.job_id).dispatch_sequence = sequence
             item.status = "running"
             item.attempts += 1
             item.started_at = now
@@ -304,7 +347,102 @@ class Repository(CacheRepository, VerificationRepository):
             job = s.get(SearchJob, item.job_id)
             job.status = "running"
             job.updated_at = now
+            item.dispatch_reserved_until = state.next_request_at
             return item, SearchQuery.model_validate(job.query_json)
+
+    @staticmethod
+    def provider_feedback(s, provider_id, error_code, retry_after_seconds, now):
+        """Provider-wide feedback survives result fencing and job cancellation."""
+        if error_code == "http_rate_limited":
+            from cheapwings.storage.models import ProviderState
+
+            state = s.get(ProviderState, provider_id)
+            if state is None:
+                state = ProviderState(provider_id=provider_id, next_request_at=0)
+                s.add(state)
+            state.next_request_at = max(
+                state.next_request_at, now + int(max(1, retry_after_seconds or 60) * 1000)
+            )
+
+    def record_provider_feedback(self, provider_id, error_code, retry_after_seconds=0):
+        with write_session(self.engine) as s:
+            self.provider_feedback(s, provider_id, error_code, retry_after_seconds, now_ms())
+
+    def mark_started(self, registration, claimed):
+        """Re-check fencing/cooldown and persist actual adapter dispatch time."""
+        from cheapwings.storage.models import (
+            OperationAttempt,
+            ProviderOperation,
+            ProviderState,
+            WorkAttempt,
+        )
+
+        now = now_ms()
+        with write_session(self.engine) as s:
+            shared = claimed.id.startswith("fetch-")
+            item = s.get(ProviderOperation if shared else WorkItem, claimed.id)
+            if (
+                not item
+                or item.status != "running"
+                or item.lease_token != claimed.lease_token
+                or item.leased_until <= now
+            ):
+                return False
+            if shared:
+                subscriber = s.scalar(
+                    select(WorkItem.id)
+                    .join(SearchJob)
+                    .where(
+                        WorkItem.operation_id == item.id,
+                        WorkItem.status.in_(ACTIVE),
+                        SearchJob.status.in_(JOB_ACTIVE),
+                        SearchJob.cancel_requested.is_(False),
+                        SearchJob.deadline_at > now,
+                    )
+                    .limit(1)
+                )
+                if subscriber is None:
+                    attempt = s.scalar(
+                        select(OperationAttempt).where(
+                            OperationAttempt.operation_id == item.id,
+                            OperationAttempt.attempt == item.attempts,
+                        )
+                    )
+                    attempt.outcome, attempt.finished_at = "cancelled", now
+                    item.status = "cancelled"
+                    item.lease_token = item.leased_until = None
+                    return False
+                if item.deadline_at <= now or item.hard_expires_at <= now:
+                    return False
+            else:
+                job = s.get(SearchJob, item.job_id)
+                if job.cancel_requested or job.deadline_at <= now:
+                    return False
+            state = s.get(ProviderState, registration.provider.provider_id)
+            if state.next_request_at > max(
+                now, getattr(claimed, "dispatch_reserved_until", state.next_request_at)
+            ):
+                # Another in-flight call supplied a cooldown after this claim.
+                # Defer the unsent claim without consuming a retry attempt.
+                attempt_model = OperationAttempt if shared else WorkAttempt
+                key = attempt_model.operation_id if shared else attempt_model.work_item_id
+                attempt = s.scalar(
+                    select(attempt_model).where(
+                        key == item.id, attempt_model.attempt == item.attempts
+                    )
+                )
+                s.delete(attempt)
+                item.attempts -= 1
+                item.status = "retry_wait"
+                item.next_attempt_at = state.next_request_at
+                item.lease_token = item.leased_until = None
+                if shared:
+                    self.fail_subscribers(s, item, "http_rate_limited", now, terminal=False)
+                return False
+            state.next_request_at = max(
+                state.next_request_at, now + int(registration.minimum_interval_seconds * 1000)
+            )
+            return True
 
     def finish(
         self,
@@ -332,6 +470,9 @@ class Repository(CacheRepository, VerificationRepository):
             )
         with write_session(self.engine) as s:
             item = s.get(WorkItem, item_id)
+            if item is None:
+                return False
+            self.provider_feedback(s, item.provider_id, error_code, retry_after_seconds, now)
             job = s.get(SearchJob, item.job_id)
             if (
                 item.status != "running"

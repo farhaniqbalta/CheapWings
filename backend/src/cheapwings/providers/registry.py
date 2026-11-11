@@ -53,7 +53,7 @@ def default_registry(settings=None):
     registrations = []
     for provider, dependencies in (
         (SkiplaggedProvider(), ("mcp", "httpx2")),
-        (SwoopProvider(), ("swoop", "airportsdata")),
+        (SwoopProvider(concurrency=settings.swoop_concurrency), ("swoop", "airportsdata")),
         (OctotripProvider(), ("airportsdata",)),
     ):
         selected = provider.provider_id in settings.enabled_providers
@@ -70,8 +70,10 @@ def default_registry(settings=None):
                 provider,
                 enabled=selected and not missing,
                 disabled_reason=reason,
-                concurrency=1,
-                minimum_interval_seconds=15,
+                concurrency=getattr(settings, provider.provider_id + "_concurrency"),
+                minimum_interval_seconds=getattr(
+                    settings, provider.provider_id + "_interval_seconds"
+                ),
                 live_data=True,
                 permitted_to_aggregate=settings.use_scope == "personal",
                 timeout_seconds=90 if provider.provider_id == "octotrip" else None,

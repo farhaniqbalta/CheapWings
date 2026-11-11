@@ -208,11 +208,12 @@ class CacheRepository:
         item.last_error_code = item.last_error_detail = None
         self.finalize(s, job, now)
 
-    def claim_operation(self, s, registration, now, lease_seconds):
+    def claim_operation(self, s, registration, now, lease_seconds, *, operation_id=None):
         provider_id = registration.provider.provider_id
         operation = s.scalar(
             select(ProviderOperation)
             .where(
+                *([ProviderOperation.id == operation_id] if operation_id else []),
                 ProviderOperation.provider_id == provider_id,
                 ProviderOperation.status.in_(("pending", "retry_wait")),
                 ProviderOperation.next_attempt_at <= now,
@@ -283,6 +284,10 @@ class CacheRepository:
     ):
         with write_session(self.engine) as s:
             operation = s.get(ProviderOperation, item_id)
+            if operation is not None:
+                self.provider_feedback(
+                    s, operation.provider_id, error_code, retry_after_seconds, now
+                )
             if (
                 not operation
                 or operation.status != "running"

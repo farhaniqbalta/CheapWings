@@ -26,8 +26,8 @@ First actions:
 3. Verify the change with appropriate offline tests. Live provider calls are
    explicit opt-in; they never run in default CI. Honor source limits and stop
    on throttling/blocking.
-4. Update WORK_LOG.md in at most five lines with the result and evidence pointer;
-   put long measurements, reports and validation in the matching docs/log/ file.
+4. Keep WORK_LOG.md under ~80 lines with at most five short checkpoint bullets;
+   put benchmark tables, detailed results and validation in docs/log/<phase>.md.
    Replace the current checkpoint and next task. Do not create reports elsewhere.
 
 For an empty/new implementation only, follow the original P0→P6 sequence in

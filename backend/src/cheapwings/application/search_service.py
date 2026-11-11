@@ -60,6 +60,9 @@ def status_projection(repo, job_id):
             dto.ProviderProgress(
                 provider_id=provider_id,
                 succeeded=sum(pc[k] for k in SUCCESS),
+                pending=pc["pending"],
+                running=pc["running"],
+                retry_wait=pc["retry_wait"],
                 failed=pc["failed_terminal"],
                 cancelled=pc["cancelled"],
                 skipped_unsupported=pc["skipped_unsupported"],

@@ -130,32 +130,42 @@ view does not prove no flights: inspect coverage and the advertised view.
   Result inserts and terminal success share one transaction. Per-job/provider
   source quote keys prevent duplicates. A failed transaction leaves the lease
   recoverable and no partial fares.
-- Live registrations currently allow one in-flight operation per provider and
-  reserve starts 15 seconds apart across jobs. Different providers can overlap.
-  Provider cooldowns persist in SQLite when rate-limit feedback is retained.
+- One asyncio queue owner admits eligible work fairly across jobs, with at most
+  nine active executions globally. Defaults: Skiplagged C3/3s, swoop C3/0.1s,
+  OctoTrip C3/5s. Each provider has independent start-to-start pacing and cooldowns;
+  a slow response adds no mandatory cooldown after completion. Live providers
+  remain opt-in. Override `WORKER_MAX_IN_FLIGHT`, `<PROVIDER>_CONCURRENCY`, and
+  `<PROVIDER>_INTERVAL_SECONDS` in both shells (see `.env.example`).
   Transient errors get up to three
   attempts with capped exponential backoff; auth/schema errors terminate.
   Adapters may raise normalized `ProviderFailure(code, retry_after_seconds)`.
 - Stale running work is reclaimed only after its lease expires; recovery runs
-  every tick and at startup. Defaults: 30s provider timeout, 40s lease (OctoTrip:
+  at startup and at most 100ms between maintenance checks. Defaults: 30s provider timeout, 40s lease (OctoTrip:
   90s timeout and at least 100s lease), 30-minute
   job budget (including queue time/restarts). Budget exhaustion is a visible
   failure, not empty success. Completed work never reruns automatically.
 - Cancellation invalidates outstanding leases immediately; late results are
   ignored. In-process provider slots remain occupied until calls finish.
   Stopping the worker leaves leases for restart. Closing a client has no effect.
-- The swoop adapter uses a bounded one-thread executor: cancelling an await cannot force-kill a blocking thread. An adapter
-  needs its own network timeout; do not release its actual execution slot early.
+- The swoop adapter uses a bounded executor matching its concurrency setting;
+  overflow is rejected instead of queued. Logical timeout/cancellation retains
+  physical capacity until actual I/O ends. Graceful worker shutdown drains threads
+  before releasing ownership; a permanently stuck thread requires process termination.
+- OctoTrip shares one ≥1.10s HTTP-start gate across initialization and tool calls
+  in every concurrent session. A 429 blocks unsent peer messages and persists the
+  provider cooldown. HTTP Retry-After seconds and dates are supported; swoop's SDK
+  omits response headers, so its rate-limit fallback remains 120 seconds.
 - Registry changes produce explicit skipped entries for removed/disabled
   adapters; unknown provider IDs are rejected.
 
-P4.8 benchmark overrides are isolated experiments; their interval/concurrency
-pairs are not production environment options yet. The
-[experiment report](docs/log/p4.8-throughput-experiment.md) records known gaps:
-late 429 feedback after direct cancellation, nested MCP error classification,
-Retry-After fidelity, and claim-time versus actual request-start spacing.
-Those fixes and any faster rollout require approval. Production settings remain
-unchanged; no Rust migration is planned.
+The P4.9 implementation keeps the durable queue, leases/fencing, retries,
+shared cache operations and progressive result commits. Dispatch ordering is
+persisted by an additive migration; stop old API/worker processes, run
+`.venv/bin/alembic -c backend/alembic.ini upgrade head`, then restart both.
+Migration downgrades preserve the earlier schema. The owner approved C3 settings;
+P4.8 confirmed C3 overlap for Skiplagged and OctoTrip, but did not show a consistent
+C3 speed advantage; swoop C3 still lacks live validation. See [WORK_LOG.md](WORK_LOG.md)
+for measurements and limitations. No Rust or separate worker service is required.
 
 ## Access and budgets
 
@@ -227,9 +237,17 @@ Offline P4.8 experiment checks:
 .venv/bin/python -m pytest -c backend/pyproject.toml scripts/benchmarks/test_p48_instrumentation.py scripts/benchmarks/test_p48_failures.py scripts/benchmarks/test_p48_scheduler_review.py -q -rx
 ```
 
-The review suite records 21 passes and one strict expected failure reproducing
-the cancellation/cooldown defect. That expected failure remains a rollout gate.
-Live benchmark scripts require explicit opt-in and are not part of default CI.
+The P4.8 review/failure/instrumentation suite now passes all 22 tests; its former
+cancellation/cooldown expected failure is a passing regression. Production scheduler
+acceptance checks are in `backend/tests/integration/test_scheduler.py`. Controlled
+performance comparisons use synthetic providers and disposable SQLite databases:
+
+```sh
+/usr/bin/caffeinate -i .venv/bin/python scripts/benchmarks/p49_scheduler_comparison.py --output /tmp/p49-new.jsonl --variant A0 --variant P49 --scenario candidate_replay_scaled --repeats 3
+```
+
+On non-macOS systems omit `caffeinate`. Live benchmark scripts require explicit
+opt-in and are not part of default CI.
 
 Full Xcode is still required for P5; command-line tools alone cannot build SwiftUI.
 See [the phase checkpoints](docs/06_IMPLEMENTATION_CHECKPOINTS.md) for remaining work.

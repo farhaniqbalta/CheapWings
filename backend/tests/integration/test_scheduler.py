@@ -378,7 +378,7 @@ def test_retry_after_dates_nested_mcp_errors_and_defaults(monkeypatch):
     monkeypatch.setenv("ENABLED_PROVIDERS", "skiplagged,swoop,octotrip")
     registry = default_registry(Settings.from_env())
     assert [r.concurrency for r in registry] == [3, 3, 3]
-    assert [r.minimum_interval_seconds for r in registry] == [1, 0.1, 5]
+    assert [r.minimum_interval_seconds for r in registry] == [3, 0.1, 5]
     for reg in registry:
         if hasattr(reg.provider, "blocking"):
             assert reg.provider.blocking.capacity == 3

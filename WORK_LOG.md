@@ -38,13 +38,13 @@ Source of truth for **current** phase status, approvals, and the exact next task
 
 ## Latest checkpoint
 - Corrected Skiplagged HTTP 429 detection to preserve Retry-After through MCP wrapping; raised its default/local interval to 3s (C3 retained).
-- Coverage dropdown now shows queued, running and retry-wait source work while jobs are active.
+- Swoop false-empty fixed with strict RPC validation and cache namespace v3; 173 backend tests pass. Actual retrieval remains blocked: RPC 13/null payload; public-page control redirects to unsupported. [Evidence](docs/log/p4.9.md).
 - Existing API/web services remain available for owner testing; durable worker restarted with the fix.
 - Diagnosed latest cross-provider failures: worker was restarted inside a network-restricted sandbox. DNS failed for all provider hosts; restarted outside sandbox. [Evidence](docs/log/p4.9.md#confirmed-runtime-cause-and-correction--2026-11-11).
 - Prior offline verification and P4.9 evidence: [scheduler log](docs/log/p4.9.md); merge remains owner-controlled.
 
 ## Next task
-Owner retests the site with the network-enabled worker (Skiplagged C3/3s, local OctoTrip C3/1s). Earlier 429/90s timeout behavior remains distinct from the corrected sandbox startup error. P5 still needs full Xcode.
+Evaluate a working supported Google Flights transport before claiming swoop retrieval restored; current guard reports failures honestly. API/worker restarted with network access. Keep Skiplagged C3/3s and local OctoTrip C3/1s. P5 still needs full Xcode.
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

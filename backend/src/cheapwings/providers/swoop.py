@@ -90,7 +90,7 @@ def local_instant(date_parts, time_parts, code, resolver):
 
 class SwoopProvider:
     cache_dependencies = ("swoop-flights", "airportsdata")
-    cache_version = "2"
+    cache_version = "3"
     cache_options: ClassVar[dict] = {"cabin": "economy"}
     provider_id = "swoop"
     capabilities = ProviderCapabilities(True, False, True, True, False, False)
@@ -116,16 +116,9 @@ class SwoopProvider:
         transport = swoop.TransportConfig(timeout=20, retries=0, country=country)
         try:
             if operation == "search":
-                q = value
-                result = swoop.search(
-                    q.origin,
-                    q.destination,
-                    str(q.departure_date),
-                    cabin="economy",
-                    include_basic_economy=q.include_basic_economy,
-                    transport=transport,
-                    time_budget=25,
-                )
+                from cheapwings.providers.swoop_search import search
+
+                result = search(value, transport)
             else:
                 result = swoop.price_selector(value, transport=transport)
             return obj_dict(result)

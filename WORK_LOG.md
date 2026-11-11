@@ -39,11 +39,11 @@ Source of truth for **current** phase status, approvals, and the exact next task
 ## Latest checkpoint
 - Corrected Skiplagged HTTP 429 detection to preserve Retry-After through MCP wrapping; raised its default/local interval to 3s (C3 retained).
 - Coverage dropdown now shows queued, running and retry-wait source work while jobs are active.
-- Existing API/web services remain available for owner testing; restart the durable worker to load the fix.
+- Existing API/web services remain available for owner testing; durable worker restarted with the fix.
 - Prior offline verification and P4.9 evidence: [scheduler log](docs/log/p4.9.md); merge remains owner-controlled.
 
 ## Next task
-Restart the local worker and review the provider cooldown behavior and progress dropdown at http://localhost:5173; then review the P4.9 PR. P5 still needs full Xcode.
+Review the Skiplagged cooldown behavior and progress dropdown at http://localhost:5173; then review the updated P4.9 PR. P5 still needs full Xcode.
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

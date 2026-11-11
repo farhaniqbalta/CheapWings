@@ -26,7 +26,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | P4.7 Source controls + historical lifecycle | Done; PR #2 merged 229fa3f; 126 backend / 4 web / 65 browser checks | same file |
 | P4.8 Provider intervals + staggered scheduling | Experiments complete; scheduling delivered through P4.9 | [interval review](docs/log/p4.8.md), [throughput experiment](docs/log/p4.8-throughput-experiment.md) |
 | P4.9 Scheduler architecture | Done; PR #3 merged a932900; Google Flights transport restoration deferred | [P4.9 review and implementation](docs/log/p4.9.md) |
-| P4.10 Smart locations | Implemented, verified and owner-tested; PR publication approved | [P4.10 implementation](docs/log/p4.10.md) |
+| P4.10 Smart locations | Owner-tested; [PR #4](https://github.com/farhaniqbalta/CheapWings/pull/4) open, awaiting owner merge | [P4.10 implementation](docs/log/p4.10.md) |
 | P5 SwiftUI native iOS | Not started; needs full Xcode | |
 | P6 Release acceptance | Not started | |
 
@@ -42,10 +42,10 @@ Source of truth for **current** phase status, approvals, and the exact next task
 - Offline typed lookup; Specific default; curated Major opt-in; authoritative metadata validation and runtime scope cap.
 - Backend 211 + isolated scheduler/failure 42 passed (253 total); web 9 tests + 75 new browser assertions; evidence in the phase log.
 - Scheduler/provider/search limits preserved; owner-authorized live P4.10 testing at http://localhost:5173/ with existing providers/database.
-- Owner confirmed live testing okay and authorized push/PR; owner controls merge. Existing swoop transport limitation remains deferred.
+- Owner confirmed live testing okay; branch pushed and PR #4 opened; owner controls merge. Existing swoop transport limitation remains deferred.
 
 ## Next task
-Publish the owner-tested P4.10 branch and PR for final review; owner handles merge. Live testing remains at http://localhost:5173/. P5 still needs full Xcode; transport restoration remains separate work.
+Owner reviews and merges [PR #4](https://github.com/farhaniqbalta/CheapWings/pull/4). No automatic merge. Live testing remains at http://localhost:5173/. P5 still needs full Xcode; transport restoration remains separate work.
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

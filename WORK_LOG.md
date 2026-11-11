@@ -40,11 +40,11 @@ Source of truth for **current** phase status, approvals, and the exact next task
 - Corrected Skiplagged HTTP 429 detection to preserve Retry-After through MCP wrapping; raised its default/local interval to 3s (C3 retained).
 - Coverage dropdown now shows queued, running and retry-wait source work while jobs are active.
 - Existing API/web services remain available for owner testing; durable worker restarted with the fix.
-- Latest live search ended cancelled with no successes: all providers recorded `provider_unavailable`; details and limits are in [P4.9 log](docs/log/p4.9.md).
+- Diagnosed latest cross-provider failures: worker was restarted inside a network-restricted sandbox. DNS failed for all provider hosts; restarted outside sandbox. [Evidence](docs/log/p4.9.md#confirmed-runtime-cause-and-correction--2026-11-11).
 - Prior offline verification and P4.9 evidence: [scheduler log](docs/log/p4.9.md); merge remains owner-controlled.
 
 ## Next task
-Diagnose the current cross-provider `provider_unavailable` failures from sanitized adapter telemetry before another live search; review the updated P4.9 PR. P5 still needs full Xcode.
+Owner retests the site with the network-enabled worker (Skiplagged C3/3s, local OctoTrip C3/1s). Earlier 429/90s timeout behavior remains distinct from the corrected sandbox startup error. P5 still needs full Xcode.
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

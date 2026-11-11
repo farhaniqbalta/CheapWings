@@ -1,7 +1,7 @@
 """Public v1 contract. Provider selectors/raw payloads have no public DTO field."""
 
 from datetime import date, datetime
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -15,6 +15,7 @@ from cheapwings.domain.offer import (
     ThreeValued,
 )
 from cheapwings.domain.query import MaxStops, SearchQuery
+from cheapwings.locations.catalog import MajorSelection, catalog
 
 JobStatus = Literal["queued", "running", "completed", "partial", "failed", "cancelled"]
 Sort = Literal["best_checked", "lowest_advertised"]
@@ -29,11 +30,13 @@ class Passengers(DTO):
 
 
 class SearchRequest(DTO):
+    origin_selection: MajorSelection | None = None
+    destination_selection: MajorSelection | None = None
     provider_ids: list[str] | None = Field(default=None, min_length=1, max_length=10)
     cache_mode: Literal["prefer_cache", "refresh"] = "prefer_cache"
     trip_type: Literal["one_way"] = "one_way"
-    origins: list[str] = Field(min_length=1, max_length=120)
-    destinations: list[str] = Field(min_length=1, max_length=120)
+    origins: list[Annotated[str, Field(max_length=16)]] = Field(min_length=1, max_length=120)
+    destinations: list[Annotated[str, Field(max_length=16)]] = Field(min_length=1, max_length=120)
     departure_date_from: date
     departure_date_through: date
     passengers: Passengers = Field(default_factory=Passengers)
@@ -48,6 +51,22 @@ class SearchRequest(DTO):
     def to_domain(self, cap):
         if self.departure_date_from < date.today():
             raise ValueError("Departure window has expired; choose today or a future date")
+        metro_codes = {
+            c.strip().upper() for c in self.origins + self.destinations
+        } & catalog().metro_only_codes
+        if metro_codes:
+            raise ValueError(
+                f"Metropolitan codes {', '.join(sorted(metro_codes))} are city locations; "
+                "choose physical airport codes or a typed Major selection"
+            )
+        for selection, codes in (
+            (self.origin_selection, self.origins),
+            (self.destination_selection, self.destinations),
+        ):
+            if selection is not None:
+                resolved = catalog().resolve(selection)
+                if sorted({c.strip().upper() for c in codes}) != resolved.codes:
+                    raise ValueError("Major selection must match the complete curated airport list")
         data = self.model_dump(exclude={"passengers", "max_stops", "provider_ids", "cache_mode"})
         return SearchQuery(
             **data,

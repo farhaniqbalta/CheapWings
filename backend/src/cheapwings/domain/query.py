@@ -8,6 +8,9 @@ from enum import Enum
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from cheapwings.domain.scope import plan_scope
+from cheapwings.locations.catalog import MajorSelection
+
 _IATA_RE = re.compile(r"^[A-Z]{3}$")
 
 
@@ -24,6 +27,8 @@ class QueryValidationError(ValueError):
 
 class SearchQuery(BaseModel):
     trip_type: str = Field(default="one_way")
+    origin_selection: MajorSelection | None = None
+    destination_selection: MajorSelection | None = None
     origins: list[str]
     destinations: list[str]
     departure_date_from: date
@@ -90,12 +95,10 @@ class SearchQuery(BaseModel):
             raise QueryValidationError(
                 "departure_date_through must not be before departure_date_from"
             )
-        overlap = set(self.origins) & set(self.destinations)
-        if overlap & set(self.origins) and len(self.origins) == 1 and len(self.destinations) == 1:
-            if self.origins[0] == self.destinations[0]:
-                raise QueryValidationError(
-                    f"origin and destination cannot both be {self.origins[0]!r}"
-                )
+        if len(self.origins) == len(self.destinations) == 1 and self.origins == self.destinations:
+            raise QueryValidationError(
+                f"origin and destination cannot both be {self.origins[0]!r}"
+            )
         n = self.combination_count()
         if n > self.max_combinations:
             raise QueryValidationError(
@@ -105,5 +108,5 @@ class SearchQuery(BaseModel):
         return self
 
     def combination_count(self) -> int:
-        days = (self.departure_date_through - self.departure_date_from).days + 1
-        return len(self.origins) * len(self.destinations) * days
+        return plan_scope(self.origins, self.destinations, self.departure_date_from,
+                          self.departure_date_through)["combinations"]

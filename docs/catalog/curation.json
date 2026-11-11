@@ -1,0 +1,18 @@
+{
+  "version": "p410-2026-11-11.1",
+  "definition": "Explicit initial gateway shortlists for the supported countries and metros. These are editorial coverage choices, not traffic rankings, all scheduled-service airports, or a completeness claim. Every change requires a reviewed code-list diff and rationale; unmapped locations have no fallback.",
+  "airport_aliases": {"HND": ["Haneda", "東京羽田"], "NRT": ["Narita", "東京成田"], "CGK": ["Soekarno Hatta", "Jakarta"], "KIX": ["Kansai", "Osaka"], "DPS": ["Bali", "Ngurah Rai"], "CDG": ["Roissy"]},
+  "country_aliases": {"JP": ["Nippon", "Nihon", "日本"], "ID": ["Indonesia", "RI"], "GB": ["UK", "Britain", "Great Britain", "United Kingdom"], "US": ["USA", "United States", "United States of America"], "KR": ["South Korea"], "AE": ["UAE"], "CZ": ["Czechia"], "TR": ["Türkiye", "Turkiye"]},
+  "major": {
+    "country:JP": {"codes": ["HND", "NRT", "KIX", "ITM", "NGO", "CTS", "FUK", "OKA"], "rationale": "Initial Japan gateway shortlist: Tokyo, Osaka, Nagoya, Sapporo, Fukuoka and Okinawa; domestic and international coverage, not every regional airport."},
+    "country:ID": {"codes": ["CGK", "DPS", "SUB", "KNO", "UPG"], "rationale": "Initial Indonesia gateway shortlist: Jakarta, Bali, Surabaya, Medan and Makassar; other islands and airports require Specific selection."},
+    "country:AU": {"codes": ["SYD", "MEL", "BNE", "PER", "ADL"], "rationale": "Initial mainland gateway shortlist; regional and other capital airports require Specific selection."},
+    "country:GB": {"codes": ["LHR", "LGW", "STN", "LTN", "LCY", "MAN", "EDI"], "rationale": "Initial London plus Manchester/Edinburgh gateway shortlist; not all UK airports."},
+    "country:SG": {"codes": ["SIN"], "rationale": "Changi gateway only; Seletar is not included."},
+    "metro:JP:TYO": {"codes": ["HND", "NRT"], "rationale": "Tokyo Haneda and Narita gateways using the pinned MAC association."},
+    "metro:ID:JKT": {"codes": ["CGK", "HLP"], "rationale": "Jakarta Soekarno-Hatta and Halim gateways using the pinned MAC association."},
+    "metro:GB:LON": {"codes": ["LHR", "LGW", "STN", "LTN", "LCY"], "rationale": "Explicit five-airport London shortlist; Southend excluded from this initial coverage choice."},
+    "metro:JP:OSA": {"codes": ["KIX", "ITM"], "rationale": "Kansai and Itami shortlist; Kobe requires Specific selection."},
+    "metro:AU:MEL": {"codes": ["MEL", "AVV"], "rationale": "Melbourne and Avalon gateways using the pinned MAC association."}
+  }
+}

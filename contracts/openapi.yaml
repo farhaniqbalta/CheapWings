@@ -46,6 +46,49 @@
         ]
       }
     },
+    "/api/v1/locations/resolve": {
+      "post": {
+        "summary": "Resolve Location",
+        "operationId": "resolve_location_api_v1_locations_resolve_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MajorSelection"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MajorResolution"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/searches": {
       "post": {
         "summary": "Create Search",
@@ -864,6 +907,74 @@
         ],
         "title": "LinkScope"
       },
+      "MajorResolution": {
+        "properties": {
+          "selection": {
+            "$ref": "#/components/schemas/MajorSelection"
+          },
+          "codes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Codes"
+          },
+          "rationale": {
+            "type": "string",
+            "title": "Rationale"
+          },
+          "definition": {
+            "type": "string",
+            "title": "Definition"
+          }
+        },
+        "type": "object",
+        "required": [
+          "selection",
+          "codes",
+          "rationale",
+          "definition"
+        ],
+        "title": "MajorResolution"
+      },
+      "MajorSelection": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "city",
+              "country"
+            ],
+            "title": "Type"
+          },
+          "location_id": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Location Id"
+          },
+          "coverage_mode": {
+            "type": "string",
+            "const": "major",
+            "title": "Coverage Mode",
+            "default": "major"
+          },
+          "catalog_version": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Catalog Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "location_id",
+          "catalog_version"
+        ],
+        "title": "MajorSelection"
+      },
       "Passengers": {
         "properties": {
           "adults": {
@@ -1517,6 +1628,26 @@
       },
       "SearchRequest": {
         "properties": {
+          "origin_selection": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MajorSelection"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "destination_selection": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MajorSelection"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "provider_ids": {
             "anyOf": [
               {
@@ -1550,7 +1681,8 @@
           },
           "origins": {
             "items": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 16
             },
             "type": "array",
             "maxItems": 120,
@@ -1559,7 +1691,8 @@
           },
           "destinations": {
             "items": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 16
             },
             "type": "array",
             "maxItems": 120,

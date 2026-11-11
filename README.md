@@ -70,6 +70,27 @@ URL or browser storage, and must be re-entered after refresh. Do not put tokens
 or upstream credentials in `VITE_*` variables: these become public build assets.
 Use HTTPS for remote private access; no public deployment is configured.
 
+## Smart location selection (P4.10)
+
+Origin and destination accept airport codes/names, cities and countries using an
+included offline catalog. **Specific Airports** is the default: a city/country
+opens a browse filter; manually selected airport chips are the exact search scope.
+**Major Airports** is opt-in and shows an explicit curated list before search.
+Unmapped places require Specific selection. Switch back to Specific to retain
+and narrow a Major list; entering Major with existing selections asks you to
+clear them explicitly.
+
+The preview excludes same-airport pairs and uses the backend's runtime limit
+(default 120). Over-budget searches stay fully selected and cannot submit;
+remove airports or shorten the dates. Provider work counts are upper-bound
+estimates. Typing never invokes flight providers. Catalog membership does not
+promise scheduled service, route support or fares.
+
+Existing IATA-array callers remain supported. Optional typed Major metadata is
+re-resolved and validated by the backend; `POST /api/v1/locations/resolve` offers
+standalone authoritative resolution. [Catalog source, refresh procedure, API
+contract, tests and limitations](docs/log/p4.10.md).
+
 ## Optional real personal-use searches
 
 P3 adapters passed an actual low-volume canary in the prior session. To opt in,
@@ -94,6 +115,12 @@ prices or booking links. See [retention and budgets](#access-and-budgets).
 Skiplagged prices remain indicative; swoop's unknown hidden-city risk excludes
 its offers from the safe ranking. **Lowest advertised** exposes those candidates
 with their evidence and warnings. No provider price is guaranteed bookable.
+
+Current live limitation (2026-11-11): swoop's RPC transport returns upstream
+errors in controlled checks. The adapter now reports these as failures and
+invalidates earlier false-empty cache entries; live swoop fare retrieval is
+not restored. Transport replacement is deferred beyond P4.9 scheduling work.
+See the [diagnosis and phase handoff](docs/log/p4.9.md).
 
 ## Try the API
 

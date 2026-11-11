@@ -35,3 +35,6 @@ asyncio_default_fixture_loop_scope = "function"
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+
+[tool.setuptools.package-data]
+"cheapwings.locations" = ["catalog.json", "LICENSE.txt"]

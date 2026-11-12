@@ -31,3 +31,4 @@ graphify-out/graph.html
 graphify-out/manifest.json
 .claude/
 .codex/
+graphify-out/.graphify_*

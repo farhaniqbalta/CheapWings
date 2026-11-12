@@ -22,7 +22,7 @@ from cheapwings.engine.expansion import expand_routes_and_dates
 from cheapwings.locations.catalog import MajorResolution, MajorSelection, catalog
 from cheapwings.providers.registry import default_registry
 from cheapwings.storage.db import database, require_current_schema
-from cheapwings.storage.repository import CapacityExceeded, Repository
+from cheapwings.storage.repository import CapacityExceeded, Repository, now_ms
 from cheapwings.storage.verification import ResultsExpired
 
 
@@ -133,6 +133,34 @@ def create_app(settings=None, registry=None, engine=None):
             max_active_jobs=settings.max_active_jobs,
             max_hourly_jobs=settings.max_hourly_jobs,
             synthetic_mode=not any(r.live_data for r in registry if r.unavailable_reason is None),
+        )
+
+    @secured.get("/worker/pool", response_model=dto.WorkerPool)
+    def worker_pool():
+        # Read-only status for the UI; the worker process owns actual admission.
+        running, deadlines = repo.pool_snapshot()
+        now = now_ms()
+        providers = []
+        for r in registry:
+            pid = r.provider.provider_id
+            if r.unavailable_reason is not None:
+                continue
+            wait = max(0, deadlines.get(pid, 0) - now)
+            providers.append(
+                dto.PoolProvider(
+                    provider_id=pid,
+                    priority=r.priority,
+                    running=running.get(pid, 0),
+                    wait_ms=wait,
+                    # Normal pacing reserves at most one interval ahead.
+                    cooling_down=wait > r.minimum_interval_seconds * 1000 + 250,
+                )
+            )
+        return dto.WorkerPool(
+            global_capacity=settings.worker_max_in_flight,
+            low_priority_headroom=settings.low_priority_headroom,
+            running=sum(running.values()),
+            providers=sorted(providers, key=lambda p: (p.priority, p.provider_id)),
         )
 
     @secured.post("/locations/resolve", response_model=MajorResolution)

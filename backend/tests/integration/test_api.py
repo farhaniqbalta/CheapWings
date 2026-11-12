@@ -220,3 +220,33 @@ def test_capabilities_report_default_source_selection(engine):
         assert all(
             r["default_selected"] for r in client.get("/api/v1/capabilities").json()["providers"]
         )
+
+
+def test_worker_pool_status_counts_shared_once_and_flags_cooldown(engine, query):
+    from cheapwings.storage.repository import Repository
+
+    fast = Registration(FakeProvider("fast"), minimum_interval_seconds=1)
+    slow = Registration(FakeProvider("slow"), minimum_interval_seconds=1, priority=1)
+    repo = Repository(engine, cache_enabled=True)
+    q = query.model_copy(update={"destinations": ["DPS"]})
+    first = repo.create_job(q, [fast, slow])
+    second = repo.create_job(q, [fast, slow])  # same query: a shared in-flight operation
+    assert repo.claim(fast) is not None and repo.claim(slow) is not None
+    ops = [
+        i.operation_id
+        for j in (first, second)
+        for i in repo.get_job(j.id)[1]
+        if i.provider_id == "fast"
+    ]
+    # Every route-date fetch has two subscribers but is one physical operation.
+    assert None not in ops and len(ops) == 2 * len(set(ops))
+    repo.record_provider_feedback("slow", "http_rate_limited", 120)
+    settings = Settings(worker_max_in_flight=16, low_priority_headroom=2)
+    with client_for(engine, [fast, slow], settings) as client:
+        pool = client.get("/api/v1/worker/pool").json()
+    assert (pool["global_capacity"], pool["low_priority_headroom"], pool["running"]) == (16, 2, 2)
+    rows = {p["provider_id"]: p for p in pool["providers"]}
+    assert [p["provider_id"] for p in pool["providers"]] == ["fast", "slow"]  # by priority
+    assert rows["fast"]["running"] == 1 and rows["slow"]["running"] == 1
+    assert 0 < rows["fast"]["wait_ms"] <= 1000 and not rows["fast"]["cooling_down"]
+    assert rows["slow"]["wait_ms"] > 100_000 and rows["slow"]["cooling_down"]

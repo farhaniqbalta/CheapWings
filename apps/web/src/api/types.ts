@@ -245,6 +245,22 @@ export interface ProviderCapability {
   default_selected?: boolean;
 }
 
+/** GET /api/v1/worker/pool — persisted view of the shared worker pool. */
+export interface PoolProvider {
+  provider_id: string;
+  priority: number;
+  running: number;
+  wait_ms: number;
+  cooling_down: boolean;
+}
+
+export interface WorkerPool {
+  global_capacity: number;
+  low_priority_headroom: number;
+  running: number;
+  providers: PoolProvider[];
+}
+
 export interface Capabilities {
   search_cache_enabled?: boolean;
   search_cache_ttl_seconds?: number;

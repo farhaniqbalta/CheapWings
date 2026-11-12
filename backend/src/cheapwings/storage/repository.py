@@ -359,6 +359,30 @@ class Repository(CacheRepository, VerificationRepository):
                 state.next_request_at, now + int(max(1, retry_after_seconds or 60) * 1000)
             )
 
+    def pool_snapshot(self):
+        """Running slots per provider (a shared operation counts once) and start deadlines."""
+        from cheapwings.storage.models import ProviderOperation, ProviderState
+
+        with Session(self.engine) as s:
+            running = Counter(
+                s.scalars(
+                    select(WorkItem.provider_id).where(
+                        WorkItem.status == "running", WorkItem.operation_id.is_(None)
+                    )
+                )
+            )
+            running.update(
+                s.scalars(
+                    select(ProviderOperation.provider_id).where(
+                        ProviderOperation.status == "running"
+                    )
+                )
+            )
+            deadlines = dict(
+                s.execute(select(ProviderState.provider_id, ProviderState.next_request_at)).all()
+            )
+        return running, deadlines
+
     def record_provider_feedback(self, provider_id, error_code, retry_after_seconds=0):
         with write_session(self.engine) as s:
             self.provider_feedback(s, provider_id, error_code, retry_after_seconds, now_ms())

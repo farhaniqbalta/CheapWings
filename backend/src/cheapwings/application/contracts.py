@@ -116,6 +116,23 @@ class Capabilities(DTO):
     inventory_completeness: Literal["unknown"] = "unknown"
 
 
+class PoolProvider(DTO):
+    provider_id: str
+    priority: int
+    running: int
+    wait_ms: int  # until the next start is allowed; 0 = ready
+    cooling_down: bool  # wait exceeds normal pacing: 429/Retry-After cooldown
+
+
+class WorkerPool(DTO):
+    """Persisted view; threads still finishing after a timeout are not visible here."""
+
+    global_capacity: int
+    low_priority_headroom: int
+    running: int
+    providers: list[PoolProvider]
+
+
 class Health(DTO):
     status: Literal["ok"] = "ok"
     service: Literal["cheapwings"] = "cheapwings"

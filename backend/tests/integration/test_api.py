@@ -205,3 +205,18 @@ async def test_pagination_freezes_incremental_quote_set(engine, query):
     assert second.itineraries[0].itinerary_id != first.itineraries[0].itinerary_id
     fresh = results_projection(repo, job.id, "best_checked")
     assert len(fresh.itineraries) == 3
+
+
+def test_capabilities_report_default_source_selection(engine):
+    registry = [Registration(FakeProvider(pid)) for pid in ("skiplagged", "swoop")]
+    with client_for(engine, registry) as client:
+        rows = client.get("/api/v1/capabilities").json()["providers"]
+    # swoop stays enabled and selectable; it is only unchecked by default.
+    assert {r["provider_id"]: (r["enabled"], r["default_selected"]) for r in rows} == {
+        "skiplagged": (True, True),
+        "swoop": (True, False),
+    }
+    with client_for(engine, registry, Settings(default_deselected_providers=())) as client:
+        assert all(
+            r["default_selected"] for r in client.get("/api/v1/capabilities").json()["providers"]
+        )

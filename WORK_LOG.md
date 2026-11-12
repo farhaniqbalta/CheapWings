@@ -44,6 +44,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 - P4.12 on branch `p4.12-global-pool` (from `5e7f865`): per-provider concurrency ceilings removed; one shared global pool `WORKER_MAX_IN_FLIGHT` (default 9, now 1..100) with unchanged start intervals, cooldowns, Retry-After, leases and fencing. `<PROVIDER>_CONCURRENCY` removed from code, `.env` and `.env.example`.
 - Adapter-intrinsic thread pools stay as adapter limits only: Fli pool = G (lazy threads), obsolete swoop fixed 3.
 - Follow-up: priority tiers (`<PROVIDER>_PRIORITY`, OctoTrip lowest) plus `LOW_PRIORITY_HEADROOM=2`, so late fast searches never wait behind slow OctoTrip calls. Live stack running locally for owner testing with all four providers (pinned Fli extras installed).
+- Owner live test passed. Swoop unchecked by default in the web picker (still enabled). Local `.env`: G16, OctoTrip 1s. Live Fli ladder at G16 (1s/0.5s/0.25s, 36 requests): no blocks; throughput 59→107→183 searches/min, in-flight ≤5, so Fli's interval, not G, is its throttle. Further experiments paused by owner.
 - Verification: 269 passed / 11 skipped (main 264); 5 new pool tests fail on P4.9 and pass on P4.12. No live provider traffic.
 - Synthetic benchmark (15 min per variant): slot-bound completion 30–86% faster at equal G; pacing-bound unchanged; a late job behind a pool-filling slow provider waits for one slow call at G9/16. G100 is limited by pre-existing `finish`/`finalize` persistence cost, not scheduling. [Details](docs/log/p4.12.md).
 

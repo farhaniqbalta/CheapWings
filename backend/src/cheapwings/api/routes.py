@@ -123,6 +123,8 @@ def create_app(settings=None, registry=None, engine=None):
                     attribution_required=r.attribution_required,
                     retention_seconds=r.retention_seconds,
                     usage_policy_reviewed_on=r.usage_policy_reviewed_on,
+                    default_selected=r.provider.provider_id
+                    not in settings.default_deselected_providers,
                 )
                 for r in registry
             ],

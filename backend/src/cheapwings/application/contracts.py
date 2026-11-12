@@ -100,6 +100,7 @@ class ProviderCapability(DTO):
     attribution_required: bool = False
     retention_seconds: int | None = None
     usage_policy_reviewed_on: str | None = None
+    default_selected: bool = True  # pre-checked in the web source picker
 
 
 class Capabilities(DTO):

@@ -241,6 +241,8 @@ export interface ProviderCapability {
   attribution_required?: boolean;
   retention_seconds?: number | null;
   usage_policy_reviewed_on?: string | null;
+  /** Pre-checked in the source picker; absent means true. */
+  default_selected?: boolean;
 }
 
 export interface Capabilities {

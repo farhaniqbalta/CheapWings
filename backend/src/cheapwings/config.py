@@ -31,6 +31,8 @@ class Settings:
     octotrip_priority: int = 1
     fli_priority: int = 0
     low_priority_headroom: int = 2
+    # Still enabled and selectable; only unchecked by default in the web picker.
+    default_deselected_providers: tuple[str, ...] = ("swoop",)
     reprice_budget: int = 20
     live_retention_seconds: int = 3600
     search_cache_enabled: bool = False
@@ -59,6 +61,8 @@ class Settings:
             "fli",
         }:
             raise ValueError("Unknown or empty provider configuration")
+        if set(self.default_deselected_providers) - {"skiplagged", "swoop", "octotrip", "fli"}:
+            raise ValueError("Unknown provider in DEFAULT_DESELECTED_PROVIDERS")
         if "fake" in self.enabled_providers and len(self.enabled_providers) != 1:
             raise ValueError("Synthetic and live providers cannot share a search")
         if not 1 <= self.search_cache_ttl_seconds <= 3600:
@@ -112,6 +116,14 @@ class Settings:
             },
             low_priority_headroom=int(
                 os.getenv("LOW_PRIORITY_HEADROOM", str(cls.low_priority_headroom))
+            ),
+            default_deselected_providers=tuple(
+                filter(
+                    None,
+                    os.getenv(
+                        "DEFAULT_DESELECTED_PROVIDERS", ",".join(cls.default_deselected_providers)
+                    ).split(","),
+                )
             ),
             search_cache_enabled=os.getenv("SEARCH_CACHE_ENABLED", "false").lower() == "true",
             search_cache_ttl_seconds=int(os.getenv("SEARCH_CACHE_TTL_SECONDS", "1200")),

@@ -1079,6 +1079,11 @@
               }
             ],
             "title": "Usage Policy Reviewed On"
+          },
+          "default_selected": {
+            "type": "boolean",
+            "title": "Default Selected",
+            "default": true
           }
         },
         "additionalProperties": false,

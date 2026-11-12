@@ -30,9 +30,11 @@ export function SearchForm({ onSubmit, submitting, error, maxCombinations, suppo
       .catch(() => {if (active) setCatalogError(true);});
     return () => {active = false;};
   }, [catalogAttempt]);
-  const [excludedSources, setExcludedSources] = useState<string[]>([]);
+  // Owner toggles override the backend default; capabilities load asynchronously.
+  const [sourceToggles, setSourceToggles] = useState<Record<string, boolean>>({});
+  const isChosen = (p: ProviderCapability) => sourceToggles[p.provider_id] ?? p.default_selected !== false;
   const eligible = providers.filter(p => p.enabled && p.permitted_to_aggregate === true);
-  const selectedSources = eligible.filter(p => !excludedSources.includes(p.provider_id)).map(p => p.provider_id);
+  const selectedSources = eligible.filter(isChosen).map(p => p.provider_id);
   const sourceNames: Record<string, string> = {skiplagged: "Skiplagged", swoop: "swoop (Google Flights)", octotrip: "OctoTrip", fli: "Fli (Google Flights)"};
   const [originSelection, setOriginSelection] = useState<MajorSelection | null>(null);
   const [destinationSelection, setDestinationSelection] = useState<MajorSelection | null>(null);
@@ -126,8 +128,8 @@ export function SearchForm({ onSubmit, submitting, error, maxCombinations, suppo
           {providers.map(provider => {
             const available = eligible.some(p => p.provider_id === provider.provider_id);
             return <label className="checkbox" key={provider.provider_id}>
-              <input type="checkbox" disabled={!available} checked={available && !excludedSources.includes(provider.provider_id)}
-                onChange={event => setExcludedSources(previous => event.target.checked ? previous.filter(id => id !== provider.provider_id) : [...previous, provider.provider_id])} />
+              <input type="checkbox" disabled={!available} checked={available && isChosen(provider)}
+                onChange={event => setSourceToggles(previous => ({...previous, [provider.provider_id]: event.target.checked}))} />
               {sourceNames[provider.provider_id] ?? provider.provider_id}
               {!available && <small>{provider.disabled_reason ?? "Source is unavailable or not approved."}</small>}
             </label>;

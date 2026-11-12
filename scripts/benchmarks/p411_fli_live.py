@@ -52,20 +52,23 @@ async def trial(args):
         cfg.set_main_option("sqlalchemy.url", url)
         command.upgrade(cfg, "head")
         engine = database(url)
-        repo = Repository(engine, global_capacity=9, cache_enabled=False)
-        provider = FliProvider(concurrency=3)
+        repo = Repository(engine, global_capacity=args.capacity, cache_enabled=False)
+        # Production sizes Fli's thread pool to G (P4.12); keep the trial identical.
+        provider = FliProvider(concurrency=args.capacity)
         reg = Registration(
-            provider, minimum_interval_seconds=1, live_data=True
+            provider, minimum_interval_seconds=args.interval, live_data=True
         )
         q = SearchQuery(
             origins=["HND"],
             destinations=["CGK"],
             departure_date_from=args.date,
-            departure_date_through=args.date + timedelta(days=2),
+            departure_date_through=args.date + timedelta(days=args.days - 1),
             display_currency="IDR",
         )
         job = repo.create_job(q, [reg])
-        runner = JobRunner(repo, [reg], max_in_flight=9, max_attempts=args.max_attempts)
+        runner = JobRunner(
+            repo, [reg], max_in_flight=args.capacity, max_attempts=args.max_attempts
+        )
         rows, state = [], {"active": 0, "peak": 0, "blocked": False}
         lock = threading.Lock()
         actual = provider._fetch
@@ -121,9 +124,9 @@ async def trial(args):
                 json.dumps(
                     {
                         "status": status.status,
-                        "concurrency": 3,
-                        "interval_seconds": 1,
-                        "global_capacity": 9,
+                        "blocked": state["blocked"],
+                        "interval_seconds": args.interval,
+                        "global_capacity": args.capacity,
                         "max_attempts": args.max_attempts,
                         "requests": len(rows),
                         "peak_in_flight": state["peak"],
@@ -165,6 +168,9 @@ def main():
     p.add_argument("--max-attempts", type=int, choices=(1, 3), default=1)
     p.add_argument("--live-db", required=True)
     p.add_argument("--date", type=date.fromisoformat, default=date(2026, 11, 20))
+    p.add_argument("--days", type=int, default=3, help="consecutive dates = searches")
+    p.add_argument("--interval", type=float, default=1.0, help="Fli start interval s")
+    p.add_argument("--capacity", type=int, default=9, help="global in-flight budget")
     args = p.parse_args()
     if not args.run_live:
         p.error("Real searches require --run-live")

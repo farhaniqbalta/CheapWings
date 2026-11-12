@@ -13,6 +13,7 @@ from cheapwings.storage.cache import CacheRepository
 from cheapwings.storage.db import write_session
 from cheapwings.storage.models import SearchJob, WorkItem
 from cheapwings.storage.verification import VerificationRepository
+from cheapwings.typeadapters import adapter
 
 ACTIVE = ("pending", "retry_wait", "running")
 SUCCESS = ("succeeded_results", "succeeded_empty")
@@ -153,9 +154,14 @@ class Repository(CacheRepository, VerificationRepository):
     @staticmethod
     def finalize(s, job, now):
         s.flush()
-        items = s.scalars(select(WorkItem).where(WorkItem.job_id == job.id)).all()
         job.updated_at = now
-        if any(i.status in ACTIVE for i in items):
+        # Called on every finish: one indexed existence check while work remains,
+        # instead of loading every item of the job (quadratic in job size).
+        if s.scalar(
+            select(WorkItem.id)
+            .where(WorkItem.job_id == job.id, WorkItem.status.in_(ACTIVE))
+            .limit(1)
+        ):
             return
         if job.deadline_at <= now:
             job.verification_planned = True
@@ -168,11 +174,20 @@ class Repository(CacheRepository, VerificationRepository):
             job.status = "running"
             job.phase = "verifying"
             return
-        counts = Counter(i.status for i in items)
+        counts = Counter(
+            dict(
+                s.execute(
+                    select(WorkItem.status, func.count())
+                    .where(WorkItem.job_id == job.id)
+                    .group_by(WorkItem.status)
+                ).all()
+            )
+        )
+        total = sum(counts.values())
         successes = sum(counts[k] for k in SUCCESS)
         if job.cancel_requested:
             job.status = "cancelled"
-        elif successes == len(items) and items:
+        elif successes == total and total:
             job.status = "completed"
         elif successes:
             job.status = "partial"
@@ -561,8 +576,6 @@ class Repository(CacheRepository, VerificationRepository):
     def _store_results(s, job, item, result, now):
         from dataclasses import replace
 
-        from pydantic import TypeAdapter
-
         from cheapwings.domain.itinerary import (
             AirportTransfer,
             IdentityConfidence,
@@ -611,10 +624,10 @@ class Repository(CacheRepository, VerificationRepository):
                     job_id=job.id,
                     fingerprint=itin.fingerprint,
                     identity_confidence=itin.identity_confidence.value,
-                    airport_transfers_json=TypeAdapter(tuple[AirportTransfer, ...]).dump_python(
+                    airport_transfers_json=adapter(tuple[AirportTransfer, ...]).dump_python(
                         transfers, mode="json"
                     ),
-                    summary_json=TypeAdapter(ItinerarySummary).dump_python(summary, mode="json")
+                    summary_json=adapter(ItinerarySummary).dump_python(summary, mode="json")
                     if summary
                     else None,
                 )
@@ -625,7 +638,7 @@ class Repository(CacheRepository, VerificationRepository):
                         SegmentRow(
                             itinerary_id=row.id,
                             ordinal=seg.ordinal,
-                            canonical_json=TypeAdapter(FlightSegment).dump_python(seg, mode="json"),
+                            canonical_json=adapter(FlightSegment).dump_python(seg, mode="json"),
                         )
                     )
             for offer in offers:
@@ -654,7 +667,7 @@ class Repository(CacheRepository, VerificationRepository):
                     comparison_status=comparison,
                     provider_quote_handle=None,
                 )
-                data = TypeAdapter(Offer).dump_python(public_offer, mode="json")
+                data = adapter(Offer).dump_python(public_offer, mode="json")
                 data.pop("provider_quote_handle")
                 fx_row = None
                 if offer.evidence and offer.evidence.fx_snapshot:

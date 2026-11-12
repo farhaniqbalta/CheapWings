@@ -4,7 +4,6 @@ from dataclasses import replace
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from pydantic import TypeAdapter
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
@@ -25,10 +24,11 @@ from cheapwings.storage.models import (
     SegmentRow,
     WorkItem,
 )
+from cheapwings.typeadapters import adapter
 
 
 def offer_from_row(row, *, private=False, data=None):
-    return TypeAdapter(Offer).validate_python(
+    return adapter(Offer).validate_python(
         {
             **(data or row.canonical_json),
             "provider_quote_handle": row.provider_quote_handle_server_side if private else None,
@@ -108,7 +108,7 @@ class VerificationRepository:
             return RepriceRequest(
                 offer_from_row(row, private=True),
                 tuple(
-                    TypeAdapter(FlightSegment).validate_python(seg.canonical_json)
+                    adapter(FlightSegment).validate_python(seg.canonical_json)
                     for seg in segments
                 ),
                 SingleDateRouteQuery(
@@ -124,7 +124,7 @@ class VerificationRepository:
 
     @staticmethod
     def _revise(s, row, offer, reason, now):
-        data = TypeAdapter(Offer).dump_python(
+        data = adapter(Offer).dump_python(
             replace(offer, provider_quote_handle=None), mode="json"
         )
         data.pop("provider_quote_handle")
@@ -158,7 +158,7 @@ class VerificationRepository:
             .order_by(SegmentRow.ordinal)
         ).all()
         expected = tuple(
-            TypeAdapter(FlightSegment).validate_python(seg.canonical_json) for seg in segments
+            adapter(FlightSegment).validate_python(seg.canonical_json) for seg in segments
         )
         identity_matches = (
             bool(expected)

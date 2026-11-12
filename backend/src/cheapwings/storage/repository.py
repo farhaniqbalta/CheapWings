@@ -278,11 +278,6 @@ class Repository(CacheRepository, VerificationRepository):
             ).all()
             if len(direct) + len(operations) >= self.global_capacity:
                 return None
-            if (
-                sum(i.provider_id == provider_id for i in direct + operations)
-                >= registration.concurrency
-            ):
-                return None
             item = s.scalar(
                 select(WorkItem)
                 .join(SearchJob)

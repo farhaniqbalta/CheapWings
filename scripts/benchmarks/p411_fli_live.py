@@ -55,7 +55,7 @@ async def trial(args):
         repo = Repository(engine, global_capacity=9, cache_enabled=False)
         provider = FliProvider(concurrency=3)
         reg = Registration(
-            provider, concurrency=3, minimum_interval_seconds=1, live_data=True
+            provider, minimum_interval_seconds=1, live_data=True
         )
         q = SearchQuery(
             origins=["HND"],

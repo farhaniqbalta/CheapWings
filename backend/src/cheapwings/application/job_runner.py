@@ -1,4 +1,4 @@
-"""One durable queue owner; bounded tasks with independent provider admission."""
+"""One durable queue owner; one shared global pool with independent provider pacing."""
 
 import asyncio
 import logging
@@ -196,9 +196,11 @@ class JobRunner:
                 index = (self._cursor + offset) % len(self.registry)
                 reg = self.registry[index]
                 pid = reg.provider.provider_id
+                # No scheduler per-provider ceiling: providers share the global
+                # budget. Only an adapter's real thread pool may refuse (no queueing);
+                # occupied() also counts dispatched tasks not yet holding a thread.
                 blocking = getattr(reg.provider, "blocking", None)
-                capacity = min(reg.concurrency, blocking.capacity) if blocking else reg.concurrency
-                if self.occupied(pid) >= capacity:
+                if blocking and self.occupied(pid) >= blocking.capacity:
                     continue
                 if reg.minimum_interval_seconds > 0 and (
                     pid in self._starting or self._next_start.get(pid, 0) > monotonic()

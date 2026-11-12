@@ -264,6 +264,7 @@ async def test_empty_success_cached_but_errors_retry_and_never_cached(engine, qu
 
 async def test_refresh_does_not_join_old_fetch_and_all_cancelled_calls_keep_slot(engine, query):
     repo, reg = setup(engine)
+    repo.global_capacity = 1  # the cancelled fetch must still hold the only slot
     q = single(query)
     first = repo.create_job(q, [reg])
     old, _ = repo.claim(reg)

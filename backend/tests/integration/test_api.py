@@ -190,8 +190,8 @@ async def test_pagination_freezes_incremental_quote_set(engine, query):
     from cheapwings.storage.repository import Repository
 
     q = query.model_copy(update={"departure_date_through": query.departure_date_from})
-    reg = [Registration(FakeProvider(), concurrency=2, minimum_interval_seconds=0)]
-    repo = Repository(engine)
+    reg = [Registration(FakeProvider(), minimum_interval_seconds=0)]
+    repo = Repository(engine, global_capacity=2)
     job = repo.create_job(q, reg)
     runner = JobRunner(repo, reg)
     await runner.tick()

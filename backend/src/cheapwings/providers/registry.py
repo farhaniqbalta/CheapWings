@@ -11,7 +11,6 @@ class Registration:
     provider: SearchProvider
     enabled: bool = True
     disabled_reason: str | None = None
-    concurrency: int = 1
     minimum_interval_seconds: float = 1
     live_data: bool = False
     permitted_to_aggregate: bool = True
@@ -25,8 +24,8 @@ class Registration:
     def __post_init__(self):
         if self.timeout_seconds is not None and self.timeout_seconds < 1:
             raise ValueError("Provider timeout must be positive")
-        if self.concurrency < 1 or self.minimum_interval_seconds < 0:
-            raise ValueError("Provider concurrency must be positive and interval nonnegative")
+        if self.minimum_interval_seconds < 0:
+            raise ValueError("Provider interval must be nonnegative")
 
     @property
     def unavailable_reason(self):
@@ -54,9 +53,12 @@ def default_registry(settings=None):
     registrations = []
     for provider, dependencies in (
         (SkiplaggedProvider(), ("mcp", "httpx2")),
-        (SwoopProvider(concurrency=settings.swoop_concurrency), ("swoop", "airportsdata")),
+        # Adapter-intrinsic thread limits, not scheduler policy. Swoop is obsolete
+        # (scheduled for replacement) and keeps its P4.9 pool; Fli threads spawn
+        # lazily and can never exceed the global budget.
+        (SwoopProvider(concurrency=3), ("swoop", "airportsdata")),
         (OctotripProvider(), ("airportsdata",)),
-        (FliProvider(concurrency=settings.fli_concurrency), ("fli", "airportsdata")),
+        (FliProvider(concurrency=settings.worker_max_in_flight), ("fli", "airportsdata")),
     ):
         selected = provider.provider_id in settings.enabled_providers
         missing = [name for name in dependencies if find_spec(name) is None]
@@ -72,7 +74,6 @@ def default_registry(settings=None):
                 provider,
                 enabled=selected and not missing,
                 disabled_reason=reason,
-                concurrency=getattr(settings, provider.provider_id + "_concurrency"),
                 minimum_interval_seconds=getattr(
                     settings, provider.provider_id + "_interval_seconds"
                 ),

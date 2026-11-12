@@ -59,10 +59,13 @@ async def test_unequal_intervals_short_and_long_calls(engine, query, cache):
     assert repo.finish(a.id, a.lease_token, await result(fast, a, q), now=start + 1000)
     assert repo.claim(fast, now=start + 4999) is None
     a2, _ = repo.claim(fast, now=start + 5000)
-    # The slow provider remains occupied beyond its interval, without delaying fast.
-    assert repo.claim(slow, now=start + 11000) is None
+    # P4.12: no per-provider ceiling. A still-running slow call does not block
+    # its next start once the interval elapses, and never delays fast.
+    assert repo.claim(slow, now=start + 9999) is None
+    b2, _ = repo.claim(slow, now=start + 10000)
     assert repo.finish(b.id, b.lease_token, await result(slow, b, q), now=start + 12000)
-    assert repo.claim(slow, now=start + 12000) is not None
+    assert repo.claim(slow, now=start + 12000) is None  # paced from b2's start
+    assert repo.finish(b2.id, b2.lease_token, await result(slow, b2, q), now=start + 12500)
     assert repo.finish(
         a2.id, a2.lease_token, await result(fast, a2, q), now=start + 13000
     )
@@ -115,7 +118,8 @@ def test_restart_waits_for_lease_and_fences_duplicate_claims(engine, query, cach
         )
     assert sum(claim is not None for claim in claims) == 1
     first, _ = next(claim for claim in claims if claim is not None)
-    restarted = Repository(engine, cache_enabled=cache)
+    # Budget 1 isolates lease recovery: the expired-lease item still occupies it.
+    restarted = Repository(engine, cache_enabled=cache, global_capacity=1)
     restarted.sweep(now=start + 39999)
     assert restarted.claim(reg, now=start + 39999) is None
     restarted.sweep(now=start + 40000)

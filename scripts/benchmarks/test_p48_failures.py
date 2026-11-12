@@ -75,8 +75,8 @@ async def test_two_overlapping_calls_cancel_and_replacement(engine, query, cache
                 self.active -= 1
 
     provider = Gate()
-    reg = Registration(provider, concurrency=2, minimum_interval_seconds=0)
-    repo = Repository(engine, cache_enabled=cache)
+    reg = Registration(provider, minimum_interval_seconds=0)
+    repo = Repository(engine, cache_enabled=cache, global_capacity=2)
     first = repo.create_job(short(query), [reg])
     runner = JobRunner(repo, [reg])
     try:
@@ -125,11 +125,11 @@ async def test_overlap_429_retry_after_and_independent_provider(
                 self.active -= 1
 
     p = Limited()
-    reg = Registration(p, concurrency=2, minimum_interval_seconds=0)
+    reg = Registration(p, minimum_interval_seconds=0)
     other = Registration(
-        FakeProvider("other"), concurrency=2, minimum_interval_seconds=0
+        FakeProvider("other"), minimum_interval_seconds=0
     )
-    repo = Repository(engine, cache_enabled=cache)
+    repo = Repository(engine, cache_enabled=cache, global_capacity=4)
     job = repo.create_job(short(query), [reg, other])
     runner = JobRunner(repo, [reg, other])
     try:
@@ -169,7 +169,7 @@ async def test_overlap_429_retry_after_and_independent_provider(
 @pytest.mark.asyncio
 async def test_two_expired_leases_reject_late_successes(engine, query, cache):
     repo = Repository(engine, cache_enabled=cache)
-    reg = Registration(FakeProvider(), concurrency=2, minimum_interval_seconds=0)
+    reg = Registration(FakeProvider(), minimum_interval_seconds=0)
     job = repo.create_job(short(query, 2), [reg])
     now = now_ms()
     old = [repo.claim(reg, lease_seconds=1, now=now)[0] for _ in range(2)]
@@ -291,14 +291,14 @@ async def test_stock_swoop_one_instance_cannot_overlap():
 @pytest.mark.parametrize("cache", [False, True])
 def test_concurrent_claims_under_real_sqlite_lock(engine, query, cache):
     repo = Repository(engine, cache_enabled=cache)
-    reg = Registration(FakeProvider(), concurrency=2, minimum_interval_seconds=0)
+    reg = Registration(FakeProvider(), minimum_interval_seconds=0)
     repo.create_job(short(query), [reg])
     lock = sqlite3.connect(engine.url.database)
     lock.execute("BEGIN IMMEDIATE")
 
     def claim(_):
         start = time.monotonic()
-        value = Repository(engine, cache_enabled=cache).claim(reg)
+        value = Repository(engine, cache_enabled=cache, global_capacity=2).claim(reg)
         return value, time.monotonic() - start
 
     try:
@@ -324,7 +324,7 @@ def test_concurrent_claims_under_real_sqlite_lock(engine, query, cache):
 
 def test_actual_worker_process_kill_and_recovery(engine, query, tmp_path, monkeypatch):
     repo = Repository(engine)
-    reg = Registration(FakeProvider(), concurrency=2, minimum_interval_seconds=0)
+    reg = Registration(FakeProvider(), minimum_interval_seconds=0)
     job = repo.create_job(short(query, 2), [reg])
     child = tmp_path / "worker.py"
     started = tmp_path / "started.txt"
@@ -342,7 +342,7 @@ class Slow(FakeProvider):
         return await super().search(q)
 async def main():
     repo=Repository(database(sys.argv[1]))
-    runner=JobRunner(repo,[Registration(Slow(),concurrency=2,minimum_interval_seconds=0)])
+    runner=JobRunner(repo,[Registration(Slow(),minimum_interval_seconds=0)])
     await runner.run()
 asyncio.run(main())
 """)

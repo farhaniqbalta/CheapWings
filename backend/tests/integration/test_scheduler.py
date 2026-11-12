@@ -1,4 +1,4 @@
-"""Production P4.9 admission, physical capacity, protocol and recovery checks."""
+"""Production P4.9/P4.12 admission, physical capacity, protocol and recovery checks."""
 
 import asyncio
 import itertools
@@ -79,11 +79,11 @@ async def drain(runner, repo, jobs):
 @pytest.mark.parametrize(
     "provider_ids", [("one", "two", "three"), ("skiplagged", "swoop", "octotrip", "fli")]
 )
-async def test_c3_independent_sources_global_bound_spacing_and_progress(
+async def test_fair_share_independent_sources_global_bound_spacing_and_progress(
     engine, query, capacity, provider_ids
 ):
     providers = [Recorded(pid, 0.12) for pid in provider_ids]
-    regs = [Registration(p, concurrency=3, minimum_interval_seconds=0.012) for p in providers]
+    regs = [Registration(p, minimum_interval_seconds=0.012) for p in providers]
     repo = Repository(engine, global_capacity=capacity)
     job = repo.create_job(small(query, 6), regs)
     runner = JobRunner(repo, regs, max_in_flight=capacity)
@@ -95,6 +95,7 @@ async def test_c3_independent_sources_global_bound_spacing_and_progress(
         assert any(i.status != "succeeded_results" for i in repo.get_job(job.id)[1])
         await drain(runner, repo, [job.id])
         assert peak([r for p in providers for r in p.trace]) <= capacity
+        # With every source busy, round-robin admission yields an even share of G.
         if capacity == 9:
             assert max(peak(p.trace) for p in providers) == 3
         for p in providers:
@@ -114,7 +115,7 @@ async def test_cancelled_late_429_persists_cooldown_without_quotes(engine, query
             await release.wait()
             raise ProviderFailure("http_rate_limited", 60)
 
-    reg = Registration(Limited(), concurrency=3, minimum_interval_seconds=0)
+    reg = Registration(Limited(), minimum_interval_seconds=0)
     repo = Repository(engine, cache_enabled=cache)
     job = repo.create_job(small(query), [reg])
     runner = JobRunner(repo, [reg])
@@ -159,7 +160,7 @@ async def test_timeout_retains_capacity_and_rejects_late_results(
             return await super().search(q)
 
     late, ready = Late(), Recorded("ready", 0.005)
-    regs = [Registration(p, concurrency=3, minimum_interval_seconds=0) for p in (late, ready)]
+    regs = [Registration(p, minimum_interval_seconds=0) for p in (late, ready)]
     repo = Repository(engine, global_capacity=1)
     job = repo.create_job(small(query), regs)
     runner = JobRunner(repo, regs, timeout_seconds=0.02, lease_seconds=1, max_attempts=1)
@@ -269,7 +270,7 @@ def test_durable_fairness_across_direct_and_shared_work(engine, query, large_cac
 @pytest.mark.parametrize("cache", [False, True])
 def test_global_atomic_claims_across_sources_and_shared_followers(engine, query, cache):
     regs = [
-        Registration(FakeProvider(p), concurrency=3, minimum_interval_seconds=0)
+        Registration(FakeProvider(p), minimum_interval_seconds=0)
         for p in ("a", "b", "c")
     ]
     repo = Repository(engine, global_capacity=4, cache_enabled=cache)
@@ -290,7 +291,7 @@ def test_global_atomic_claims_across_sources_and_shared_followers(engine, query,
 def test_actual_start_deadline_and_cooldown_survive_restart(engine, query, monkeypatch):
     import cheapwings.storage.repository as module
 
-    reg = Registration(FakeProvider(), concurrency=3, minimum_interval_seconds=1)
+    reg = Registration(FakeProvider(), minimum_interval_seconds=1)
     repo = Repository(engine)
     repo.create_job(small(query, 2), [reg])
     start = now_ms()
@@ -376,18 +377,19 @@ def test_retry_after_dates_nested_mcp_errors_and_defaults(monkeypatch):
     assert failure.code == "http_rate_limited" and failure.retry_after_seconds == 70
     settings = Settings.from_env()
     assert settings.worker_max_in_flight == 9
-    assert [getattr(settings, p + "_concurrency") for p in ("skiplagged", "swoop", "octotrip")] == [
-        3,
-        3,
-        3,
-    ]
+    assert not any("concurrency" in name for name in vars(settings))
     monkeypatch.setenv("ENABLED_PROVIDERS", "skiplagged,swoop,octotrip")
     registry = default_registry(Settings.from_env())
-    assert [r.concurrency for r in registry] == [3, 3, 3, 3]
+    assert not any(hasattr(r, "concurrency") for r in registry)
     assert [r.minimum_interval_seconds for r in registry] == [3, 0.1, 5, 1]
+    # Adapter-intrinsic thread pools only: obsolete swoop keeps 3, Fli follows G.
+    assert {
+        r.provider.provider_id: r.provider.blocking.capacity
+        for r in registry
+        if hasattr(r.provider, "blocking")
+    } == {"swoop": 3, "fli": 9}
     for reg in registry:
         if hasattr(reg.provider, "blocking"):
-            assert reg.provider.blocking.capacity == 3
             reg.provider.blocking.close()
 
 
@@ -402,7 +404,7 @@ async def test_expired_lease_does_not_duplicate_still_running_work(engine, query
             await release.wait()
             return await super().search(q)
 
-    reg = Registration(Held(), concurrency=3, minimum_interval_seconds=0)
+    reg = Registration(Held(), minimum_interval_seconds=0)
     repo = Repository(engine, global_capacity=3, cache_enabled=cache)
     original = repo.create_job(small(query), [reg])
     runner = JobRunner(repo, [reg])
@@ -548,7 +550,7 @@ async def test_scheduler_honors_actual_executor_capacity_when_registration_is_la
             return await super().search(q)
 
     provider = SingleThread()
-    reg = Registration(provider, concurrency=3, minimum_interval_seconds=0)
+    reg = Registration(provider, minimum_interval_seconds=0)
     repo = Repository(engine)
     job = repo.create_job(small(query, 3), [reg])
     runner = JobRunner(repo, [reg])

@@ -48,6 +48,7 @@ def main():
                 ),
                 default_registry(settings),
                 max_in_flight=settings.worker_max_in_flight,
+                low_priority_headroom=settings.low_priority_headroom,
                 timeout_seconds=settings.call_timeout_seconds,
                 lease_seconds=settings.lease_seconds,
                 max_attempts=settings.max_attempts,

@@ -126,8 +126,8 @@ Fli is a fourth, independent scheduling option using Google's public search
 page. Its current 0.10.0 source is pinned to commit
 `881aee5ff4321e81ea2157cb44be94ce6a21dc1b` (PyPI's older 0.9.0 is not used),
 with curl-cffi 0.17.0 and explicit HTTP/2. Installing the live extra requires
-Git to fetch that commit. Set `FLI_CONCURRENCY=3` and
-`FLI_INTERVAL_SECONDS=1` in both API/worker environments.
+Git to fetch that commit. Set `FLI_INTERVAL_SECONDS=1` in both API/worker
+environments.
 
 Fli offers appear under **Lowest advertised** as indicative shopping quotes;
 links open a Google Flights search, not a confirmed seller fare. Basic-economy
@@ -171,11 +171,19 @@ view does not prove no flights: inspect coverage and the advertised view.
   Result inserts and terminal success share one transaction. Per-job/provider
   source quote keys prevent duplicates. A failed transaction leaves the lease
   recoverable and no partial fares.
-- One asyncio queue owner admits eligible work fairly across jobs, with at most
-  nine active executions globally. Defaults: Skiplagged C3/3s, swoop C3/0.1s,
-  OctoTrip C3/5s, Fli C3/1s. Each provider has independent start-to-start pacing and cooldowns;
-  a slow response adds no mandatory cooldown after completion. Live providers
-  remain opt-in. Override `WORKER_MAX_IN_FLIGHT`, `<PROVIDER>_CONCURRENCY`, and
+- One asyncio queue owner admits eligible work fairly across providers and jobs
+  from one shared global pool (default nine physical operations, 1..100). There
+  is no per-provider concurrency ceiling: any provider may use idle global
+  capacity. Start-to-start intervals decide when a provider may begin a request
+  (defaults: Skiplagged 3s, swoop 0.1s, OctoTrip 5s, Fli 1s); cooldowns and
+  Retry-After still apply. Providers have priority tiers (`<PROVIDER>_PRIORITY`,
+  0 = highest; OctoTrip defaults to 1): a lower tier only gets a slot when no
+  higher tier has eligible work, and cannot take the last `LOW_PRIORITY_HEADROOM`
+  slots (default 2), so a later fast search never waits behind slow calls.
+  `DEFAULT_DESELECTED_PROVIDERS` (default `swoop`) only pre-unchecks a source in
+  the web picker; it stays enabled and selectable.
+  A slow response adds no mandatory cooldown after
+  completion. Live providers remain opt-in. Override `WORKER_MAX_IN_FLIGHT` and
   `<PROVIDER>_INTERVAL_SECONDS` in both shells (see `.env.example`).
   Transient errors get up to three
   attempts with capped exponential backoff; auth/schema errors terminate.
@@ -188,8 +196,10 @@ view does not prove no flights: inspect coverage and the advertised view.
 - Cancellation invalidates outstanding leases immediately; late results are
   ignored. In-process provider slots remain occupied until calls finish.
   Stopping the worker leaves leases for restart. Closing a client has no effect.
-- The swoop adapter uses a bounded executor matching its concurrency setting;
-  overflow is rejected instead of queued. Logical timeout/cancellation retains
+- Blocking adapters use bounded executors as an adapter-intrinsic limit, not a
+  scheduler policy: swoop keeps three threads (obsolete, pending replacement);
+  Fli's threads spawn lazily up to the global pool size. Overflow is rejected
+  instead of queued. Logical timeout/cancellation retains
   physical capacity until actual I/O ends. Graceful worker shutdown drains threads
   before releasing ownership; a permanently stuck thread requires process termination.
 - OctoTrip shares one ≥1.10s HTTP-start gate across initialization and tool calls

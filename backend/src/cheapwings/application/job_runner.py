@@ -1,4 +1,4 @@
-"""One durable queue owner; bounded tasks with independent provider admission."""
+"""One durable queue owner; one shared global pool with independent provider pacing."""
 
 import asyncio
 import logging
@@ -31,6 +31,7 @@ class JobRunner:
         lease_seconds=40,
         max_attempts=3,
         max_in_flight=None,
+        low_priority_headroom=0,
     ):
         if lease_seconds <= timeout_seconds or max_attempts < 1:
             raise ValueError("Lease must exceed call timeout; max_attempts must be positive")
@@ -40,6 +41,9 @@ class JobRunner:
         self.max_in_flight = max_in_flight if max_in_flight is not None else repo.global_capacity
         if self.max_in_flight < 1:
             raise ValueError("Global capacity must be positive")
+        if not 0 <= low_priority_headroom < self.max_in_flight:
+            raise ValueError("Low-priority headroom must be 0..capacity-1")
+        self.low_priority_headroom = low_priority_headroom
         repo.global_capacity = self.max_in_flight
         self.tasks = set()
         self.task_providers = {}
@@ -190,15 +194,29 @@ class JobRunner:
             self.repo.sweep(max_attempts=self.max_attempts)
             self.repo.schedule_verification()
             self._maintenance_at = monotonic() + 0.1
+        # Strict priority tiers (0 = highest), round-robin inside a tier. A
+        # lower-priority source may not take the last `low_priority_headroom`
+        # slots while a higher-priority source is available, because running
+        # calls cannot be preempted when urgent work arrives later.
+        best = min((r.priority for r in self.registry if not r.unavailable_reason), default=0)
+        reserved_from = self.max_in_flight - self.low_priority_headroom
+        n = len(self.registry)
         while self.occupied() < self.max_in_flight:
             dispatched = False
-            for offset in range(len(self.registry)):
-                index = (self._cursor + offset) % len(self.registry)
+            order = sorted(
+                ((self._cursor + offset) % n for offset in range(n)),
+                key=lambda i: self.registry[i].priority,  # stable: keeps rotation
+            )
+            for index in order:
                 reg = self.registry[index]
                 pid = reg.provider.provider_id
+                if reg.priority > best and self.occupied() >= reserved_from:
+                    continue
+                # No scheduler per-provider ceiling: providers share the global
+                # budget. Only an adapter's real thread pool may refuse (no queueing);
+                # occupied() also counts dispatched tasks not yet holding a thread.
                 blocking = getattr(reg.provider, "blocking", None)
-                capacity = min(reg.concurrency, blocking.capacity) if blocking else reg.concurrency
-                if self.occupied(pid) >= capacity:
+                if blocking and self.occupied(pid) >= blocking.capacity:
                     continue
                 if reg.minimum_interval_seconds > 0 and (
                     pid in self._starting or self._next_start.get(pid, 0) > monotonic()

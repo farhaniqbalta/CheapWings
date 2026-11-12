@@ -46,6 +46,29 @@
         ]
       }
     },
+    "/api/v1/worker/pool": {
+      "get": {
+        "summary": "Worker Pool",
+        "operationId": "worker_pool_api_v1_worker_pool_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkerPool"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/locations/resolve": {
       "post": {
         "summary": "Resolve Location",
@@ -988,6 +1011,40 @@
         "type": "object",
         "title": "Passengers"
       },
+      "PoolProvider": {
+        "properties": {
+          "provider_id": {
+            "type": "string",
+            "title": "Provider Id"
+          },
+          "priority": {
+            "type": "integer",
+            "title": "Priority"
+          },
+          "running": {
+            "type": "integer",
+            "title": "Running"
+          },
+          "wait_ms": {
+            "type": "integer",
+            "title": "Wait Ms"
+          },
+          "cooling_down": {
+            "type": "boolean",
+            "title": "Cooling Down"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider_id",
+          "priority",
+          "running",
+          "wait_ms",
+          "cooling_down"
+        ],
+        "title": "PoolProvider"
+      },
       "PriceStatus": {
         "type": "string",
         "enum": [
@@ -1079,6 +1136,11 @@
               }
             ],
             "title": "Usage Policy Reviewed On"
+          },
+          "default_selected": {
+            "type": "boolean",
+            "title": "Default Selected",
+            "default": true
           }
         },
         "additionalProperties": false,
@@ -1918,6 +1980,39 @@
           "cancelled"
         ],
         "title": "WorkStatus"
+      },
+      "WorkerPool": {
+        "properties": {
+          "global_capacity": {
+            "type": "integer",
+            "title": "Global Capacity"
+          },
+          "low_priority_headroom": {
+            "type": "integer",
+            "title": "Low Priority Headroom"
+          },
+          "running": {
+            "type": "integer",
+            "title": "Running"
+          },
+          "providers": {
+            "items": {
+              "$ref": "#/components/schemas/PoolProvider"
+            },
+            "type": "array",
+            "title": "Providers"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "global_capacity",
+          "low_priority_headroom",
+          "running",
+          "providers"
+        ],
+        "title": "WorkerPool",
+        "description": "Persisted view; threads still finishing after a timeout are not visible here."
       }
     },
     "securitySchemes": {

@@ -241,6 +241,24 @@ export interface ProviderCapability {
   attribution_required?: boolean;
   retention_seconds?: number | null;
   usage_policy_reviewed_on?: string | null;
+  /** Pre-checked in the source picker; absent means true. */
+  default_selected?: boolean;
+}
+
+/** GET /api/v1/worker/pool — persisted view of the shared worker pool. */
+export interface PoolProvider {
+  provider_id: string;
+  priority: number;
+  running: number;
+  wait_ms: number;
+  cooling_down: boolean;
+}
+
+export interface WorkerPool {
+  global_capacity: number;
+  low_priority_headroom: number;
+  running: number;
+  providers: PoolProvider[];
 }
 
 export interface Capabilities {

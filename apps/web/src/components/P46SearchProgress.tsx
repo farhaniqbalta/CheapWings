@@ -1,4 +1,6 @@
+import { useState } from "react";
 import type { Job } from "../api/types";
+import { PoolGauge, ProviderBars } from "./StatusVisuals";
 
 const LABEL: Record<Job["status"], string> = {
   queued: "Queued", running: "Searching", completed: "Search complete",
@@ -9,6 +11,7 @@ const LABEL: Record<Job["status"], string> = {
 export function P46SearchProgress({ job, onCancel, cancelling }: {
   job: Job; onCancel: () => void; cancelling: boolean;
 }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const active = job.status === "queued" || job.status === "running";
   const unpriced = job.coverage.filter(item => item.work_type === "detailed")
     .reduce((total, item) => total + item.unpriced_candidate_count, 0);
@@ -49,18 +52,17 @@ export function P46SearchProgress({ job, onCancel, cancelling }: {
         <span><b>Inventory completeness: unknown.</b></span>
         {job.failed_provider_work_items > 0 && <span className="p46-job-caution">{job.failed_provider_work_items} source work failed</span>}
         {unpriced > 0 && <span className="p46-job-caution">{unpriced} candidates unpriced</span>}
-        <details className="p46-job-details"><summary>Source coverage and caveats</summary>
+        <details className="p46-job-details" onToggle={event => setDetailsOpen(event.currentTarget.open)}>
+          <summary>Source coverage and caveats</summary>
           <div className="p46-job-detail-body">
+            {detailsOpen && <PoolGauge />}
+            <ProviderBars statuses={job.provider_status} />
             <p>Fare preferences: {job.query.max_stops == null ? "Any stops" : `Up to ${job.query.max_stops} stops`} · {job.query.checked_bags_required ? "Checked bag required" : "Checked bag not required"} · {job.query.include_basic_economy === false ? "Basic economy excluded" : "Basic economy included"}. Dates are inclusive.</p>
             <p>Route/date coverage counts unique pairs with a successful source response. Provider work counts source tasks independently. Neither measures the completeness of flight inventory.</p>
             <p>{job.succeeded_empty} source work items returned no matching fares · {job.failed_provider_work_items} failed · {job.skipped_unsupported} skipped · {job.cancelled_provider_work_items} cancelled.</p>
             {job.status === "queued" || job.status === "running" ? <p>The background worker continues eligible searches while this job is active. Queued work may be waiting for provider pacing or cooldowns.</p> : null}
             {job.exact_reprice_attempted > 0 && <p>Exact reprice successes: {job.exact_reprice_succeeded} / {job.exact_reprice_attempted} attempts.</p>}
             {job.query.include_hidden_city && <p>Hidden-city inclusion requested. Classification depends on individual sources and is not presumed safe.</p>}
-            {job.provider_status.length > 0 && <ul>{job.provider_status.map(source => (
-              <li key={source.provider_id}><strong>{source.provider_id}</strong>: {source.succeeded} succeeded, {source.pending ?? 0} queued, {source.running ?? 0} running, {source.retry_wait ?? 0} waiting to retry, {source.failed} failed, {source.cancelled} cancelled, {source.skipped_unsupported} skipped
-                {source.disabled_reason && ` · disabled: ${source.disabled_reason}`}</li>
-            ))}</ul>}
             {errors.length > 0 && <ul>{errors.map(([label, count]) => <li key={label}>{label}: {count} work items</li>)}</ul>}
             {job.warnings.length > 0 && <ul>{job.warnings.map((warning, index) =>
               <li key={`${index}-${warning}`}>{warning.includes("unpriced_candidate_count") ? `${unpriced} source candidates had no price and are excluded from priced results.` : warning}</li>)}</ul>}

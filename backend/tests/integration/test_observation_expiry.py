@@ -17,7 +17,7 @@ async def test_short_source_expiry_preserves_other_source_and_running_job(engine
                          retention_seconds=seconds)
             for name, seconds in [('short', 900), ('long', 3600)]]
     q = query.model_copy(update={'destinations': ['DPS'], 'departure_date_through': query.departure_date_from + timedelta(days=1)})
-    repo = Repository(engine)
+    repo = Repository(engine, global_capacity=2)  # one slot per source, as before
     job = repo.create_job(q, regs, budget_seconds=1800)
     runner = JobRunner(repo, regs)
     try:

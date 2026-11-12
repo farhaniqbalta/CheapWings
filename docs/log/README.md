@@ -19,6 +19,7 @@ their original sessions; they are not current instructions or deployment state.
 | [P4.10 smart locations](p4.10.md) | Offline typed lookup, curated Major coverage, scope validation, tests and UI evidence |
 | [Swoop transport follow-up](swoop-transport.md) | Current-main/Fli evaluation and explicit Google traffic-check blocker; fare retrieval unresolved |
 | [P4.11 Fli provider](p4.11.md) | Merged PR #5 (`4c98386`); fourth-source integration, C3/1s verification, HTTP/2 trials, usable API/UI quotes and owner acceptance |
+| [P4.12 shared global pool](p4.12.md) | Per-provider cap removal, admission review, P4.9-vs-P4.12 synthetic benchmark, G100 profile, risks and owner decisions |
 
 ## Reporting convention
 

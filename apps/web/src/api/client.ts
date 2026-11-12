@@ -8,6 +8,7 @@ import type {
   Results,
   SearchRequest,
   SortMode,
+  WorkerPool,
 } from "./types";
 
 const BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000").replace(/\/$/, "");
@@ -49,6 +50,8 @@ export const api = {
   health: () => request<{ status: string; service: string }>("/api/v1/health"),
 
   capabilities: () => request<Capabilities>("/api/v1/capabilities"),
+
+  workerPool: () => request<WorkerPool>("/api/v1/worker/pool"),
 
   createSearch: (body: SearchRequest) =>
     request<Created>("/api/v1/searches", { method: "POST", body: JSON.stringify(body) }),

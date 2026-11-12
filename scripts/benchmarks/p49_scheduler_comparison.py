@@ -102,7 +102,7 @@ class ReviewRepository(Repository):
             if (
                 sum(x.provider_id == pid for x in direct)
                 + sum(x.provider_id == pid for x in operations)
-                >= registration.concurrency
+                >= getattr(registration, "concurrency", math.inf)
             ):
                 return None
             operation = self.claim_operation(s, registration, now, lease_seconds)
@@ -350,7 +350,7 @@ class ReviewDispatcher(JobRunner):
             for index in indices:
                 reg = self.registry[index]
                 pid = reg.provider.provider_id
-                if self.occupied(pid) >= reg.concurrency:
+                if self.occupied(pid) >= getattr(reg, "concurrency", math.inf):
                     continue
                 if self.variant != "A0" and (
                     (pid in self.start_pending and reg.minimum_interval_seconds > 0)

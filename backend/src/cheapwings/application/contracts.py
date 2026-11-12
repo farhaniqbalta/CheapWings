@@ -100,6 +100,7 @@ class ProviderCapability(DTO):
     attribution_required: bool = False
     retention_seconds: int | None = None
     usage_policy_reviewed_on: str | None = None
+    default_selected: bool = True  # pre-checked in the web source picker
 
 
 class Capabilities(DTO):
@@ -113,6 +114,23 @@ class Capabilities(DTO):
     max_hourly_jobs: int
     synthetic_mode: bool
     inventory_completeness: Literal["unknown"] = "unknown"
+
+
+class PoolProvider(DTO):
+    provider_id: str
+    priority: int
+    running: int
+    wait_ms: int  # until the next start is allowed; 0 = ready
+    cooling_down: bool  # wait exceeds normal pacing: 429/Retry-After cooldown
+
+
+class WorkerPool(DTO):
+    """Persisted view; threads still finishing after a timeout are not visible here."""
+
+    global_capacity: int
+    low_priority_headroom: int
+    running: int
+    providers: list[PoolProvider]
 
 
 class Health(DTO):

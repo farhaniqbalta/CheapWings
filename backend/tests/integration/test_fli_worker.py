@@ -39,7 +39,7 @@ async def test_fli_uses_durable_shared_fetch_cancel_fencing_and_cache(engine, qu
 
     p._fetch = fetch
     p.normalize = lambda payload, request: payload
-    reg = Registration(p, concurrency=3, minimum_interval_seconds=0.01)
+    reg = Registration(p, minimum_interval_seconds=0.01)
     repo = Repository(engine, cache_enabled=True, global_capacity=9)
     first = repo.create_job(q, [reg])
     second = repo.create_job(q, [reg])
@@ -71,7 +71,6 @@ def test_fourth_registration_configuration_and_no_false_capabilities(monkeypatch
     import importlib.util
 
     monkeypatch.setattr(importlib.util, "find_spec", lambda name: object())
-    monkeypatch.setenv("FLI_CONCURRENCY", "3")
     monkeypatch.setenv("FLI_INTERVAL_SECONDS", "1")
     monkeypatch.setenv("ENABLED_PROVIDERS", "skiplagged,swoop,octotrip,fli")
     settings = Settings.from_env()
@@ -84,7 +83,8 @@ def test_fourth_registration_configuration_and_no_false_capabilities(monkeypatch
             "fli",
         }
         fli = next(r for r in registry if r.provider.provider_id == "fli")
-        assert fli.enabled and fli.concurrency == 3 and fli.minimum_interval_seconds == 1
+        assert fli.enabled and fli.minimum_interval_seconds == 1
+        assert fli.provider.blocking.capacity == settings.worker_max_in_flight
         assert not fli.provider.capabilities.exact_reprice
         assert not fli.provider.capabilities.has_baggage_details
         assert fli.can_cache and settings.worker_max_in_flight == 9
@@ -141,7 +141,7 @@ async def test_fli_real_normalization_api_prices_and_cache(engine, query, monkey
         }
 
     p = FliProvider(transport=transport)
-    reg = Registration(p, concurrency=3, minimum_interval_seconds=0, live_data=True)
+    reg = Registration(p, minimum_interval_seconds=0, live_data=True)
     settings = Settings(enabled_providers=("fli",), search_cache_enabled=True)
     app = create_app(settings=settings, registry=[reg], engine=engine)
     runner = JobRunner(app.state.repository, [reg])
@@ -199,7 +199,7 @@ async def test_missing_fli_payload_is_failure_and_never_cached(engine, query):
         return {"data": [None, None, None, None]}
 
     p = FliProvider(transport=transport)
-    reg = Registration(p, concurrency=3, minimum_interval_seconds=0)
+    reg = Registration(p, minimum_interval_seconds=0)
     repo = Repository(engine, cache_enabled=True)
     job = repo.create_job(q, [reg])
     runner = JobRunner(repo, [reg], max_attempts=1)

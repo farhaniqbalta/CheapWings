@@ -190,8 +190,8 @@ async def test_pagination_freezes_incremental_quote_set(engine, query):
     from cheapwings.storage.repository import Repository
 
     q = query.model_copy(update={"departure_date_through": query.departure_date_from})
-    reg = [Registration(FakeProvider(), concurrency=2, minimum_interval_seconds=0)]
-    repo = Repository(engine)
+    reg = [Registration(FakeProvider(), minimum_interval_seconds=0)]
+    repo = Repository(engine, global_capacity=2)
     job = repo.create_job(q, reg)
     runner = JobRunner(repo, reg)
     await runner.tick()
@@ -205,3 +205,48 @@ async def test_pagination_freezes_incremental_quote_set(engine, query):
     assert second.itineraries[0].itinerary_id != first.itineraries[0].itinerary_id
     fresh = results_projection(repo, job.id, "best_checked")
     assert len(fresh.itineraries) == 3
+
+
+def test_capabilities_report_default_source_selection(engine):
+    registry = [Registration(FakeProvider(pid)) for pid in ("skiplagged", "swoop")]
+    with client_for(engine, registry) as client:
+        rows = client.get("/api/v1/capabilities").json()["providers"]
+    # swoop stays enabled and selectable; it is only unchecked by default.
+    assert {r["provider_id"]: (r["enabled"], r["default_selected"]) for r in rows} == {
+        "skiplagged": (True, True),
+        "swoop": (True, False),
+    }
+    with client_for(engine, registry, Settings(default_deselected_providers=())) as client:
+        assert all(
+            r["default_selected"] for r in client.get("/api/v1/capabilities").json()["providers"]
+        )
+
+
+def test_worker_pool_status_counts_shared_once_and_flags_cooldown(engine, query):
+    from cheapwings.storage.repository import Repository
+
+    fast = Registration(FakeProvider("fast"), minimum_interval_seconds=1)
+    slow = Registration(FakeProvider("slow"), minimum_interval_seconds=1, priority=1)
+    repo = Repository(engine, cache_enabled=True)
+    q = query.model_copy(update={"destinations": ["DPS"]})
+    first = repo.create_job(q, [fast, slow])
+    second = repo.create_job(q, [fast, slow])  # same query: a shared in-flight operation
+    assert repo.claim(fast) is not None and repo.claim(slow) is not None
+    ops = [
+        i.operation_id
+        for j in (first, second)
+        for i in repo.get_job(j.id)[1]
+        if i.provider_id == "fast"
+    ]
+    # Every route-date fetch has two subscribers but is one physical operation.
+    assert None not in ops and len(ops) == 2 * len(set(ops))
+    repo.record_provider_feedback("slow", "http_rate_limited", 120)
+    settings = Settings(worker_max_in_flight=16, low_priority_headroom=2)
+    with client_for(engine, [fast, slow], settings) as client:
+        pool = client.get("/api/v1/worker/pool").json()
+    assert (pool["global_capacity"], pool["low_priority_headroom"], pool["running"]) == (16, 2, 2)
+    rows = {p["provider_id"]: p for p in pool["providers"]}
+    assert [p["provider_id"] for p in pool["providers"]] == ["fast", "slow"]  # by priority
+    assert rows["fast"]["running"] == 1 and rows["slow"]["running"] == 1
+    assert 0 < rows["fast"]["wait_ms"] <= 1000 and not rows["fast"]["cooling_down"]
+    assert rows["slow"]["wait_ms"] > 100_000 and rows["slow"]["cooling_down"]

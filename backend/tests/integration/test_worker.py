@@ -79,7 +79,7 @@ async def test_restart_recovery_and_fencing(engine, query):
 
 
 async def test_completed_pairs_survive_worker_recreation(engine, query):
-    repo = Repository(engine)
+    repo = Repository(engine, global_capacity=1)
     q = query.model_copy(
         update={
             "destinations": ["DPS"],
@@ -103,7 +103,7 @@ async def test_completed_pairs_survive_worker_recreation(engine, query):
 
 
 async def test_cancel_fences_late_response_preserves_success(engine, query):
-    repo = Repository(engine)
+    repo = Repository(engine, global_capacity=1)
     reg = Registration(FakeProvider(), minimum_interval_seconds=0)
     job = repo.create_job(query, [reg])
     runner = JobRunner(repo, [reg])
@@ -120,13 +120,15 @@ async def test_cancel_fences_late_response_preserves_success(engine, query):
     await runner.close()
 
 
-def test_atomic_claim_and_global_provider_limit(engine, query):
+def test_atomic_claim_and_global_limit(engine, query):
     repo = Repository(engine)
     reg = Registration(FakeProvider(), minimum_interval_seconds=0)
     repo.create_job(query, [reg])
     repo.create_job(single(query), [reg])
     with ThreadPoolExecutor(max_workers=2) as pool:
-        claims = list(pool.map(lambda _: Repository(engine).claim(reg), range(2)))
+        claims = list(
+            pool.map(lambda _: Repository(engine, global_capacity=1).claim(reg), range(2))
+        )
     assert sum(c is not None for c in claims) == 1
 
 
@@ -203,7 +205,7 @@ async def test_offer_write_rollback_is_atomic(engine, query):
     assert repo.finish(item.id, item.lease_token, result)
 
 
-async def test_cancel_does_not_release_live_provider_slot(engine, query):
+async def test_cancel_does_not_release_live_global_slot(engine, query):
     class SlowProvider(FakeProvider):
         started = 0
         release = None
@@ -216,7 +218,7 @@ async def test_cancel_does_not_release_live_provider_slot(engine, query):
     p = SlowProvider()
     p.release = asyncio.Event()
     reg = Registration(p, minimum_interval_seconds=0)
-    repo = Repository(engine)
+    repo = Repository(engine, global_capacity=1)
     first = repo.create_job(single(query), [reg])
     runner = JobRunner(repo, [reg])
     await runner.tick()

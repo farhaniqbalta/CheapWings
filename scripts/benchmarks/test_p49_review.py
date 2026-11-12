@@ -78,7 +78,7 @@ async def test_independent_sources_global_capacity_and_progressive_commit(
         for name, latency in [("fast", 0.02), ("medium", 0.04), ("slow", 0.09)]
     ]
     regs = [
-        Registration(p, concurrency=2, minimum_interval_seconds=0.01) for p in providers
+        Registration(p, minimum_interval_seconds=0.01) for p in providers
     ]
     repo = ReviewRepository(engine, global_capacity=3, fair=True)
     job = repo.create_job(query(), regs)
@@ -104,7 +104,7 @@ async def test_independent_sources_global_capacity_and_progressive_commit(
 async def test_within_provider_overlap_and_actual_start_pacing(engine, variant):
     trace = []
     p = TimedFake("paced", [0.07], trace)
-    reg = Registration(p, concurrency=2, minimum_interval_seconds=0.02)
+    reg = Registration(p, minimum_interval_seconds=0.02)
     repo = ReviewRepository(engine, global_capacity=2, fair=True)
     job = repo.create_job(query(4), [reg])
     runner = ReviewDispatcher(repo, [reg], variant=variant, global_capacity=2)
@@ -125,7 +125,7 @@ async def test_zero_interval_fills_available_global_capacity(engine, variant):
     trace = []
     regs = [
         Registration(
-            TimedFake(name, [0.05], trace), concurrency=2, minimum_interval_seconds=0
+            TimedFake(name, [0.05], trace), minimum_interval_seconds=0
         )
         for name in ("one", "two", "three")
     ]
@@ -149,7 +149,7 @@ async def test_cooldown_occupies_no_execution_slot(engine, variant):
         TimedFake(p, [0.02], trace) for p in ["cooled", "ready-one", "ready-two"]
     ]
     regs = [
-        Registration(p, concurrency=1, minimum_interval_seconds=0) for p in providers
+        Registration(p, minimum_interval_seconds=0) for p in providers
     ]
     repo = ReviewRepository(engine, global_capacity=2, fair=True)
     job = repo.create_job(query(1), regs)
@@ -174,7 +174,7 @@ async def test_cooldown_occupies_no_execution_slot(engine, variant):
 async def test_small_job_precedes_remaining_large_job(engine, variant, cache):
     trace = []
     p = TimedFake("fair", [0.02], trace)
-    reg = Registration(p, concurrency=1, minimum_interval_seconds=0)
+    reg = Registration(p, minimum_interval_seconds=0)
     repo = ReviewRepository(engine, global_capacity=1, fair=True, cache_enabled=cache)
     large = repo.create_job(query(12), [reg])
     runner = ReviewDispatcher(repo, [reg], variant=variant, global_capacity=1)
@@ -194,7 +194,7 @@ async def test_small_job_precedes_remaining_large_job(engine, variant, cache):
 async def test_shared_fetch_and_cache_hit_never_duplicate_execution(engine, variant):
     trace = []
     p = TimedFake("shared", [0.02], trace)
-    reg = Registration(p, concurrency=2, minimum_interval_seconds=0)
+    reg = Registration(p, minimum_interval_seconds=0)
     repo = ReviewRepository(engine, global_capacity=2, fair=True, cache_enabled=True)
     jobs = [repo.create_job(query(2), [reg]) for _ in range(2)]
     runner = ReviewDispatcher(repo, [reg], variant=variant, global_capacity=2)
@@ -218,7 +218,7 @@ async def test_shared_fetch_and_cache_hit_never_duplicate_execution(engine, vari
 @pytest.mark.parametrize("cache", [False, True])
 def test_global_capacity_is_atomic_across_repository_claimants(engine, cache):
     regs = [
-        Registration(FakeProvider(p), concurrency=2, minimum_interval_seconds=0)
+        Registration(FakeProvider(p), minimum_interval_seconds=0)
         for p in ["one", "two", "three"]
     ]
     repo = ReviewRepository(engine, global_capacity=3, fair=True, cache_enabled=cache)
@@ -266,7 +266,7 @@ async def test_timed_out_thread_retains_global_physical_capacity(engine, variant
     trace = []
     other = TimedFake("other", [0.01], trace)
     regs = [
-        Registration(p, concurrency=1, minimum_interval_seconds=0)
+        Registration(p, minimum_interval_seconds=0)
         for p in [late, other]
     ]
     repo = ReviewRepository(engine, global_capacity=1, fair=True)

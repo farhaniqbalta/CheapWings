@@ -135,3 +135,95 @@ async def test_blocking_adapter_pool_sized_to_g_uses_real_threads(engine, query)
         )
     finally:
         await runner.close()
+
+
+class Logged(Recorded):
+    def __init__(self, pid, latency, starts):
+        super().__init__(pid, latency)
+        self.starts = starts
+
+    async def search(self, q):
+        self.starts.append(self.provider_id)
+        return await super().search(q)
+
+
+async def test_lower_priority_only_gets_slots_higher_tiers_cannot_use(engine, query):
+    starts = []
+    high, low = Logged("high", 0.03, starts), Logged("low", 0.03, starts)
+    regs = [
+        Registration(low, minimum_interval_seconds=0, priority=1),
+        Registration(high, minimum_interval_seconds=0, priority=0),
+    ]
+    repo = Repository(engine, global_capacity=2)
+    job = repo.create_job(small(query, 6), regs)
+    runner = JobRunner(repo, regs)
+    try:
+        await drain(runner, repo, [job.id])
+        assert starts == ["high"] * 6 + ["low"] * 6  # registry order does not matter
+    finally:
+        await runner.close()
+
+
+async def test_headroom_lets_late_higher_priority_work_start_immediately(engine, query):
+    starts = []
+    high, low = Logged("high", 0.05, starts), Logged("low", 0.5, starts)
+    regs = [
+        Registration(high, minimum_interval_seconds=0, priority=0),
+        Registration(low, minimum_interval_seconds=0, priority=1),
+    ]
+    repo = Repository(engine, global_capacity=6)
+    slow = repo.create_job(small(query, 20), [regs[1]])
+    runner = JobRunner(repo, regs, low_priority_headroom=2)
+    try:
+        await runner.tick()
+        await runner.tick()
+        assert starts == ["low"] * 4  # the last two slots stay free
+        fast = repo.create_job(small(query, 4, offset=30), [regs[0]])
+        await runner.tick()
+        assert starts[4:] == ["high", "high"]  # no wait for a 0.5s low-priority call
+        await drain(runner, repo, [slow.id, fast.id])
+        assert peak(high.trace + low.trace) <= 6 and peak(low.trace) <= 4
+    finally:
+        await runner.close()
+
+
+async def test_headroom_unused_without_an_available_higher_priority_source(engine, query):
+    low = Recorded("low", 0.1)
+    reg = Registration(low, minimum_interval_seconds=0, priority=1)
+    repo = Repository(engine, global_capacity=6)
+    job = repo.create_job(small(query, 12), [reg])
+    runner = JobRunner(repo, [reg], low_priority_headroom=2)
+    try:
+        await drain(runner, repo, [job.id])
+        assert peak(low.trace) == 6
+    finally:
+        await runner.close()
+
+
+def test_priority_configuration(monkeypatch):
+    from cheapwings.config import Settings
+    from cheapwings.providers.registry import default_registry
+
+    settings = Settings.from_env()
+    assert settings.low_priority_headroom == 2
+    monkeypatch.setenv("ENABLED_PROVIDERS", "skiplagged,octotrip")
+    monkeypatch.setenv("FLI_PRIORITY", "3")
+    registry = default_registry(Settings.from_env())
+    try:
+        assert {r.provider.provider_id: r.priority for r in registry} == {
+            "skiplagged": 0,
+            "swoop": 0,
+            "octotrip": 1,
+            "fli": 3,
+        }
+    finally:
+        for r in registry:
+            if hasattr(r.provider, "blocking"):
+                r.provider.blocking.close()
+    monkeypatch.setenv("LOW_PRIORITY_HEADROOM", "9")
+    try:
+        Settings.from_env()
+    except ValueError as exc:
+        assert "HEADROOM" in str(exc)
+    else:
+        raise AssertionError("headroom >= capacity must be rejected")

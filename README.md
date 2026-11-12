@@ -176,7 +176,11 @@ view does not prove no flights: inspect coverage and the advertised view.
   is no per-provider concurrency ceiling: any provider may use idle global
   capacity. Start-to-start intervals decide when a provider may begin a request
   (defaults: Skiplagged 3s, swoop 0.1s, OctoTrip 5s, Fli 1s); cooldowns and
-  Retry-After still apply. A slow response adds no mandatory cooldown after
+  Retry-After still apply. Providers have priority tiers (`<PROVIDER>_PRIORITY`,
+  0 = highest; OctoTrip defaults to 1): a lower tier only gets a slot when no
+  higher tier has eligible work, and cannot take the last `LOW_PRIORITY_HEADROOM`
+  slots (default 2), so a later fast search never waits behind slow calls.
+  A slow response adds no mandatory cooldown after
   completion. Live providers remain opt-in. Override `WORKER_MAX_IN_FLIGHT` and
   `<PROVIDER>_INTERVAL_SECONDS` in both shells (see `.env.example`).
   Transient errors get up to three

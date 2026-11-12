@@ -25,6 +25,12 @@ class Settings:
     swoop_interval_seconds: float = 0.1
     octotrip_interval_seconds: float = 5
     fli_interval_seconds: float = 1
+    # Priority tiers, 0 = highest. OctoTrip is slowest, so it yields to the others.
+    skiplagged_priority: int = 0
+    swoop_priority: int = 0
+    octotrip_priority: int = 1
+    fli_priority: int = 0
+    low_priority_headroom: int = 2
     reprice_budget: int = 20
     live_retention_seconds: int = 3600
     search_cache_enabled: bool = False
@@ -41,6 +47,10 @@ class Settings:
             interval = getattr(self, pid + "_interval_seconds")
             if not math.isfinite(interval) or interval < 0:
                 raise ValueError("Provider interval must be finite/nonnegative")
+            if not 0 <= getattr(self, pid + "_priority") <= 9:
+                raise ValueError("Provider priority must be 0..9")
+        if not 0 <= self.low_priority_headroom < self.worker_max_in_flight:
+            raise ValueError("LOW_PRIORITY_HEADROOM must be 0..WORKER_MAX_IN_FLIGHT-1")
         if not self.enabled_providers or set(self.enabled_providers) - {
             "fake",
             "skiplagged",
@@ -94,6 +104,15 @@ class Settings:
                     pid + "_interval_seconds" for pid in ("skiplagged", "swoop", "octotrip", "fli")
                 )
             },
+            **{
+                name: int(os.getenv(name.upper(), str(getattr(cls, name))))
+                for name in (
+                    pid + "_priority" for pid in ("skiplagged", "swoop", "octotrip", "fli")
+                )
+            },
+            low_priority_headroom=int(
+                os.getenv("LOW_PRIORITY_HEADROOM", str(cls.low_priority_headroom))
+            ),
             search_cache_enabled=os.getenv("SEARCH_CACHE_ENABLED", "false").lower() == "true",
             search_cache_ttl_seconds=int(os.getenv("SEARCH_CACHE_TTL_SECONDS", "1200")),
             search_cache_max_entries=int(os.getenv("SEARCH_CACHE_MAX_ENTRIES", "2000")),

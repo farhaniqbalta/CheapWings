@@ -12,6 +12,7 @@ class Registration:
     enabled: bool = True
     disabled_reason: str | None = None
     minimum_interval_seconds: float = 1
+    priority: int = 0  # 0 = highest; larger tiers start only when higher tiers have no work
     live_data: bool = False
     permitted_to_aggregate: bool = True
     can_cache: bool = True
@@ -24,8 +25,8 @@ class Registration:
     def __post_init__(self):
         if self.timeout_seconds is not None and self.timeout_seconds < 1:
             raise ValueError("Provider timeout must be positive")
-        if self.minimum_interval_seconds < 0:
-            raise ValueError("Provider interval must be nonnegative")
+        if self.minimum_interval_seconds < 0 or self.priority < 0:
+            raise ValueError("Provider interval and priority must be nonnegative")
 
     @property
     def unavailable_reason(self):
@@ -77,6 +78,7 @@ def default_registry(settings=None):
                 minimum_interval_seconds=getattr(
                     settings, provider.provider_id + "_interval_seconds"
                 ),
+                priority=getattr(settings, provider.provider_id + "_priority"),
                 live_data=True,
                 permitted_to_aggregate=settings.use_scope == "personal",
                 timeout_seconds=90 if provider.provider_id == "octotrip" else None,

@@ -46,7 +46,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 - P5.1 (branch `p5.1-shared-rust-core`): Cargo workspace `core/` — `cheapwings-core` (money, fingerprint, ranking, Fli `tfs`/`ds:1` decoder), `cheapwings-py` (PyO3), `cheapwings-ffi` (UniFFI). Networking and UI stay native.
 - Web backend: `domain/money.py` arithmetic and minor-unit table now come from Rust; public API unchanged. Setup needs Rust + `maturin develop` (README). Amounts beyond 28 digits now exact.
 - iPad: `apps/ios/CheapWingsCore` Swift package over the single Rust static library (`core/build-ios.sh`); builds for iOS devices.
-- One generated fixture file (`contracts/fixtures/core/core_fixtures.json`) gates all three: Rust 9 passed, backend **250 passed**, Swift XCTest 6 passed. No live provider traffic.
+- One generated fixture file (`contracts/fixtures/core/core_fixtures.json`) gates all three: Rust 9 passed, backend **252 passed**, Swift XCTest 6 passed. Fresh-subagent review: 0 critical; 2 important fixed. No live provider traffic.
 - Details and rulings: [P5.1](docs/log/p5.1.md).
 
 ## Next task

@@ -46,6 +46,16 @@ def test_beyond_28_digits_is_exact():
     assert amount.as_minor_units() == 79228162514264337593543950335
 
 
+def test_beyond_96_bit_raises_instead_of_rounding():
+    # Rust decimals hold at most a 96-bit mantissa (~7.9e28). Old Python rounded silently.
+    with pytest.raises(ValueError):
+        Money(Decimal("123456789012345678901234567890"), "JPY").as_minor_units()
+    with pytest.raises(ValueError):
+        Money(Decimal("79228162514264337593543950335"), "USD").as_minor_units()
+    with pytest.raises(ValueError):
+        Money.from_minor_units(10**30, "USD")
+
+
 def test_core_module_is_rust():
     import cheapwings_core
 

@@ -1,24 +1,54 @@
 """Generate the shared Rust-core fixtures from the Python reference engine (no network).
 
 Run from repo root: PYTHONPATH=backend/src .venv/bin/python scripts/gen_core_fixtures.py
-Writes contracts/fixtures/core/core_fixtures.json with the answers the real Python code
+Writes contracts/fixtures/core/core_fixtures.json with the answers the Python reference
 produces. The Rust core, its PyO3 module and its Swift package must all match them exactly.
+
+Money answers come from the pure-Decimal reference below, NOT from cheapwings.domain.money:
+since P5.1 that module delegates to the Rust core, so using it would gate Rust against itself.
 """
 
 import json
 import random
+import subprocess
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
 
-from cheapwings.domain.itinerary import compute_fingerprint
-from cheapwings.domain.money import FXSnapshot, Money
-from cheapwings.domain.offer import ComparisonStatus, LinkScope, Offer, PriceStatus, ThreeValued
-from cheapwings.domain.segments import FlightSegment
-from cheapwings.engine.ranking import best_checked_deal, lowest_advertised
-
 rng = random.Random(20261113)
+
+# ---------- pure-Python money reference (money.py arithmetic as of 984cfd2, before Rust) ----------
+
+_REFERENCE_EXPONENTS = {
+    "IDR": 0, "JPY": 0, "KRW": 0, "VND": 0,
+    "USD": 2, "AUD": 2, "EUR": 2, "GBP": 2, "CAD": 2, "SGD": 2, "MYR": 2, "INR": 2, "CNY": 2,
+    "HKD": 2, "NZD": 2, "CHF": 2, "THB": 2, "PHP": 2, "BRL": 2, "MXN": 2, "CZK": 2, "DKK": 2,
+    "SEK": 2, "PLN": 2, "RON": 2, "TRY": 2, "TWD": 2, "UAH": 2,
+}
+
+
+def _reference_exponent(currency):
+    try:
+        return _REFERENCE_EXPONENTS[currency.upper()]
+    except KeyError:
+        raise ValueError(f"unknown currency {currency!r}") from None
+
+
+def reference_fx_convert(amount, rate, quote_currency):
+    quantum = Decimal(1).scaleb(-_reference_exponent(quote_currency))
+    return str((Decimal(amount) * Decimal(rate)).quantize(quantum))
+
+
+def reference_from_minor_units(minor, currency):
+    return str(Decimal(minor).scaleb(-_reference_exponent(currency)))
+
+
+def reference_as_minor_units(amount, currency):
+    scaled = Decimal(amount).scaleb(_reference_exponent(currency))
+    if scaled != scaled.to_integral_value():
+        raise ValueError(f"{amount} does not scale cleanly")
+    return int(scaled)
 CURRENCIES = ["IDR", "JPY", "USD", "AUD", "EUR", "SGD", "XYZ"]
 AIRPORTS = ["CGK", "DPS", "SUB", "SIN", "KUL", "NRT", "HND", "SYD", "LHR", "JFK", "KTM", "DEL"]
 CARRIERS = ["GA", "QZ", "SQ", "MH", "JL", "QF", "BA", "AA", "3K", "5J"]
@@ -42,17 +72,15 @@ def money_cases(n):
         currency = rng.choice(CURRENCIES)
         minor = rng.randint(-10**12, 10**12)
         cases.append({"op": "fx", "amount": amount, "rate": rate, "currency": currency,
-                      "expect": outcome(lambda: FXSnapshot("USD", currency, Decimal(rate), "s5", "t")
-                                        .convert(Money(Decimal(amount), "USD")).amount)})
+                      "expect": outcome(lambda: reference_fx_convert(amount, rate, currency))})
         cases.append({"op": "from_minor", "minor": str(minor), "currency": currency,
-                      "expect": outcome(lambda: Money.from_minor_units(minor, currency).amount)})
+                      "expect": outcome(lambda: reference_from_minor_units(minor, currency))})
         cases.append({"op": "as_minor", "amount": amount, "currency": currency,
-                      "expect": outcome(lambda: Money(Decimal(amount), currency).as_minor_units())})
+                      "expect": outcome(lambda: reference_as_minor_units(amount, currency))})
     for amount, rate, currency in [("0.125", "1", "USD"), ("0.135", "1", "USD"), ("2.5", "1", "IDR"),
                                    ("3.5", "1", "IDR"), ("-0.004", "1", "USD"), ("1250000", "0.0000613", "USD")]:
         cases.append({"op": "fx", "amount": amount, "rate": rate, "currency": currency,
-                      "expect": outcome(lambda: FXSnapshot("USD", currency, Decimal(rate), "s5", "t")
-                                        .convert(Money(Decimal(amount), "USD")).amount)})
+                      "expect": outcome(lambda: reference_fx_convert(amount, rate, currency))})
     return cases
 
 
@@ -67,6 +95,9 @@ def instant():
 
 
 def fingerprint_cases(n):
+    from cheapwings.domain.itinerary import compute_fingerprint
+    from cheapwings.domain.segments import FlightSegment
+
     cases = []
     for _ in range(n):
         segments, raw = [], []
@@ -85,6 +116,10 @@ def fingerprint_cases(n):
 
 
 def offer(quote_id):
+    # Money here only carries amounts into Offer; ranking compares them, no money arithmetic.
+    from cheapwings.domain.money import Money
+    from cheapwings.domain.offer import ComparisonStatus, LinkScope, Offer, PriceStatus, ThreeValued
+
     status = rng.choice(list(PriceStatus))
     hidden = ThreeValued.NO if status == PriceStatus.REPRICED_EXACT else rng.choice(list(ThreeValued))
     amount = rng.choice(["99.00", "100.00", "100.00", "120.50", "120.5", "75.25", None])  # ties on purpose
@@ -97,6 +132,8 @@ def offer(quote_id):
 
 
 def ranking_cases(n):
+    from cheapwings.engine.ranking import best_checked_deal, lowest_advertised
+
     cases = []
     for c in range(n):
         groups, raw = [], []
@@ -208,11 +245,20 @@ def fli_page_cases(n):
     return cases
 
 
-fixtures = {"source": "backend/src/cheapwings @ 984cfd2; fli 881aee5", "money": money_cases(1000),
-            "fingerprint": fingerprint_cases(500), "ranking": ranking_cases(300),
-            "fli_tfs": fli_tfs_cases(50), "fli_pages": fli_page_cases(40)}
-out = Path(__file__).resolve().parents[1] / "contracts" / "fixtures" / "core" / "core_fixtures.json"
-out.write_text(json.dumps(fixtures, separators=(",", ":")))
-print(f"wrote {out.name}: {len(fixtures['money'])} money, {len(fixtures['fingerprint'])} fingerprint, "
-      f"{len(fixtures['ranking'])} ranking, {len(fixtures['fli_tfs'])} fli_tfs, "
-      f"{len(fixtures['fli_pages'])} fli_pages cases, {out.stat().st_size} bytes")
+def main():
+    root = Path(__file__).resolve().parents[1]
+    commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True,
+                            cwd=root).stdout.strip() or "unknown"
+    fixtures = {"source": f"money: pure-Decimal reference in this script; fingerprint/ranking: "
+                          f"backend/src/cheapwings @ {commit}; fli 881aee5",
+                "money": money_cases(1000), "fingerprint": fingerprint_cases(500),
+                "ranking": ranking_cases(300), "fli_tfs": fli_tfs_cases(50), "fli_pages": fli_page_cases(40)}
+    out = root / "contracts" / "fixtures" / "core" / "core_fixtures.json"
+    out.write_text(json.dumps(fixtures, separators=(",", ":")))
+    print(f"wrote {out.name}: {len(fixtures['money'])} money, {len(fixtures['fingerprint'])} fingerprint, "
+          f"{len(fixtures['ranking'])} ranking, {len(fixtures['fli_tfs'])} fli_tfs, "
+          f"{len(fixtures['fli_pages'])} fli_pages cases, {out.stat().st_size} bytes")
+
+
+if __name__ == "__main__":
+    main()

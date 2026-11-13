@@ -8,15 +8,24 @@ public struct SearchRequest: Sendable, Equatable {
     public var dateFrom: String  // YYYY-MM-DD
     public var dateThrough: String
     public var currency: String
+    /// Any / 0 / 1 / 2 stops, applied per offer by the Rust core.
+    public var maxStops: UInt32?
+    /// Catalog location ids when a side used "Major airports" (for display and persistence).
+    public var originMajorID: String?
+    public var destinationMajorID: String?
 
     public static let maxCombinations: UInt32 = 120
 
-    public init(origins: [String], destinations: [String], dateFrom: String, dateThrough: String, currency: String) {
+    public init(origins: [String], destinations: [String], dateFrom: String, dateThrough: String, currency: String,
+                maxStops: UInt32? = nil, originMajorID: String? = nil, destinationMajorID: String? = nil) {
         self.origins = origins
         self.destinations = destinations
         self.dateFrom = dateFrom
         self.dateThrough = dateThrough
         self.currency = currency
+        self.maxStops = maxStops
+        self.originMajorID = originMajorID
+        self.destinationMajorID = destinationMajorID
     }
 
     /// Point-of-sale country as `providers/fli.py` maps it.
@@ -136,7 +145,7 @@ public actor SearchEngine {
                     // Per-offer check: a row Google sends without a currency token must not
                     // discard the page's other offers (P5.2 owner test, CGK→HND).
                     let checked = fliFilterOffers(page: decoded, origin: combo.origin, destination: combo.destination,
-                                                  date: combo.date, currency: request.currency, maxStops: nil)
+                                                  date: combo.date, currency: request.currency, maxStops: request.maxStops)
                     if checked.offers.isEmpty, let reason = checked.rejected.first {
                         out.yield(.comboFailed(combo, code: "cross_check: \(reason)"))
                     } else {

@@ -241,6 +241,10 @@ impl Catalog {
         Ok(MajorResolution { codes, rationale: mapping.rationale.clone(), definition: self.definition.clone() })
     }
 
+    pub fn location(&self, id: &str) -> Option<Location> {
+        self.by_id.get(id).map(|&i| self.entities[i].clone())
+    }
+
     pub fn airport(&self, code: &str) -> Option<Location> {
         self.airports.get(code).map(|&i| self.entities[i].clone())
     }

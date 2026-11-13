@@ -149,3 +149,72 @@ Unique key `(job_id, provider_id, origin, destination, depart_date, work_type, u
 - Parallel jobs respect global provider rate caps, not just individual job limits.
 - A disabled provider is visible in metadata and not silently omitted.
 - No source IDs or source-specific objects leak into domain logic except opaque `provider_quote_handle` stored for provider-only repricing.
+
+## Proposed: destination discovery layer (P7 — not approved)
+
+> Proposal only; no code exists. Feature spec: [01 → Explore Anywhere](01_PRODUCT_REQUIREMENTS_UX.md#proposed-feature-explore-anywhere-and-surprise-me-p7--proposed--not-started).
+> Milestone: [06 → P7](06_IMPLEMENTATION_CHECKPOINTS.md#p7--explore-anywhere-proposed--not-started).
+
+Explore Anywhere adds **one** new step in front of the existing search: discovery turns
+"origin + dates + budget" into a bounded list of route/date combos, and from there the normal
+detailed-search path runs unchanged. Surprise Me is a selection over the finished results.
+
+```mermaid
+flowchart LR
+  UI[React / SwiftUI<br/>Explore form] --> D[Discovery requests<br/>DestinationDiscoveryProvider<br/>paced, bounded]
+  D --> N[Normalize to catalog airports<br/>dedupe, budget/region/date filter<br/>Rust core]
+  N --> S[Prioritize bounded shortlist<br/>discovery-to-search plan<br/>Rust core]
+  S --> P[Existing planner<br/>120 route/date cap]
+  P --> Q[Existing scheduler / global pool<br/>intervals, retries, cooldowns,<br/>cache, persistence, cancel]
+  Q --> F[Existing SearchProviders<br/>Fli, Skiplagged, OctoTrip, swoop]
+  F --> R[Existing normalize + rank<br/>+ evidence level per destination]
+  R --> UI
+  R --> SM[Surprise Me<br/>random pick over results]
+```
+
+### Two provider roles
+
+`DestinationDiscoveryProvider` sits beside the existing detailed-search provider protocol
+(sketch only, names to be fixed in P7.2):
+
+```python
+class DestinationDiscoveryProvider(Protocol):
+    provider_id: str
+    async def discover(self, query: "DiscoveryQuery") -> "DiscoveryResult": ...
+    # DiscoveryQuery: origins, date window, optional budget + currency, region/country limits,
+    #   max candidates. DiscoveryResult: candidates (destination code or place, optional
+    #   date, optional "from" price + currency + source age), coverage/limit signal, errors.
+```
+
+A provider advertises discovery, detailed search, or both through capabilities (a
+`destination_discovery` flag next to `detailed_search`); orchestration branches on the flag,
+never on provider name. A discovery-only source never produces ranked offers by itself.
+
+### Responsibilities and boundaries
+
+| Concern | Lives in | Notes |
+|---|---|---|
+| Discovery HTTP/MCP calls | Python adapter (web); Swift transport (iPad) | Platform-native networking, as Fli today |
+| Discovery response parsing | Rust core where the format is shared and pure (like the Fli decoder), else adapter | No networking in Rust |
+| Candidate normalization to catalog airports, dedupe | Rust core (`locations` catalog already ported in P5.5) | Same output on web (PyO3) and iPad (UniFFI) |
+| Budget / currency / region / date filtering | Rust core (`money` already shared) | Discovery FX is display-only |
+| Shortlist prioritization, discovery-to-search plan | Rust core, feeding the existing `plan_search` cap | Deterministic for the same inputs |
+| Price provenance / evidence level | Rust core ranking (extends `lowest_advertised` evidence) | Discovery price never ranks as checked |
+| Scheduling, pacing, retries, cooldown, cache, persistence, cancellation, progress | **Existing** engine (web scheduler; iPad engine) | No second scheduler; discovery calls get their own provider interval and a bounded budget in the same pool |
+| Explore form, results, Surprise Me presentation | React and SwiftUI separately | Random pick may use a shared seeded helper in Rust for parity |
+
+### Execution rules
+
+- Discovery calls are bounded (max calls and wall-clock per job) and paced per provider like
+  any other provider; a discovery 429/block stops discovery and keeps the job honest
+  ("discovery unavailable"), it does not escalate into brute-force detailed searches.
+- The shortlist must fit the existing 120 route/date cap; Explore never raises it implicitly.
+- Persistence: discovery candidates and their evidence are stored with the job so resume and
+  restart work like normal searches; detailed work items are ordinary work items.
+- Coverage ledger adds "candidates discovered / shortlisted / checked".
+
+### Platform note
+
+Web runs discovery in the Python worker today and moves with the rest of the engine in P5.7.
+The iPad can run discovery natively only for sources reachable with plain URLSession and no
+server (to be shown in P7.1); otherwise Explore ships web-first and the iPad waits.

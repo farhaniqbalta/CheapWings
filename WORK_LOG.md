@@ -39,6 +39,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | P5.4 More providers on iPad | Moved to the bottom by owner (2026-11-14): iPad is Fli-only for now; runs just before the web migration | |
 | P5.7 Web backend onto the Rust core | Not started (web keeps all four providers in Python until then) | |
 | P6 Release acceptance | Not started | |
+| P7 Explore Anywhere / Surprise Me | **Proposed / Not started** — awaits owner approval; amends two scope rules if approved | [P7 plan](docs/06_IMPLEMENTATION_CHECKPOINTS.md#p7--explore-anywhere-proposed--not-started), [spec](docs/01_PRODUCT_REQUIREMENTS_UX.md#proposed-feature-explore-anywhere-and-surprise-me-p7--proposed--not-started) |
 
 ## Provider decision ledger
 | Provider | Decision | Key limits (details in provider-feasibility-evidence / research logs) |

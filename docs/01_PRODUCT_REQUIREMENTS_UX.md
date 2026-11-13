@@ -109,3 +109,86 @@ Cheapest unverified: Rp ... [Indicative — seller price may differ]
 - User closes iPhone app and later opens it: search continues on hosted server and job state can be recovered.
 - Provider fails on 2 of 27 combos: app says `partial`, never `100% complete across providers`.
 - All sample fares must be clearly fictitious in demos, screenshots and tests.
+
+## Proposed feature: Explore Anywhere and Surprise Me (P7 — Proposed / Not started)
+
+> **Status: proposal for owner approval, not an approved requirement.** Nothing here is
+> implemented. Milestone: [06 → P7](06_IMPLEMENTATION_CHECKPOINTS.md#p7--explore-anywhere-proposed--not-started).
+> Architecture: [02 → destination discovery layer](02_SYSTEM_ARCHITECTURE.md#proposed-destination-discovery-layer-p7--not-approved).
+> Provider candidates: [03 → discovery candidates](03_PROVIDERS_AGGREGATION_PRICING.md#destination-discovery-candidates-p7-research--unverified).
+
+### What the user does
+
+**Explore Anywhere:** pick an origin (airport, or a city/country's Major airports as in the
+iPad picker), a flexible departure date range, and optionally a maximum flight budget (in the
+display currency) and destination limits (region/country include or exclude lists, max
+stops). CheapWings finds destinations that look affordable, checks real fares for a bounded
+shortlist with the existing detailed search, and shows destinations ranked by the best fare
+evidence found.
+
+**Surprise Me:** the same request, then CheapWings picks one (or a few) destinations at random
+from the Explore Anywhere results that meet the budget and limits. It is a presentation mode
+over the same results — no separate search engine, scheduler or provider path.
+
+### Price evidence shown per destination (never merged)
+
+| Level | Meaning | Ranked as |
+|---|---|---|
+| Discovered destination | A source suggests the route exists / is popular | Not a price |
+| Discovery price | Historical, cached or "from" price from a discovery source, with its age | `indicative` only, labelled "from … (source, age)" |
+| Checked offer | Fresh detailed search result for a real route/date | `recent_search` (same rules as today) |
+| Verified fare | Exact reprice, only where a provider supports it | `repriced_exact` |
+
+A destination's headline price is the best **checked** offer when one exists; a discovery
+price alone is shown separately and never ranks above checked offers or wears a checked badge.
+
+### MVP (if approved)
+
+- One origin side (one or more airports), date range within the existing 120 route/date cap.
+- Discovery from **one** feasible, permitted source; candidates normalized to catalog airports,
+  deduplicated, filtered by budget/limits, then a bounded shortlist (e.g. top N destinations ×
+  dates within the cap) sent to the existing detailed search (Fli first, as today).
+- Progressive results: discovered list appears first (clearly "not checked yet"), checked fares
+  fill in as the normal search progresses; coverage line "checked N of M candidate
+  destinations".
+- Surprise Me as a button on the finished (or partial) Explore results.
+- Web and iPad both, sharing the Rust selection logic; same result order for the same inputs.
+
+### Later enhancements (not MVP)
+
+Multiple discovery sources merged; region presets and maps; trip-length / return-date
+exploration (roundtrips are out of scope today); "weekend" date presets; saved explore
+searches; Surprise Me constraints (e.g. "somewhere new", visa-free lists — needs a data source).
+
+### Non-goals
+
+Brute-force search of hundreds of airports × dates; treating discovery prices as bookable;
+price alerts or historical-price analytics; booking; a second search engine or scheduler for
+Explore or Surprise Me; moving networking or UI into Rust.
+
+### Conflicts with current approved scope (owner decision needed)
+
+- "Not in MVP: country-wide auto-expand airport codes or route suggestions" (above) — Explore
+  Anywhere *is* route suggestion. Approval of P7 would amend this line for Explore mode only.
+- Non-negotiable #4 in [docs/README.md](README.md) ("calendar prices only prioritize, never
+  prune the matrix"): Explore mode necessarily prunes the destination space to a shortlist.
+  Proposal: the rule stays unchanged for normal searches; Explore results must state that only
+  shortlisted destinations were checked ("checked N of M candidates") and never claim
+  "cheapest anywhere".
+
+### Open questions
+
+1. Which discovery source is permitted for combination with other providers (see 03)?
+2. Budget semantics: one-way fare only, in display currency; how to treat FX for discovery
+   prices quoted in another currency (display-only, as Skiplagged USD today)?
+3. Shortlist size and default destination count vs the 120 route/date cap and Fli pacing.
+4. Does the iPad run discovery itself (native networking) or is Explore web-first?
+5. Surprise Me randomness: seeded per request (repeatable) or fresh each tap?
+6. Region definitions: derive from the location catalog's countries, or a curated region list?
+
+### Risks
+
+Discovery data stale or geographically biased (popular routes only); source terms forbidding
+aggregation (Travelpayouts Search API rules already flag this); undocumented endpoints
+breaking (Google Explore); extra load on Fli if shortlists are too large; users reading
+"from" prices as fares.

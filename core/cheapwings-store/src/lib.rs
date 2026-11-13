@@ -19,6 +19,26 @@ pub struct StoredRequest {
     pub date_from: String,
     pub date_through: String,
     pub currency: String,
+    /// P5.5 fields; default to empty so searches stored by P5.3 still load.
+    #[serde(default)]
+    pub max_stops: Option<u32>,
+    /// Catalog ids of the intact "Major airports" places on each side.
+    #[serde(default)]
+    pub origin_majors: Vec<String>,
+    #[serde(default)]
+    pub destination_majors: Vec<String>,
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn old_request_json_still_reads() {
+        let p53 = r#"{"origins":["CGK"],"destinations":["DPS"],"date_from":"2026-12-15","date_through":"2026-12-17","currency":"IDR"}"#;
+        let request: super::StoredRequest = super::from_json(p53).expect("P5.3 row reads");
+        assert_eq!(request.max_stops, None);
+        assert!(request.origin_majors.is_empty());
+        assert!(request.destination_majors.is_empty());
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

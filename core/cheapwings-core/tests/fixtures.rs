@@ -1,7 +1,8 @@
 //! Shared fixtures generated from the Python reference (scripts/gen_core_fixtures.py).
 
 use cheapwings_core::fingerprint::{fingerprint, isoformat, LocalInstant, Segment};
-use cheapwings_core::fli::{cross_check, decode_page, filter_offers, search_url, tfs, FliOffer};
+use cheapwings_core::fli::{airport_changes, cross_check, decode_page, filter_offers, search_url, tfs, FliLeg, FliOffer};
+use cheapwings_core::locations::Catalog;
 use cheapwings_core::money::{as_minor_units, from_minor_units, fx_convert};
 use cheapwings_core::planning::{plan_search, RouteDate};
 use cheapwings_core::ranking::{best_checked_deal, lowest_advertised, RankOffer};
@@ -78,6 +79,54 @@ struct Fixtures {
     fli_tfs: Vec<TfsCase>,
     fli_pages: Vec<PageCase>,
     planning: Vec<PlanCase>,
+    location_search: Vec<SearchCase>,
+    location_major: Vec<MajorCase>,
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum SearchExpect {
+    Ids(Vec<String>),
+    Error { error: String },
+}
+
+#[derive(Deserialize)]
+struct SearchCase {
+    text: String,
+    within: Option<String>,
+    expect: SearchExpect,
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum MajorExpect {
+    Resolved { codes: Vec<String>, rationale: String, definition: String },
+    Error { error: String },
+}
+
+#[derive(Deserialize)]
+struct MajorCase {
+    kind: String,
+    id: String,
+    version: String,
+    expect: MajorExpect,
+}
+
+const CATALOG: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../backend/src/cheapwings/locations/catalog.json");
+
+fn catalog() -> Catalog {
+    Catalog::from_json(&std::fs::read_to_string(CATALOG).expect("catalog file")).expect("valid catalog")
+}
+
+fn leg(origin: &str, destination: &str, depart: &str, arrive: &str) -> FliLeg {
+    FliLeg {
+        origin: origin.into(),
+        destination: destination.into(),
+        airline: "GA".into(),
+        flight_number: "1".into(),
+        depart_local: depart.into(),
+        arrive_local: arrive.into(),
+    }
 }
 
 /// One priced CGK→DPS row on 2026-12-15 in the ds:1 layout, price spliced in as raw JSON.
@@ -220,11 +269,99 @@ fn filter_offers_keeps_good_rows_and_explains_dropped_ones() {
     page.offers.extend(decode_page(&no_token).expect("decodes").offers);
     assert_eq!(page.offers[1].currency, None);
 
-    let checked = filter_offers(&page, "CGK", "DPS", "2026-12-15", "IDR");
+    let checked = filter_offers(&page, "CGK", "DPS", "2026-12-15", "IDR", None);
     assert_eq!(checked.offers.iter().map(|o| o.price.as_str()).collect::<Vec<_>>(), ["1250000"]);
     assert_eq!(checked.rejected, ["currency None"]);
     // The all-or-nothing check still reports the first mismatch.
     assert_eq!(cross_check(&page, "CGK", "DPS", "2026-12-15", "IDR").as_deref(), Some("currency None"));
+}
+
+#[test]
+fn location_search_matches_python() {
+    let cat = catalog();
+    let cases = fixtures().location_search;
+    for c in &cases {
+        let got = cat.search(&c.text, c.within.as_deref());
+        match (&got, &c.expect) {
+            (Ok(found), SearchExpect::Ids(ids)) => {
+                let got_ids: Vec<&str> = found.iter().take(15).map(|l| l.id.as_str()).collect();
+                assert_eq!(got_ids, ids.iter().map(String::as_str).collect::<Vec<_>>(), "search {:?} within {:?}", c.text, c.within);
+            }
+            (Err(e), SearchExpect::Error { error }) => assert_eq!(e.code(), error, "search {:?}", c.text),
+            _ => panic!("search {:?} within {:?}: got {got:?}", c.text, c.within),
+        }
+    }
+    assert_eq!(cases.len(), 54);
+}
+
+#[test]
+fn location_major_matches_python() {
+    let cat = catalog();
+    let cases = fixtures().location_major;
+    for c in &cases {
+        match (cat.resolve_major(&c.kind, &c.id, &c.version), &c.expect) {
+            (Ok(r), MajorExpect::Resolved { codes, rationale, definition }) => {
+                assert_eq!(&r.codes, codes, "{}", c.id);
+                assert_eq!(&r.rationale, rationale);
+                assert_eq!(&r.definition, definition);
+                assert!(cat.has_major(&c.id));
+            }
+            (Err(e), MajorExpect::Error { error }) => assert_eq!(e.code(), error, "{} {} {}", c.kind, c.id, c.version),
+            (got, _) => panic!("{} {}: got {got:?}", c.kind, c.id),
+        }
+    }
+    assert_eq!(cases.len(), 14);
+}
+
+#[test]
+fn catalog_rejects_inconsistent_data() {
+    let base = |entities: &str, major: &str| {
+        format!(r#"{{"version":"t","definition":"d","entities":[{entities}],"major":{{{major}}}}}"#)
+    };
+    let airport = r#"{"id":"airport:AAA","type":"airport","name":"A","country":"XX","country_name":"X","codes":["AAA"],"aliases":[],"code":"AAA"}"#;
+    let city = r#"{"id":"metro:XX:AAA","type":"city","name":"C","country":"XX","country_name":"X","codes":["AAA"],"aliases":[]}"#;
+    assert!(Catalog::from_json(&base(&format!("{airport},{city}"), r#""metro:XX:AAA":{"codes":["AAA"],"rationale":"r"}"#)).is_ok());
+    assert!(Catalog::from_json(&base(&format!("{airport},{airport}"), "")).is_err(), "duplicate id");
+    assert!(Catalog::from_json(&base(&format!("{airport},{city}"), r#""metro:XX:AAA":{"codes":["BBB"],"rationale":"r"}"#)).is_err(), "mapping code outside entity");
+    assert!(Catalog::from_json(&base(&format!("{airport},{city}"), r#""airport:AAA":{"codes":["AAA"],"rationale":"r"}"#)).is_err(), "mapping on an airport");
+}
+
+#[test]
+fn airport_lookup_has_timezone() {
+    let cat = catalog();
+    let hnd = cat.airport("HND").expect("HND");
+    assert_eq!(hnd.timezone.as_deref(), Some("Asia/Tokyo"));
+    assert_eq!(cat.airport("CGK").unwrap().timezone.as_deref(), Some("Asia/Jakarta"));
+    assert!(cat.airport("ZZZZ").is_none());
+    assert_eq!(cat.airports_of("metro:JP:TYO").unwrap().iter().map(|l| l.code.clone().unwrap()).collect::<Vec<_>>(), ["HND", "NRT"]);
+}
+
+#[test]
+fn filter_offers_applies_max_stops() {
+    let mut page = decode_page(&one_row_page("1250000")).expect("decodes");
+    let nonstop = page.offers[0].clone();
+    let mut one_stop = nonstop.clone();
+    one_stop.legs = vec![leg("CGK", "SUB", "2026-12-15T06:05", "2026-12-15T07:30"), leg("SUB", "DPS", "2026-12-15T08:30", "2026-12-15T09:40")];
+    page.offers = vec![nonstop, one_stop];
+    let only_nonstop = filter_offers(&page, "CGK", "DPS", "2026-12-15", "IDR", Some(0));
+    assert_eq!(only_nonstop.offers.len(), 1);
+    // The stop limit is the user's filter, not a data problem: counted apart from rejections.
+    assert!(only_nonstop.rejected.is_empty());
+    assert_eq!(only_nonstop.excluded_by_stops, 1);
+    assert_eq!(filter_offers(&page, "CGK", "DPS", "2026-12-15", "IDR", Some(1)).offers.len(), 2);
+    assert_eq!(filter_offers(&page, "CGK", "DPS", "2026-12-15", "IDR", None).offers.len(), 2);
+}
+
+#[test]
+fn airport_changes_detects_nrt_hnd() {
+    let offer = FliOffer {
+        price: "1".into(),
+        currency: Some("IDR".into()),
+        legs: vec![leg("CGK", "NRT", "2026-12-15T06:00", "2026-12-15T15:00"), leg("HND", "ITM", "2026-12-15T18:00", "2026-12-15T19:10")],
+    };
+    assert_eq!(airport_changes(&offer), vec![("NRT".to_string(), "HND".to_string())]);
+    let same = FliOffer { legs: vec![offer.legs[0].clone(), leg("NRT", "ITM", "x", "y")], ..offer };
+    assert!(airport_changes(&same).is_empty());
 }
 
 #[test]

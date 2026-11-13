@@ -1,7 +1,7 @@
 //! UniFFI surface of `cheapwings-core` for Swift. Thin wrappers only: records mirror the core
 //! types and every function delegates. UniFFI has no i128, so minor units cross as text.
 
-use cheapwings_core::{fingerprint as fp, fli, money, planning, ranking};
+use cheapwings_core::{fingerprint as fp, fli, locations, money, planning, ranking};
 
 uniffi::setup_scaffolding!();
 
@@ -263,13 +263,129 @@ pub struct FliCheckedOffers {
     pub offers: Vec<FliOffer>,
     /// One reason per dropped offer (e.g. `currency None`).
     pub rejected: Vec<String>,
+    /// Offers left out by Max stops (the user's filter, not a data problem).
+    pub excluded_by_stops: u32,
 }
 
 #[uniffi::export]
-pub fn fli_filter_offers(page: FliPage, origin: String, destination: String, date: String, currency: String) -> FliCheckedOffers {
-    let checked = fli::filter_offers(&page.into(), &origin, &destination, &date, &currency);
+pub fn fli_filter_offers(
+    page: FliPage,
+    origin: String,
+    destination: String,
+    date: String,
+    currency: String,
+    max_stops: Option<u32>,
+) -> FliCheckedOffers {
+    let checked = fli::filter_offers(&page.into(), &origin, &destination, &date, &currency, max_stops);
     let offers = FliPage::from(fli::FliPage { offers: checked.offers, unpriced: 0 }).offers;
-    FliCheckedOffers { offers, rejected: checked.rejected }
+    FliCheckedOffers { offers, rejected: checked.rejected, excluded_by_stops: checked.excluded_by_stops }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct AirportChange {
+    pub from: String,
+    pub to: String,
+}
+
+#[uniffi::export]
+pub fn fli_airport_changes(offer: FliOffer) -> Vec<AirportChange> {
+    let page = fli::FliPage::from(FliPage { offers: vec![offer], unpriced: 0 });
+    fli::airport_changes(&page.offers[0]).into_iter().map(|(from, to)| AirportChange { from, to }).collect()
+}
+
+// ---------- location catalog ----------
+
+#[derive(Debug, thiserror::Error, uniffi::Error)]
+pub enum CatalogError {
+    /// `code`: `invalid | too_long | unknown_location | stale_version | type_mismatch | no_major_mapping`.
+    #[error("{code}: {message}")]
+    Failed { code: String, message: String },
+}
+
+impl From<locations::CatalogError> for CatalogError {
+    fn from(err: locations::CatalogError) -> Self {
+        Self::Failed { code: err.code().to_owned(), message: err.to_string() }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct Location {
+    pub id: String,
+    /// `airport | city | country`
+    pub kind: String,
+    pub name: String,
+    pub code: Option<String>,
+    pub city: Option<String>,
+    pub country: String,
+    pub country_name: String,
+    pub codes: Vec<String>,
+    pub timezone: Option<String>,
+}
+
+impl From<locations::Location> for Location {
+    fn from(l: locations::Location) -> Self {
+        Self {
+            id: l.id,
+            kind: l.kind,
+            name: l.name,
+            code: l.code,
+            city: l.city,
+            country: l.country,
+            country_name: l.country_name,
+            codes: l.codes,
+            timezone: l.timezone,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct MajorResolution {
+    pub codes: Vec<String>,
+    pub rationale: String,
+    pub definition: String,
+}
+
+/// The shared airport/city/country catalog (same JSON as the backend and web app).
+#[derive(uniffi::Object)]
+pub struct LocationCatalog {
+    inner: locations::Catalog,
+}
+
+#[uniffi::export]
+impl LocationCatalog {
+    #[uniffi::constructor]
+    pub fn new(json: String) -> Result<std::sync::Arc<Self>, CatalogError> {
+        Ok(std::sync::Arc::new(Self { inner: locations::Catalog::from_json(&json)? }))
+    }
+
+    pub fn version(&self) -> String {
+        self.inner.version().to_owned()
+    }
+
+    pub fn search(&self, text: String, within: Option<String>) -> Result<Vec<Location>, CatalogError> {
+        Ok(self.inner.search(&text, within.as_deref())?.into_iter().map(Location::from).collect())
+    }
+
+    pub fn airports_of(&self, id: String) -> Result<Vec<Location>, CatalogError> {
+        Ok(self.inner.airports_of(&id)?.into_iter().map(Location::from).collect())
+    }
+
+    pub fn has_major(&self, id: String) -> bool {
+        self.inner.has_major(&id)
+    }
+
+    pub fn resolve_major(&self, kind: String, id: String, version: String) -> Result<MajorResolution, CatalogError> {
+        let r = self.inner.resolve_major(&kind, &id, &version)?;
+        Ok(MajorResolution { codes: r.codes, rationale: r.rationale, definition: r.definition })
+    }
+
+    pub fn location(&self, id: String) -> Option<Location> {
+        self.inner.location(&id).map(Location::from)
+    }
+
+    pub fn airport(&self, code: String) -> Option<Location> {
+        self.inner.airport(&code).map(Location::from)
+    }
 }
 
 #[uniffi::export]
@@ -302,6 +418,12 @@ pub struct StoredRequest {
     pub date_from: String,
     pub date_through: String,
     pub currency: String,
+    #[uniffi(default = None)]
+    pub max_stops: Option<u32>,
+    #[uniffi(default = [])]
+    pub origin_majors: Vec<String>,
+    #[uniffi(default = [])]
+    pub destination_majors: Vec<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
@@ -388,6 +510,9 @@ impl SearchStore {
             date_from: request.date_from,
             date_through: request.date_through,
             currency: request.currency,
+            max_stops: request.max_stops,
+            origin_majors: request.origin_majors,
+            destination_majors: request.destination_majors,
         };
         let combos: Vec<planning::RouteDate> = combos.into_iter().map(route_to_core).collect();
         Ok(self.inner.create_search(&request, &combos, now_ms)?)
@@ -440,6 +565,9 @@ impl SearchStore {
                 date_from: s.request.date_from,
                 date_through: s.request.date_through,
                 currency: s.request.currency,
+                max_stops: s.request.max_stops,
+                origin_majors: s.request.origin_majors,
+                destination_majors: s.request.destination_majors,
             },
             created_at_ms: s.created_at_ms,
             updated_at_ms: s.updated_at_ms,

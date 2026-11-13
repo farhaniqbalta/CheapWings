@@ -295,19 +295,44 @@ pub fn cross_check(page: &FliPage, origin: &str, destination: &str, date: &str, 
 pub struct CheckedOffers {
     pub offers: Vec<FliOffer>,
     pub rejected: Vec<String>,
+    /// Offers left out by the user's Max stops (a filter, not a data problem).
+    pub excluded_by_stops: u32,
 }
 
 /// Per-offer version of `cross_check`: one bad row (e.g. a row Google sends without a
 /// currency token) no longer discards every other offer on the page.
-pub fn filter_offers(page: &FliPage, origin: &str, destination: &str, date: &str, currency: &str) -> CheckedOffers {
-    let mut checked = CheckedOffers { offers: Vec::new(), rejected: Vec::new() };
+/// `max_stops` (None = any) is applied here, per offer, like the backend's storage-time
+/// eligibility check; the Fli request itself always asks for any number of stops.
+pub fn filter_offers(
+    page: &FliPage,
+    origin: &str,
+    destination: &str,
+    date: &str,
+    currency: &str,
+    max_stops: Option<u32>,
+) -> CheckedOffers {
+    let mut checked = CheckedOffers { offers: Vec::new(), rejected: Vec::new(), excluded_by_stops: 0 };
     for offer in &page.offers {
-        match offer_mismatch(offer, origin, destination, date, currency) {
-            None => checked.offers.push(offer.clone()),
-            Some(reason) => checked.rejected.push(reason),
+        let stops = offer.legs.len().saturating_sub(1) as u32;
+        if let Some(reason) = offer_mismatch(offer, origin, destination, date, currency) {
+            checked.rejected.push(reason);
+        } else if max_stops.is_some_and(|max| stops > max) {
+            checked.excluded_by_stops += 1;
+        } else {
+            checked.offers.push(offer.clone());
         }
     }
     checked
+}
+
+/// Connections where the next leg leaves from a different airport (e.g. arrive NRT, depart HND).
+pub fn airport_changes(offer: &FliOffer) -> Vec<(String, String)> {
+    offer
+        .legs
+        .windows(2)
+        .filter(|pair| pair[0].destination != pair[1].origin)
+        .map(|pair| (pair[0].destination.clone(), pair[1].origin.clone()))
+        .collect()
 }
 
 fn offer_mismatch(offer: &FliOffer, origin: &str, destination: &str, date: &str, currency: &str) -> Option<String> {

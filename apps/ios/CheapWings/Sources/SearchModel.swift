@@ -11,13 +11,20 @@ import UIKit
 final class SearchModel {
     static let currencies = ["IDR", "USD", "AUD", "JPY"]
 
+    /// Typed-code fallback, used only if the airport catalog failed to load.
     var originsText = "CGK"
     var destinationsText = "DPS"
+    var origin = AirportSelection([.airport("CGK")])
+    var destination = AirportSelection([.airport("DPS")])
+    var maxStops: UInt32?
     var dateFrom = Calendar.current.date(byAdding: .day, value: 30, to: .now)!
     var dateThrough = Calendar.current.date(byAdding: .day, value: 32, to: .now)!
     var currency = "IDR"
 
     let session: SearchSession
+    /// The shared airport catalog (bundled `catalog.json`, same file as backend and web).
+    let catalog: LocationCatalog?
+    let catalogError: String?
     /// Set when the on-device history could not be opened (search still works).
     let historyError: String?
     private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
@@ -26,6 +33,17 @@ final class SearchModel {
     private var continuedTask: AnyObject?
 
     init() {
+        let loadedCatalog: LocationCatalog?
+        let catalogProblem: String?
+        do {
+            loadedCatalog = try Self.loadCatalog()
+            catalogProblem = nil
+        } catch {
+            loadedCatalog = nil
+            catalogProblem = "Airport search unavailable (\(error)); type IATA codes instead."
+        }
+        catalog = loadedCatalog
+        catalogError = catalogProblem
         let engine = SearchEngine(transport: URLSessionFliTransport())
         let store: SearchStore?
         let openError: String?
@@ -44,18 +62,25 @@ final class SearchModel {
         if #available(iOS 26.0, *) { ContinuedSearch.onTask = { [weak self] task in self?.attach(task) } }
     }
 
-    var request: SearchRequest {
-        SearchRequest(origins: Self.codes(originsText), destinations: Self.codes(destinationsText),
-                      dateFrom: Self.ymd(dateFrom), dateThrough: Self.ymd(dateThrough), currency: currency)
+    /// Resolves the form (Major selections through the catalog) into a request.
+    func makeRequest() throws -> SearchRequest {
+        let (from, through) = (Self.ymd(dateFrom), Self.ymd(dateThrough))
+        guard let catalog else {
+            return SearchRequest(origins: Self.codes(originsText), destinations: Self.codes(destinationsText),
+                                 dateFrom: from, dateThrough: through, currency: currency, maxStops: maxStops)
+        }
+        return try SearchRequest.make(origin: origin, destination: destination, dateFrom: from, dateThrough: through,
+                                      currency: currency, maxStops: maxStops, catalog: catalog)
     }
 
     /// Re-planned on every edit, so the form shows the count or the reason before any request.
-    var plan: Result<[RouteDate], Error> { Result { try request.plan() } }
+    var plan: Result<[RouteDate], Error> { Result { try makeRequest().plan() } }
 
     var planSummary: String {
         switch plan {
         case .success(let combos): return "\(combos.count) route/date searches · 1 per second"
-        case .failure(PlanSearchError.Rejected(_, let detail)): return detail.prefix(1).uppercased() + detail.dropFirst()
+        case .failure(PlanSearchError.Rejected(_, let detail)), .failure(CatalogError.Failed(_, let detail)):
+            return detail.prefix(1).uppercased() + detail.dropFirst()
         case .failure(let error): return "\(error)"
         }
     }
@@ -63,9 +88,20 @@ final class SearchModel {
     var canSearch: Bool { !session.isRunning && (try? plan.get()) != nil }
 
     func start() {
-        guard canSearch, let combos = try? plan.get() else { return }
+        guard canSearch, let request = try? makeRequest(), let combos = try? request.plan() else { return }
         session.start(request, combos: combos)
         requestContinuedProcessing()
+    }
+
+    /// "Tokyo (Major), CGK" — or a prompt when empty.
+    func label(_ selection: AirportSelection) -> String {
+        guard !selection.tokens.isEmpty else { return "Choose airports" }
+        return selection.tokens.map { token in
+            switch token {
+            case .airport(let code): return code
+            case .major(_, _, let name): return "\(name) (Major)"
+            }
+        }.joined(separator: ", ")
     }
 
     func resume() {
@@ -140,6 +176,9 @@ final class SearchModel {
     private func fillForm(from request: SearchRequest) {
         originsText = request.origins.joined(separator: ", ")
         destinationsText = request.destinations.joined(separator: ", ")
+        origin = AirportSelection.restore(codes: request.origins, majorIDs: request.originMajorIDs, catalog: catalog)
+        destination = AirportSelection.restore(codes: request.destinations, majorIDs: request.destinationMajorIDs, catalog: catalog)
+        maxStops = request.maxStops
         currency = request.currency
         if let from = Self.date(request.dateFrom), let through = Self.date(request.dateThrough) {
             dateFrom = from
@@ -149,6 +188,13 @@ final class SearchModel {
 
     /// `Application Support/CheapWings/searches.sqlite`, readable after first unlock so the
     /// store keeps working while a search continues in the background.
+    static func loadCatalog() throws -> LocationCatalog {
+        guard let url = Bundle.main.url(forResource: "catalog", withExtension: "json") else {
+            throw CocoaError(.fileNoSuchFile)
+        }
+        return try LocationCatalog(json: String(contentsOf: url, encoding: .utf8))
+    }
+
     static func openStore() throws -> SearchStore {
         let support = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask,
                                                   appropriateFor: nil, create: true)

@@ -8,15 +8,24 @@ public struct SearchRequest: Sendable, Equatable {
     public var dateFrom: String  // YYYY-MM-DD
     public var dateThrough: String
     public var currency: String
+    /// Any / 0 / 1 / 2 stops, applied per offer by the Rust core.
+    public var maxStops: UInt32?
+    /// Catalog location ids when a side used "Major airports" (for display and persistence).
+    public var originMajorIDs: [String]
+    public var destinationMajorIDs: [String]
 
     public static let maxCombinations: UInt32 = 120
 
-    public init(origins: [String], destinations: [String], dateFrom: String, dateThrough: String, currency: String) {
+    public init(origins: [String], destinations: [String], dateFrom: String, dateThrough: String, currency: String,
+                maxStops: UInt32? = nil, originMajorIDs: [String] = [], destinationMajorIDs: [String] = []) {
         self.origins = origins
         self.destinations = destinations
         self.dateFrom = dateFrom
         self.dateThrough = dateThrough
         self.currency = currency
+        self.maxStops = maxStops
+        self.originMajorIDs = originMajorIDs
+        self.destinationMajorIDs = destinationMajorIDs
     }
 
     /// Point-of-sale country as `providers/fli.py` maps it.
@@ -83,6 +92,9 @@ public enum SearchEvent: Sendable {
 /// sign of blocking (429, refused redirect, traffic page). Offers are only delivered while
 /// the search is still running.
 public actor SearchEngine {
+    /// Hidden-offer reason for itineraries over the user's Max stops.
+    public static let stopLimitReason = "more stops than your Max stops"
+
     private let transport: FliTransport
     private let interval: Duration
     private let sleep: @Sendable (Duration) async throws -> Void
@@ -136,8 +148,9 @@ public actor SearchEngine {
                     // Per-offer check: a row Google sends without a currency token must not
                     // discard the page's other offers (P5.2 owner test, CGK→HND).
                     let checked = fliFilterOffers(page: decoded, origin: combo.origin, destination: combo.destination,
-                                                  date: combo.date, currency: request.currency)
-                    if checked.offers.isEmpty, let reason = checked.rejected.first {
+                                                  date: combo.date, currency: request.currency, maxStops: request.maxStops)
+                    // Failed only when bad data removed everything; Max stops alone is a normal result.
+                    if checked.offers.isEmpty, checked.excludedByStops == 0, let reason = checked.rejected.first {
                         out.yield(.comboFailed(combo, code: "cross_check: \(reason)"))
                     } else {
                         if !checked.offers.isEmpty {
@@ -145,7 +158,9 @@ public actor SearchEngine {
                                 FoundOffer(routeDate: combo, index: $0.offset, offer: $0.element, searchURL: url)
                             }))
                         }
-                        if !checked.rejected.isEmpty { out.yield(.offersHidden(combo, reasons: checked.rejected)) }
+                        let hidden = checked.rejected
+                            + Array(repeating: Self.stopLimitReason, count: Int(checked.excludedByStops))
+                        if !hidden.isEmpty { out.yield(.offersHidden(combo, reasons: hidden)) }
                     }
                 } catch FliDecodeError.Failed(let code, _) {
                     if code == "auth_denied" { return stop(.blocked("auth_denied")) }

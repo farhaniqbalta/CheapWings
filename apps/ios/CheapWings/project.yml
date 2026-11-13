@@ -13,7 +13,11 @@ targets:
   CheapWings:
     type: application
     platform: iOS
-    sources: [Sources]
+    sources:
+      - Sources
+      # Same location catalog as the backend and web app (one file, no copy to drift).
+      - path: ../../../backend/src/cheapwings/locations/catalog.json
+        buildPhase: resources
     info:
       path: Generated/Info.plist
       properties:

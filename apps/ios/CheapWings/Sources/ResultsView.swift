@@ -36,7 +36,14 @@ struct ResultsView: View {
             }
             if !session.offers.isEmpty {
                 Section {
-                    ForEach(session.offers) { OfferRow(found: $0, currency: session.currency) }
+                    ForEach(session.offers) { found in
+                        let info = model.catalog.map { ItineraryInfo.make(offer: found.offer, catalog: $0) }
+                        NavigationLink {
+                            OfferDetailView(found: found, currency: session.currency, info: info)
+                        } label: {
+                            OfferRow(found: found, currency: session.currency, info: info)
+                        }
+                    }
                 } header: {
                     Text("Lowest advertised · \(session.offers.count) flights")
                 } footer: {
@@ -105,6 +112,7 @@ struct ResultsView: View {
 struct OfferRow: View {
     let found: FoundOffer
     let currency: String
+    let info: ItineraryInfo?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -112,10 +120,14 @@ struct OfferRow: View {
                 Text(PriceText.display(found.offer.price, currency: found.offer.currency ?? currency))
                     .font(.headline.monospacedDigit())
                 Spacer()
-                Text(stops).font(.subheadline).foregroundStyle(.secondary)
+                Text(summary).font(.subheadline).foregroundStyle(.secondary)
             }
             Text(found.offer.legs.map(Self.legText).joined(separator: "  ·  "))
                 .font(.subheadline)
+            if let change = info?.airportChanges.first {
+                Label("Change airports \(change.from) → \(change.to)", systemImage: "arrow.left.arrow.right")
+                    .font(.caption).foregroundStyle(.orange)
+            }
             HStack {
                 Text("\(found.routeDate.origin)→\(found.routeDate.destination) · \(found.routeDate.date)")
                 Text("Indicative · fees & bags unknown")
@@ -124,14 +136,16 @@ struct OfferRow: View {
             if found.isStale {
                 Text("Older than 1 hour — prices may have changed").font(.caption).foregroundStyle(.orange)
             }
-            Link("Open on Google Flights", destination: found.searchURL).font(.caption)
         }
         .padding(.vertical, 2)
     }
 
-    private var stops: String {
+    /// "Nonstop · 7h 15m" (duration only when both airports' time zones are known).
+    private var summary: String {
         let n = found.offer.legs.count - 1
-        return n == 0 ? "Nonstop" : "\(n) stop\(n == 1 ? "" : "s")"
+        let stops = n == 0 ? "Nonstop" : "\(n) stop\(n == 1 ? "" : "s")"
+        guard let minutes = info?.totalMinutes else { return stops }
+        return "\(stops) · \(ItineraryInfo.durationText(minutes))"
     }
 
     static func legText(_ leg: FliLeg) -> String {

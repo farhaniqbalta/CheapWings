@@ -25,6 +25,7 @@ their original sessions; they are not current instructions or deployment state.
 | [P5.1 shared Rust core](p5.1.md) | Rust money/fingerprint/ranking/Fli decoder; backend money via PyO3 (252 tests); iPad Swift package via UniFFI; shared fixtures. [Plan](p5.1-plan.md) |
 | [P5.2 iPad app shell](p5.2.md) | Rust search planning; CheapWingsKit transport + paced engine; SwiftUI iPad app running Fli searches on-device; owner device check. [Plan](p5.2-plan.md) |
 | [P5.3 persistence + resume](p5.3.md) | Rust SQLite store, checkpoint per route/date, restore + Resume on iPad; continued processing deferred (registration rejected on device). [Plan](p5.3-plan.md) |
+| [P5.5 iPad feature parity](p5.5.md) | Location catalog in Rust, iPad airport picker (Major airports, stacked places, removable airports), Max stops filter, itinerary details. [Plan](p5.5-plan.md) |
 
 ## Reporting convention
 

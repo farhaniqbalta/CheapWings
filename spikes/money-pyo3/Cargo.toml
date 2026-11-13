@@ -1,0 +1,14 @@
+[package]
+name = "cheapwings-money-rs"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# P5.06 spike S4: Rust port of backend/src/cheapwings/domain/money.py arithmetic, loaded by Python via PyO3.
+[lib]
+name = "cheapwings_money_rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "=0.30.1", features = ["extension-module"] }
+rust_decimal = "=1.43.0"

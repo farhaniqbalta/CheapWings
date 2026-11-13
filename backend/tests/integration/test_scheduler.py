@@ -381,7 +381,7 @@ def test_retry_after_dates_nested_mcp_errors_and_defaults(monkeypatch):
     monkeypatch.setenv("ENABLED_PROVIDERS", "skiplagged,swoop,octotrip")
     registry = default_registry(Settings.from_env())
     assert not any(hasattr(r, "concurrency") for r in registry)
-    assert [r.minimum_interval_seconds for r in registry] == [3, 0.1, 5, 1]
+    assert [r.minimum_interval_seconds for r in registry] == [3, 0.1, 5, 0.25]
     # Adapter-intrinsic thread pools only: obsolete swoop keeps 3, Fli follows G.
     assert {
         r.provider.provider_id: r.provider.blocking.capacity

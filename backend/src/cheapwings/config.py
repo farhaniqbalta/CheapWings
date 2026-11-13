@@ -24,7 +24,7 @@ class Settings:
     skiplagged_interval_seconds: float = 3
     swoop_interval_seconds: float = 0.1
     octotrip_interval_seconds: float = 5
-    fli_interval_seconds: float = 1
+    fli_interval_seconds: float = 0.25  # owner-approved after the P5.5 live test
     # Priority tiers, 0 = highest. OctoTrip is slowest, so it yields to the others.
     skiplagged_priority: int = 0
     swoop_priority: int = 0

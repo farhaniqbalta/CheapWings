@@ -52,8 +52,8 @@ Source of truth for **current** phase status, approvals, and the exact next task
 - P5.5 (branch `p5.5-ipad-parity`): iPad airport picker over the shared location catalog (Rust port of `catalog.py`, same `catalog.json`): one-tap Major airports for cities/countries, several places per side, remove single airports after choosing; Max stops filter (Rust, per offer); itinerary details (flight numbers, local times, durations from airport time zones, layovers, airport-change warning).
 - Owner device checks passed (picker, stops, details, resume); missing Back button on details fixed.
 - Gates: Rust 28, backend 252, Swift Core 12 + Kit 43, iOS Release build.
-- Fli 0.25 s test (owner request): 270 live requests (1 s × 30, then 0.25 s × 120 twice), 0 errors, 0 blocks; a 120-search job takes ~32 s instead of ~2 min. Production interval still 1 s until the owner decides ([log](docs/log/p5.5-fli-interval.md)).
-- Order (owner 2026-11-14): P5.6 polish → P5.4 more iPad providers → P5.7 web migration → P6.
+- Fli 0.25 s test (owner request): 270 live requests (1 s × 30, then 0.25 s × 120 twice), 0 errors, 0 blocks; a 120-search job takes ~32 s instead of ~2 min. Owner applied 0.25 s to web and iPad (iPad still sequential) ([log](docs/log/p5.5-fli-interval.md)).
+- Order (owner 2026-11-14): P5.6 polish → iPad parallel Fli pacing (web start-to-start logic) → P5.4 more iPad providers → P5.7 web migration → P6.
 - Details and rulings: [P5.5](docs/log/p5.5.md). Open: iOS 26 continued processing; web `providers/fli.py` whole-page currency rule (p5.2.md); web picker parity with the iPad token picker.
 
 ## Next task

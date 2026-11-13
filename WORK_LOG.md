@@ -8,7 +8,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 - At phase close: collapse its detail into `docs/log/`, leave one tracker row. Replace (don't append to) "Latest checkpoint" and "Next task".
 
 ## Project basics
-- Repo `farhaniqbalta/CheapWings`, current branch `main`, including P4.11 merge `4c98386`, personal single-owner use. Python 3.12 backend (`backend/src/cheapwings`), React web (`apps/web`), SQLite + Alembic. Native iOS (P5) needs full Xcode (only CLT present).
+- Repo `farhaniqbalta/CheapWings`, current branch `main`, including P4.11 merge `4c98386`, personal single-owner use. Python 3.12 backend (`backend/src/cheapwings`), React web (`apps/web`), SQLite + Alembic. Native iPad (P5): Xcode 27.1 + Rust 1.100 installed; free Personal Team signing (3-app device limit).
 - Owner merges PRs; never merge/push automatically. Confirm before toolchain installs or live provider probes.
 - Baseline/environment history: [baseline-and-old-summary](docs/log/baseline-and-old-summary.md).
 
@@ -28,8 +28,10 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | P4.9 Scheduler architecture | Done; PR #3 merged a932900; Google Flights transport restoration deferred | [P4.9 review and implementation](docs/log/p4.9.md) |
 | P4.10 Smart locations | Done; PR #4 merged `9a160d9` | [P4.10 implementation](docs/log/p4.10.md) |
 | P4.11 Fli provider | Done; owner-accepted; [PR #5](https://github.com/farhaniqbalta/CheapWings/pull/5) merged `4c98386` | [P4.11 implementation and verification](docs/log/p4.11.md) |
-| P4.12 Shared global pool | Implemented + offline-verified on branch `p4.12-global-pool`; awaiting owner review (not pushed) | [P4.12 review, benchmark and risks](docs/log/p4.12.md) |
-| P5 SwiftUI native iOS | Not started; needs full Xcode | |
+| P4.12 Shared global pool | Done; [PR #7](https://github.com/farhaniqbalta/CheapWings/pull/7) merged `00c2fbb` | [P4.12 review, benchmark and risks](docs/log/p4.12.md) |
+| P4.13 Persistence cost | Done; [PR #8](https://github.com/farhaniqbalta/CheapWings/pull/8) merged `984cfd2` | [P4.13 follow-up](docs/log/p4.12.md#p413-follow-up--result-persistence-cost-2026-11-13-branch-p413-finish-persistence) |
+| P5.05/P5.06 Native iPad feasibility + spikes | Done on branch `p5.05-native-ios-analysis`; awaiting owner merge | [P5.05 analysis](docs/log/p5.05.md), [P5.06 spikes](docs/log/p5.06.md) |
+| P5.1 Shared Rust core | Next; owner-approved direction | [P5.06 owner decision](docs/log/p5.06.md#owner-decision-2026-11-13-after-s5) |
 | P6 Release acceptance | Not started | |
 
 ## Provider decision ledger
@@ -41,15 +43,14 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | Fli | Owner-requested personal-use integration (2026-11-12) | Google Flights public page; indicative quotes/search links; basic-economy exclusion unsupported; same inventory as swoop. |
 
 ## Latest checkpoint
-- P4.12 on branch `p4.12-global-pool` (from `5e7f865`): per-provider concurrency ceilings removed; one shared global pool `WORKER_MAX_IN_FLIGHT` (default 9, now 1..100) with unchanged start intervals, cooldowns, Retry-After, leases and fencing. `<PROVIDER>_CONCURRENCY` removed from code, `.env` and `.env.example`.
-- Adapter-intrinsic thread pools stay as adapter limits only: Fli pool = G (lazy threads), obsolete swoop fixed 3.
-- Follow-up: priority tiers (`<PROVIDER>_PRIORITY`, OctoTrip lowest) plus `LOW_PRIORITY_HEADROOM=2`, so late fast searches never wait behind slow OctoTrip calls. Live stack running locally for owner testing with all four providers (pinned Fli extras installed).
-- Owner live test passed. Swoop unchecked by default in the web picker (still enabled). Local `.env`: G16, OctoTrip 1s. Live Fli ladder at G16 (1s/0.5s/0.25s, 36 requests): no blocks; throughput 59→107→183 searches/min, in-flight ≤5, so Fli's interval, not G, is its throttle. Further experiments paused by owner.
-- Verification: 269 passed / 11 skipped (main 264); 5 new pool tests fail on P4.9 and pass on P4.12. No live provider traffic.
-- Synthetic benchmark (15 min per variant): slot-bound completion 30–86% faster at equal G; pacing-bound unchanged; a late job behind a pool-filling slow provider waits for one slow call at G9/16. G100 is limited by pre-existing `finish`/`finalize` persistence cost, not scheduling. [Details](docs/log/p4.12.md).
+- P5.05 analysis + P5.06 spikes (branch `p5.05-native-ios-analysis`, spike code under `spikes/` only; no production code changed). Target device: iPad, standalone (no server).
+- Fli (must-have) works natively on iPad via plain `URLSession`: 3/3 PASS (h2, 0.7–1.0 s, 22 priced rows); macOS 3/3 PASS. Rust `wreq` builds for iOS but is not needed.
+- Rust money via PyO3 matches Python: 200,052 parity checks / 0 mismatches; backend suite 245 passed with every money call shadowed.
+- Rust and Swift cores both match 3,806/3,806 Python fixtures on iPad (Rust 2.2 ms vs Swift 26.6 ms per round; +715 KB vs +156 KB). Owner chose **one shared Rust core**.
+- Details, reproduction and local leftovers: [P5.06](docs/log/p5.06.md).
 
 ## Next task
-Owner review of P4.12: decide on the pool-monopolization mitigation, production G and local OctoTrip interval, any live validation, and PR publication. Do not push or merge without approval.
+P5.1 — shared Rust core: one crate for money, fingerprint, ranking and the Fli `tfs`/`ds:1` decoder, packaged for iPad via UniFFI and wired into the web backend via PyO3 starting with `money`, gated by the existing suite and the S5 fixtures. Networking and UI stay native. Plan first; do not merge without owner approval.
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

@@ -1,0 +1,4 @@
+core_s5FFI.xcframework/
+Sources/RustCore/Generated.swift
+.build/
+.swiftpm/

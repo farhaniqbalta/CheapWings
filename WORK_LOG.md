@@ -31,7 +31,8 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | P4.12 Shared global pool | Done; [PR #7](https://github.com/farhaniqbalta/CheapWings/pull/7) merged `00c2fbb` | [P4.12 review, benchmark and risks](docs/log/p4.12.md) |
 | P4.13 Persistence cost | Done; [PR #8](https://github.com/farhaniqbalta/CheapWings/pull/8) merged `984cfd2` | [P4.13 follow-up](docs/log/p4.12.md#p413-follow-up--result-persistence-cost-2026-11-13-branch-p413-finish-persistence) |
 | P5.05/P5.06 Native iPad feasibility + spikes | Done; [PR #9](https://github.com/farhaniqbalta/CheapWings/pull/9) merged `ce7b343` | [P5.05 analysis](docs/log/p5.05.md), [P5.06 spikes](docs/log/p5.06.md) |
-| P5.1 Shared Rust core | Implemented on branch `p5.1-shared-rust-core`; awaiting owner review | [P5.1](docs/log/p5.1.md), [plan](docs/log/p5.1-plan.md) |
+| P5.1 Shared Rust core | Done; [PR #10](https://github.com/farhaniqbalta/CheapWings/pull/10) merged `26dfc95` | [P5.1](docs/log/p5.1.md), [plan](docs/log/p5.1-plan.md) |
+| P5.2 iPad app shell | Implemented on branch `p5.2-ipad-app-shell`; owner device check passed; awaiting owner review | [P5.2](docs/log/p5.2.md), [plan](docs/log/p5.2-plan.md) |
 | P6 Release acceptance | Not started | |
 
 ## Provider decision ledger
@@ -43,14 +44,14 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | Fli | Owner-requested personal-use integration (2026-11-12) | Google Flights public page; indicative quotes/search links; basic-economy exclusion unsupported; same inventory as swoop. |
 
 ## Latest checkpoint
-- P5.1 (branch `p5.1-shared-rust-core`): Cargo workspace `core/` — `cheapwings-core` (money, fingerprint, ranking, Fli `tfs`/`ds:1` decoder), `cheapwings-py` (PyO3), `cheapwings-ffi` (UniFFI). Networking and UI stay native.
-- Web backend: `domain/money.py` arithmetic and minor-unit table now come from Rust; public API unchanged. Setup needs Rust + `maturin develop` (README). Amounts beyond 28 digits now exact.
-- iPad: `apps/ios/CheapWingsCore` Swift package over the single Rust static library (`core/build-ios.sh`); builds for iOS devices.
-- One generated fixture file (`contracts/fixtures/core/core_fixtures.json`) gates all three: Rust 9 passed, backend **252 passed**, Swift XCTest 6 passed. Fresh-subagent review: 0 critical; 2 important fixed. No live provider traffic.
-- Details and rulings: [P5.1](docs/log/p5.1.md).
+- P5.2 (branch `p5.2-ipad-app-shell`): standalone SwiftUI iPad app `apps/ios/CheapWings` runs flexible-date one-way Fli searches on-device; no server.
+- Rust core gained search planning (120 cap, Python-identical expansion); `apps/ios/CheapWingsKit` holds the `URLSession` transport and paced `SearchEngine` (1 s, sequential, stops on any block, no retries).
+- Gates: Rust 11, backend 252, Swift Core 7 + Kit 11 passed; iOS Release build installed on iPad Pro 11"; owner device search CGK→DPS ×3 dates "seems good".
+- Foreground-first only: backgrounding pauses the search; no persistence or resume yet.
+- Details and rulings: [P5.2](docs/log/p5.2.md).
 
 ## Next task
-Owner review of P5.1 PR. Then P5.2 — iPad app shell: SwiftUI search screen using `CheapWingsCore` with `URLSession` fetching Fli pages (pattern proven in P5.06 S1), foreground-first with checkpointing. Do not merge without owner approval.
+Owner review of the P5.2 PR. Then P5.3 — on-device persistence: SQLite job/progress/results, checkpoint + resume after backgrounding or termination, optional iOS 26 continued processing. Plan first; do not merge without owner approval.
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

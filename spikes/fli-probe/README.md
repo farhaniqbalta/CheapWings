@@ -19,23 +19,31 @@ decode, null-minute times, date/airport/currency cross-check, redirect policy.
 
 ## S1 — physical iPhone (needs full Xcode, owner-approved live requests)
 
-1. Xcode → File › New › Project › iOS › App (SwiftUI). Name `FliProbeApp`, iOS 17+.
-2. File › Add Package Dependencies › Add Local… → select `spikes/fli-probe`; add library
-   `FliProbe` to the app target.
-3. Delete the template `ContentView.swift` and `<Name>App.swift`; add `App/FliProbeApp.swift`.
-4. Signing: your team. Product › Scheme › Edit Scheme › Run › Build Configuration **Release**.
-5. Run on the **physical device** (not the simulator), on the same network you use for the
-   Python baseline. Tap **Run offline self-test** first; it must say `selftest OK`.
+The app lives in `spikes/probe-app` (iPhone + iPad, iOS 17+) and also carries the S2 Rust
+transport, so build `spikes/fli-wreq` first:
+
+```sh
+spikes/fli-wreq/build.sh                       # Rust → XCFramework + Swift bindings
+cd spikes/probe-app && xcodegen generate        # brew install xcodegen
+xcodebuild -project FliProbeApp.xcodeproj -scheme FliProbeApp -configuration Release \
+  -destination 'id=<DEVICE_UDID>' -derivedDataPath build DEVELOPMENT_TEAM=<TEAM_ID> \
+  -allowProvisioningUpdates build
+xcrun devicectl device install app --device <DEVICE_UDID> build/Build/Products/Release-iphoneos/FliProbeApp.app
+```
+
+Free accounts: max 3 self-signed apps per device; trust the profile once in Settings ›
+General › VPN & Device Management. Use the **physical device**, on the same network as the
+Python baseline. Tap both offline checks first: `selftest OK` and `wreq client OK`.
 
 Run protocol (stop rules are enforced by the app):
 
-| Step | UA mode | Action |
+| Step | Transport / UA | Action |
 |---|---|---|
-| 1 | `safariIOS` | 3 single requests, ≥10 s apart, same query |
-| 2 | `chromeDesktop` | only if step 1 was `ROWLESS` (not blocked): 3 requests |
-| 3 | `system` | optional, only if step 1 or 2 passed |
+| 1 | URLSession / `safariIPad` (iPad) or `safariIOS` (iPhone) | 3 single requests, ≥10 s apart, same query |
+| 2 | URLSession / `chromeDesktop` | only if step 1 was `ROWLESS` (not blocked): 3 requests |
+| 3 | Rust wreq Chrome (S2) | only if steps 1–2 did not pass and nothing was blocked: 3 requests |
 
-- **PASS (S1 passes):** 3/3 `PASS` in one UA mode.
+- **PASS (S1 passes):** 3/3 `PASS` with URLSession. **S2 passes:** 3/3 `PASS` with wreq.
 - **Stop for the day** at the first `BLOCKED_SORRY`, `BLOCKED_TRAFFIC`, `BLOCKED_REDIRECT`
   or `RATE_LIMITED`. The app latches and refuses more requests until relaunch. Do not retry
   from another network, VPN or identity; do not accept consent pages.

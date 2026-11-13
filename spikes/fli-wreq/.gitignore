@@ -1,0 +1,6 @@
+target/
+build/
+.build/
+.swiftpm/
+swift/fli_wreqFFI.xcframework/
+swift/Sources/FliWreq/Generated.swift

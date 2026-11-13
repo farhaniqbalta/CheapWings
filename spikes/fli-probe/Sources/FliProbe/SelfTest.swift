@@ -51,10 +51,9 @@ public enum SelfTest {
             check(first.legs.first?.arriveLocal == "2026-12-15T09:00", "arrive time with null minute")
             check(decoded.offers[1].price == Decimal(string: "1234.5"), "fractional price \(decoded.offers[1].priceText)")
             check(decoded.offers[1].legs.map(\.flightNumber) == ["300", "344"], "connection legs")
-            let probe = FliProbe()
-            check(probe.crossCheck(decoded, origin: "CGK", destination: "DPS", date: "2026-12-15", currency: "IDR") == nil,
+            check(FliProbe.crossCheck(decoded, origin: "CGK", destination: "DPS", date: "2026-12-15", currency: "IDR") == nil,
                   "cross-check should pass")
-            check(probe.crossCheck(decoded, origin: "CGK", destination: "DPS", date: "2026-12-16", currency: "IDR") != nil,
+            check(FliProbe.crossCheck(decoded, origin: "CGK", destination: "DPS", date: "2026-12-16", currency: "IDR") != nil,
                   "cross-check should catch wrong date")
         } else {
             failures.append("synthetic page did not extract/decode")

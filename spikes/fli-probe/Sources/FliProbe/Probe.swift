@@ -3,12 +3,15 @@ import Foundation
 /// Which User-Agent the probe sends. TLS is always the platform's own (no impersonation).
 public enum UserAgentMode: String, CaseIterable, Sendable {
     case system         // URLSession default (CFNetwork)
-    case safariIOS      // matches the iOS TLS stack most honestly
+    case safariIPad     // iPadOS Safari's default (desktop-class) UA — matches the iPad TLS stack
+    case safariIOS      // iPhone Safari
     case chromeDesktop  // what fli-js sends; UA/TLS mismatch
 
     var header: String? {
         switch self {
         case .system: return nil
+        case .safariIPad:
+            return "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15"
         case .safariIOS:
             return "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
         case .chromeDesktop:
@@ -44,12 +47,18 @@ public struct ProbeResult: Sendable {
     public var unpriced = 0
     public var firstOffer: String?
     public var detail = ""
-    public var userAgent: UserAgentMode
+    public var client: String          // e.g. "urlsession/safariIOS", "wreq/chrome149"
     public var searchURL: URL
+
+    public init(outcome: Outcome, client: String, searchURL: URL) {
+        self.outcome = outcome
+        self.client = client
+        self.searchURL = searchURL
+    }
 
     /// One line, no payload — safe to paste into the P5.06 log.
     public var summary: String {
-        var parts = ["\(outcome.rawValue)", "ua=\(userAgent.rawValue)", "status=\(status)",
+        var parts = ["\(outcome.rawValue)", "client=\(client)", "status=\(status)",
                      "proto=\(httpProtocol ?? "?")", "bytes=\(bytes)", String(format: "t=%.2fs", seconds),
                      "offers=\(offers)", "unpriced=\(unpriced)"]
         if let r = redirectedTo { parts.append("redirect=\(r)") }
@@ -78,7 +87,7 @@ public final class FliProbe: NSObject, URLSessionTaskDelegate, @unchecked Sendab
     private func run(origin: String, destination: String, date: String,
                      currency: String, country: String, userAgent: UserAgentMode) async -> ProbeResult {
         let url = Tfs.pageURL(origin: origin, destination: destination, date: date, currency: currency, country: country)
-        var result = ProbeResult(outcome: .networkError, userAgent: userAgent, searchURL: url)
+        var result = ProbeResult(outcome: .networkError, client: "urlsession/\(userAgent.rawValue)", searchURL: url)
         var request = URLRequest(url: url, timeoutInterval: 25)
         request.setValue("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", forHTTPHeaderField: "Accept")
         request.setValue("en-US,en;q=0.9", forHTTPHeaderField: "Accept-Language")
@@ -97,9 +106,17 @@ public final class FliProbe: NSObject, URLSessionTaskDelegate, @unchecked Sendab
         }
         result.seconds = Date().timeIntervalSince(start)
         result.httpProtocol = httpProtocol
-        result.bytes = data.count
         result.status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        return Self.evaluate(result, blockedRedirect: blockedRedirect, body: data, origin: origin,
+                             destination: destination, date: date, currency: currency)
+    }
 
+    /// Shared verdict for any transport (URLSession here, wreq in S2): `result` carries
+    /// status/protocol/timing; `blockedRedirect` is a redirect target the policy refused.
+    public static func evaluate(_ result: ProbeResult, blockedRedirect: URL?, body data: Data,
+                                origin: String, destination: String, date: String, currency: String) -> ProbeResult {
+        var result = result
+        result.bytes = data.count
         if let target = blockedRedirect {
             result.redirectedTo = (target.host ?? "?") + target.path
             result.outcome = target.path.hasPrefix("/sorry") ? .blockedSorry : .blockedRedirect
@@ -120,7 +137,7 @@ public final class FliProbe: NSObject, URLSessionTaskDelegate, @unchecked Sendab
                 let legs = first.legs.map { "\($0.airline)\($0.flightNumber) \($0.origin)\u{2192}\($0.destination) \($0.departLocal)" }
                 result.firstOffer = "\(first.currency ?? "?") \(first.priceText) | " + legs.joined(separator: ", ")
             }
-            result.detail = crossCheck(decoded, origin: origin, destination: destination, date: date, currency: currency) ?? ""
+            result.detail = Self.crossCheck(decoded, origin: origin, destination: destination, date: date, currency: currency) ?? ""
             result.outcome = decoded.offers.isEmpty ? .rowless : (result.detail.isEmpty ? .pass : .crossCheckFailed)
         } catch {
             result.outcome = .schemaChanged
@@ -130,7 +147,7 @@ public final class FliProbe: NSObject, URLSessionTaskDelegate, @unchecked Sendab
     }
 
     /// Nil when every priced offer matches the query (airports, date, currency, positive price).
-    func crossCheck(_ decoded: Decoded, origin: String, destination: String, date: String, currency: String) -> String? {
+    static func crossCheck(_ decoded: Decoded, origin: String, destination: String, date: String, currency: String) -> String? {
         for offer in decoded.offers {
             guard let first = offer.legs.first, let last = offer.legs.last else { return "offer without legs" }
             if first.origin != origin || last.destination != destination { return "airports \(first.origin)-\(last.destination)" }

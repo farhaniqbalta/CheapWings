@@ -1,10 +1,15 @@
 import FliProbe
+import FliWreq
 import SwiftUI
 
-// Drop-in app file for an Xcode "iOS App" project that adds this package (see README).
 @main
 struct FliProbeApp: App {
     var body: some Scene { WindowGroup { ProbeView() } }
+}
+
+enum Transport: String, CaseIterable {
+    case urlSession = "URLSession (S1)"
+    case wreq = "Rust wreq Chrome (S2)"
 }
 
 struct ProbeView: View {
@@ -13,12 +18,13 @@ struct ProbeView: View {
     @State private var date = Calendar.current.date(byAdding: .day, value: 30, to: .now)!
     @State private var currency = "IDR"
     @State private var country = "ID"
-    @State private var userAgent = UserAgentMode.safariIOS
+    @State private var transport = Transport.urlSession
+    @State private var userAgent = UserAgentMode.safariIPad
     @State private var results: [ProbeResult] = []
     @State private var running = false
     @State private var stopped = false          // latched after any block / 429 (P5.05 §7)
     @State private var lastRun = Date.distantPast
-    @State private var selfTest = ""
+    @State private var message = ""
 
     private let minGap: TimeInterval = 10      // stricter than Fli's 1 s production interval
 
@@ -31,20 +37,30 @@ struct ProbeView: View {
                     DatePicker("Date", selection: $date, displayedComponents: .date)
                     TextField("Currency", text: $currency).textInputAutocapitalization(.characters)
                     TextField("Country (gl)", text: $country).textInputAutocapitalization(.characters)
-                    Picker("User-Agent", selection: $userAgent) {
-                        ForEach(UserAgentMode.allCases, id: \.self) { Text($0.rawValue) }
+                    Picker("Transport", selection: $transport) {
+                        ForEach(Transport.allCases, id: \.self) { Text($0.rawValue) }
+                    }
+                    if transport == .urlSession {
+                        Picker("User-Agent", selection: $userAgent) {
+                            ForEach(UserAgentMode.allCases, id: \.self) { Text($0.rawValue) }
+                        }
                     }
                 }
-                Section {
-                    Button("Run offline self-test") {
+                Section("Offline checks (no network)") {
+                    Button("Decoder self-test") {
                         let failures = SelfTest.run()
-                        selfTest = failures.isEmpty ? "selftest OK" : failures.joined(separator: "\n")
+                        message = failures.isEmpty ? "selftest OK" : failures.joined(separator: "\n")
                     }
-                    if !selfTest.isEmpty { Text(selfTest).font(.footnote.monospaced()) }
+                    Button("wreq Chrome client builds on this device?") {
+                        message = WreqProbe.clientBuildError().map { "wreq client FAILED: \($0)" } ?? "wreq client OK"
+                    }
+                    if !message.isEmpty { Text(message).font(.footnote.monospaced()) }
+                }
+                Section {
                     Button(running ? "Running…" : "Send ONE live request", action: probe)
                         .disabled(running || stopped)
                     if stopped { Text("Stopped: blocked or rate-limited. No more requests today.").foregroundStyle(.red) }
-                    Text("Pass = 3 runs, all PASS, ≥10 s apart.").font(.footnote)
+                    Text("Pass = 3 runs, all PASS, ≥10 s apart, same transport.").font(.footnote)
                 }
                 Section("Results (\(results.filter { $0.outcome == .pass }.count) pass / \(results.count))") {
                     ForEach(Array(results.enumerated()), id: \.offset) { _, r in
@@ -59,19 +75,26 @@ struct ProbeView: View {
                     }
                 }
             }
-            .navigationTitle("Fli probe (S1)")
+            .navigationTitle("Fli probe")
         }
     }
 
     private func probe() {
         let wait = minGap - Date().timeIntervalSince(lastRun)
-        guard wait <= 0 else { selfTest = String(format: "Wait %.0f s between requests.", wait); return }
+        guard wait <= 0 else { message = String(format: "Wait %.0f s between requests.", wait); return }
         let day = date.formatted(.iso8601.year().month().day())
         running = true
         lastRun = .now
         Task {
-            let result = await FliProbe.run(origin: origin, destination: destination, date: day,
+            let result: ProbeResult
+            switch transport {
+            case .urlSession:
+                result = await FliProbe.run(origin: origin, destination: destination, date: day,
                                             currency: currency, country: country, userAgent: userAgent)
+            case .wreq:
+                result = await WreqProbe.run(origin: origin, destination: destination, date: day,
+                                             currency: currency, country: country)
+            }
             results.insert(result, at: 0)
             stopped = stopped || result.outcome.mustStop
             running = false

@@ -1,0 +1,31 @@
+# P5.06 spikes S1/S2 probe app. Generate with `xcodegen` (see README). Team ID is passed at
+# build time (DEVELOPMENT_TEAM=...) so no personal signing data lives in the repo.
+name: FliProbeApp
+options:
+  deploymentTarget:
+    iOS: "17.0"
+packages:
+  FliProbe:
+    path: ../fli-probe
+  FliWreq:
+    path: ../fli-wreq/swift
+targets:
+  FliProbeApp:
+    type: application
+    platform: iOS
+    sources: [Sources]
+    dependencies:
+      - package: FliProbe
+      - package: FliWreq
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.cheapwings.fliprobe
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait"
+        CODE_SIGN_STYLE: Automatic
+        MARKETING_VERSION: "0.1"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.0"

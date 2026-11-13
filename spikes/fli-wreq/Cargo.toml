@@ -1,0 +1,27 @@
+[package]
+name = "fli-wreq"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# P5.06 spike S2: can a Rust Chrome-emulating client (wreq/BoringSSL) fetch Google Flights from iOS?
+[lib]
+crate-type = ["staticlib", "lib"]
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "uniffi-bindgen.rs"
+
+[dependencies]
+uniffi = { version = "=0.32.2", features = ["tokio", "cli"] }
+wreq = { version = "=6.0.0-rc.31", default-features = false, features = ["tokio-rt", "webpki-roots", "gzip", "brotli"] }
+wreq-util = { version = "=3.0.0-rc.14" }
+tokio = { version = "1", features = ["rt-multi-thread", "time"] }
+thiserror = "2"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
+panic = "unwind"  # UniFFI turns panics into Swift errors

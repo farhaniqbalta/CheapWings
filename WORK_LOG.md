@@ -32,7 +32,9 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | P4.13 Persistence cost | Done; [PR #8](https://github.com/farhaniqbalta/CheapWings/pull/8) merged `984cfd2` | [P4.13 follow-up](docs/log/p4.12.md#p413-follow-up--result-persistence-cost-2026-11-13-branch-p413-finish-persistence) |
 | P5.05/P5.06 Native iPad feasibility + spikes | Done; [PR #9](https://github.com/farhaniqbalta/CheapWings/pull/9) merged `ce7b343` | [P5.05 analysis](docs/log/p5.05.md), [P5.06 spikes](docs/log/p5.06.md) |
 | P5.1 Shared Rust core | Done; [PR #10](https://github.com/farhaniqbalta/CheapWings/pull/10) merged `26dfc95` | [P5.1](docs/log/p5.1.md), [plan](docs/log/p5.1-plan.md) |
-| P5.2 iPad app shell | Implemented on branch `p5.2-ipad-app-shell`; owner device check passed; awaiting owner review | [P5.2](docs/log/p5.2.md), [plan](docs/log/p5.2-plan.md) |
+| P5.2 iPad app shell | Done; [PR #11](https://github.com/farhaniqbalta/CheapWings/pull/11) + follow-up [#12](https://github.com/farhaniqbalta/CheapWings/pull/12) merged `53c0f6c` | [P5.2](docs/log/p5.2.md), [plan](docs/log/p5.2-plan.md) |
+| P5.3 Persistence + resume | Implemented on branch `p5.3-persistence-resume`; owner device checks passed; awaiting owner review | [P5.3](docs/log/p5.3.md), [plan](docs/log/p5.3-plan.md) |
+| P5.4 More providers on iPad | Deferred by owner (2026-11-14) | |
 | P6 Release acceptance | Not started | |
 
 ## Provider decision ledger
@@ -44,15 +46,14 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | Fli | Owner-requested personal-use integration (2026-11-12) | Google Flights public page; indicative quotes/search links; basic-economy exclusion unsupported; same inventory as swoop. |
 
 ## Latest checkpoint
-- P5.2 (branch `p5.2-ipad-app-shell`): standalone SwiftUI iPad app `apps/ios/CheapWings` runs flexible-date one-way Fli searches on-device; no server.
-- Rust core gained search planning (120 cap, Python-identical expansion); `apps/ios/CheapWingsKit` holds the `URLSession` transport and paced `SearchEngine` (1 s, sequential, stops on any block, no retries).
-- Owner test found CGK→HND pages fully rejected (2 of 10 rows lacked a currency token); fixed with per-offer filtering in Rust. Same whole-page rule exists in web `providers/fli.py` (open).
-- Gates: Rust 12, backend 252, Swift Core 7 + Kit 21 passed; iOS Release build installed on iPad Pro 11"; owner device search CGK→DPS ×3 dates "seems good". Fresh-subagent review: 0 critical, 4 important fixed (401/403 stop, empty-result kinds, no parallel searches, background task).
-- Foreground-first only: backgrounding pauses the search; no persistence or resume yet.
-- Details and rulings: [P5.2](docs/log/p5.2.md).
+- P5.3 (branch `p5.3-persistence-resume`): iPad searches saved on-device after every route/date (Rust `cheapwings-store`, SQLite); relaunch restores results with their age and offers Resume of unfinished route/dates (30 min wait after a Google block).
+- Owner device checks passed ("works normally"): Home → pause → Resume; force-quit → Resume; history kept.
+- First device build crashed on Search (iOS 26 continued-processing submit without a registered handler); fixed. Registration is rejected on the owner's iPad (iOS 27.0.1, free signing) → continued processing deferred, foreground-first + resume.
+- Gates: Rust core 12 + store 9, backend 252, Swift Core 9 + Kit 30, iOS Release build. Fresh-subagent review: 0 critical, 3 important fixed (resume without history, cooldown redraw, README claim).
+- Details and rulings: [P5.3](docs/log/p5.3.md). Open: web `providers/fli.py` whole-page currency rule (p5.2.md).
 
 ## Next task
-Owner review of the P5.2 PR. Then P5.3 — on-device persistence: SQLite job/progress/results, checkpoint + resume after backgrounding or termination, optional iOS 26 continued processing. Plan first; do not merge without owner approval.
+Owner review of the P5.3 PR. Then P5.5 (P5.4 deferred by owner) — Major-airport selection from the location catalog, more filters, itinerary details on iPad. Plan first; owner reviews and merges every checkpoint PR.
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

@@ -41,13 +41,21 @@ public struct FoundOffer: Sendable, Identifiable {
     public let routeDate: RouteDate
     public let offer: FliOffer
     public let searchURL: URL
+    public let fetchedAt: Date
 
-    public init(routeDate: RouteDate, index: Int, offer: FliOffer, searchURL: URL) {
+    /// Prices older than this are labelled as possibly changed (backend live-data retention: 3600 s).
+    public static let staleAfter: TimeInterval = 60 * 60
+
+    public init(routeDate: RouteDate, index: Int, offer: FliOffer, searchURL: URL, fetchedAt: Date = Date()) {
         id = "\(routeDate.origin)-\(routeDate.destination)-\(routeDate.date)-\(index)"
         self.routeDate = routeDate
         self.offer = offer
         self.searchURL = searchURL
+        self.fetchedAt = fetchedAt
     }
+
+    public func isStale(at now: Date) -> Bool { now.timeIntervalSince(fetchedAt) > Self.staleAfter }
+    public var isStale: Bool { isStale(at: Date()) }
 }
 
 public enum StopReason: Sendable, Equatable {
@@ -56,6 +64,8 @@ public enum StopReason: Sendable, Equatable {
     case rateLimited
     case blocked(String)
     case backgrounded
+    /// The app was killed or force-quit while searching (found on next launch).
+    case interrupted
 }
 
 public enum SearchEvent: Sendable {

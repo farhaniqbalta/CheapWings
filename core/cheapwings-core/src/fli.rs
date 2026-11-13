@@ -7,7 +7,7 @@
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
 use regex::Regex;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fmt;
 use std::sync::OnceLock;
@@ -64,7 +64,7 @@ pub fn search_url(origin: &str, destination: &str, date: &str, currency: &str, c
 
 // ---------- page decoding ----------
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct FliLeg {
     pub origin: String,
     pub destination: String,
@@ -75,7 +75,7 @@ pub struct FliLeg {
     pub arrive_local: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct FliOffer {
     /// Exact price text from the page (e.g. `"1234.50"`); never a float.
     pub price: String,

@@ -9,7 +9,8 @@ let package = Package(
     products: [.library(name: "CheapWingsCore", targets: ["CheapWingsCore"])],
     targets: [
         .binaryTarget(name: "cheapwings_ffiFFI", path: "cheapwings_ffiFFI.xcframework"),
-        .target(name: "CheapWingsCore", dependencies: ["cheapwings_ffiFFI"]),
+        .target(name: "CheapWingsCore", dependencies: ["cheapwings_ffiFFI"],
+                linkerSettings: [.linkedLibrary("sqlite3")]),  // on-device search store (OS SQLite)
         .testTarget(name: "CheapWingsCoreTests", dependencies: ["CheapWingsCore"]),
     ]
 )

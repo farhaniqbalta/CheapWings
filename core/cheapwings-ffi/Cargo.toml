@@ -1,0 +1,19 @@
+[package]
+name = "cheapwings-ffi"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "UniFFI bindings (Swift) for the CheapWings shared Rust core. The only Rust library linked into the iPad app."
+
+[lib]
+name = "cheapwings_ffi"
+crate-type = ["staticlib", "lib"]
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "uniffi-bindgen.rs"
+
+[dependencies]
+cheapwings-core = { path = "../cheapwings-core" }
+thiserror = "2"
+uniffi = { version = "=0.32.2", features = ["cli"] }

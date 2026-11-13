@@ -1,0 +1,4 @@
+*.xcframework/
+Sources/CheapWingsCore/Generated.swift
+.build/
+.swiftpm/

@@ -3,4 +3,5 @@
 pub mod fingerprint;
 pub mod fli;
 pub mod money;
+pub mod planning;
 pub mod ranking;

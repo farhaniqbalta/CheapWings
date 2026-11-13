@@ -32,3 +32,4 @@ graphify-out/manifest.json
 .claude/
 .codex/
 graphify-out/.graphify_*
+graphify-out/20*/

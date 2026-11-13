@@ -283,15 +283,13 @@ class Repository(CacheRepository, VerificationRepository):
                 return None
             # Shared subscribers are not extra execution slots. These checks and
             # the selected claim share one BEGIN IMMEDIATE transaction.
-            direct = s.scalars(
-                select(WorkItem).where(
+            direct = s.scalar(
+                select(func.count()).where(
                     WorkItem.status == "running", WorkItem.operation_id.is_(None)
                 )
-            ).all()
-            operations = s.scalars(
-                select(ProviderOperation).where(ProviderOperation.status == "running")
-            ).all()
-            if len(direct) + len(operations) >= self.global_capacity:
+            )
+            operations = s.scalar(select(func.count()).where(ProviderOperation.status == "running"))
+            if direct + operations >= self.global_capacity:
                 return None
             item = s.scalar(
                 select(WorkItem)

@@ -29,7 +29,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | P4.10 Smart locations | Done; PR #4 merged `9a160d9` | [P4.10 implementation](docs/log/p4.10.md) |
 | P4.11 Fli provider | Done; owner-accepted; [PR #5](https://github.com/farhaniqbalta/CheapWings/pull/5) merged `4c98386` | [P4.11 implementation and verification](docs/log/p4.11.md) |
 | P4.12 Shared global pool | Implemented + offline-verified on branch `p4.12-global-pool`; awaiting owner review (not pushed) | [P4.12 review, benchmark and risks](docs/log/p4.12.md) |
-| P5 SwiftUI native iOS | P5.05 analysis done; P5.06 spikes: Fli native on iPad via URLSession 3/3 PASS, Rust money via PyO3 parity PASS; S5 (Rust vs Swift core) on owner hold | [P5.05](docs/log/p5.05.md), [P5.06](docs/log/p5.06.md) |
+| P5 SwiftUI native iOS | P5.05 analysis done; P5.06 spikes done: Fli native on iPad via URLSession 3/3 PASS; S5 Rust and Swift cores both exact on iPad → Swift core recommended for iPad-only; awaiting owner decision | [P5.05](docs/log/p5.05.md), [P5.06](docs/log/p5.06.md) |
 | P6 Release acceptance | Not started | |
 
 ## Provider decision ledger

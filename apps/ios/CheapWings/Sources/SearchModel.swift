@@ -78,7 +78,7 @@ final class SearchModel {
 
     var planSummary: String {
         switch plan {
-        case .success(let combos): return "\(combos.count) route/date searches · 1 per second"
+        case .success(let combos): return "\(combos.count) route/date searches · 0.25 s apart"
         case .failure(PlanSearchError.Rejected(_, let detail)), .failure(CatalogError.Failed(_, let detail)):
             return detail.prefix(1).uppercased() + detail.dropFirst()
         case .failure(let error): return "\(error)"

@@ -88,7 +88,7 @@ public enum SearchEvent: Sendable {
     case stopped(StopReason)
 }
 
-/// Runs one Fli search: strictly sequential requests, `interval` between them, stop on any
+/// Runs one Fli search: strictly sequential requests, `interval` (0.25 s) between them, stop on any
 /// sign of blocking (429, refused redirect, traffic page). Offers are only delivered while
 /// the search is still running.
 public actor SearchEngine {
@@ -99,7 +99,7 @@ public actor SearchEngine {
     private let interval: Duration
     private let sleep: @Sendable (Duration) async throws -> Void
 
-    public init(transport: FliTransport, interval: Duration = .seconds(1),
+    public init(transport: FliTransport, interval: Duration = .milliseconds(250),
                 sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }) {
         self.transport = transport
         self.interval = interval

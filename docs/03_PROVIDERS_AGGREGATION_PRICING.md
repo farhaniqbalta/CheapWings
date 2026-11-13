@@ -145,3 +145,20 @@ Do not collapse `failed`, `unsupported`, `skipped` or `no eligible offers` into 
 - Restrictions forbid aggregation; adapter disabled and reason exposed.
 
 **Gate:** do not advance provider-adapter work until the source is feasible, acceptable to use, and testable with a versioned fixture. Keep fake provider available for full app testing if real providers fail.
+
+## Destination-discovery candidates (P7 research — unverified)
+
+For the proposed Explore Anywhere feature ([01](01_PRODUCT_REQUIREMENTS_UX.md#proposed-feature-explore-anywhere-and-surprise-me-p7--proposed--not-started)).
+**None of these is verified, approved or integrated.** Each needs the same P0-style probe
+(actual response, terms, quotas, freshness) in P7.1 before any adapter work.
+
+| Candidate | Possible use | Access / credentials | Known or expected limits | Native iPad (no server)? |
+|---|---|---|---|---|
+| Skiplagged (MCP, "anywhere"-style search if offered) | Destinations + indicative "from" prices from an origin | No auth for current detailed search; discovery tool not yet confirmed in the tool list | Personal-use terms (no commercial/redistribution); USD prices, display-only FX; hidden-city offers mixed in | Likely (plain HTTPS JSON-RPC), unproven |
+| Travelpayouts / Aviasales price data | Cached cheapest prices by destination/month | API token, partner account | Cached/historical prices (age varies); published Search API rules prohibit combining with other metasearch APIs — data API terms must be checked separately; regional bias | Possible (HTTPS + token in app = key exposure risk) |
+| swoop / Google Flights Explore | Destinations + prices from Google's Explore view | None; undocumented RPC | Undocumented, may break; ToS risk already accepted only for personal use; not known whether swoop exposes Explore | Unknown (swoop is Python; would need a Swift/Rust port) |
+| Fli Explore | Same, via the Fli codebase/approach | None; public page | Not known whether Fli (pinned 881aee5) supports Explore; same Google block risk as Fli search | Possible via URLSession like Fli search, unproven |
+
+Questions for every candidate: freshness/age signal, currency, geographic coverage, result
+limits, rate limits, whether results can be shown next to other sources, and whether the
+iPad can call it directly without exposing credentials.

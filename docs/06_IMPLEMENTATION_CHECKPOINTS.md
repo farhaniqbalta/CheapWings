@@ -17,6 +17,9 @@ P0 Provider gate ──┬──→ P1 Canonical domain + fake providers ──�
                                                          │
                                                          ▼
                                               P6 E2E acceptance + release
+                                                         ┊
+                                                         ▼  (proposed, not approved)
+                                              P7 Explore Anywhere / Surprise Me
 ```
 
 Each phase needs a short current checkpoint (at most five lines) and evidence pointer in `WORK_LOG.md`. Record commits, changed files, exact validation, screenshots, decisions and blockers in the matching `docs/log/*.md` entry. The phase tracker in WORK_LOG.md is authoritative; unchecked design tasks below are not live status.
@@ -112,6 +115,56 @@ Each phase needs a short current checkpoint (at most five lines) and evidence po
 - [ ] Record the release summary in `docs/log/` with exact commands, validation limits, remaining work and per-provider decisions; replace the current checkpoint and next task in WORK_LOG.md.
 
 **Gate:** user can run end-to-end from documented steps with fake provider even without external credentials, and with validated real provider(s) where permitted.
+
+## P7 — Explore Anywhere (Proposed / Not started)
+
+> **Status: proposed for owner approval.** Not scheduled; does not change P5.x or P6 scope.
+> Spec: [01](01_PRODUCT_REQUIREMENTS_UX.md#proposed-feature-explore-anywhere-and-surprise-me-p7--proposed--not-started) ·
+> Architecture: [02](02_SYSTEM_ARCHITECTURE.md#proposed-destination-discovery-layer-p7--not-approved) ·
+> Candidates: [03](03_PROVIDERS_AGGREGATION_PRICING.md#destination-discovery-candidates-p7-research--unverified).
+
+**Placement:** P6 already means release and owner acceptance of the current product, so
+Explore Anywhere is proposed as P7 after it rather than inside P6. If the owner prefers it
+before release, it can become P6.x by explicit decision; nothing is renumbered here.
+
+**Objective:** from an origin, dates and an optional budget, discover affordable destinations,
+check a bounded shortlist with the existing detailed search, and rank destinations by honest
+fare evidence; Surprise Me picks from those results. One engine, web and iPad.
+
+**Dependencies:** P5.5 location catalog in Rust (done, in review); the shared Rust core and
+its PyO3/UniFFI bindings (P5.1); the existing scheduler, pacing, cache and persistence; P5.7
+(web on the Rust core) preferred before web integration, so selection logic is written once.
+Scope: Discover is a separate feature beside Search (owner 2026-11-14), so Search's rules are
+unchanged; until P7 starts, current phases keep the seams listed in
+[02 → keeping current work ready](02_SYSTEM_ARCHITECTURE.md#keeping-current-work-ready-for-discover-owner-2026-11-14).
+Budget rules follow the future discovery API contract; shortlist size follows the chosen
+provider; Surprise Me randomness and regions are deferred.
+
+**Phases (each its own checkpoint PR, owner-reviewed):**
+- P7.1 Discovery-provider feasibility: probe candidates in 03 (terms, freshness, coverage,
+  iPad reachability), low-volume, owner-approved live probes; pick one MVP source or stop.
+- P7.2 Discovery contract and data models: `DestinationDiscoveryProvider`, capability flag,
+  candidate/evidence types, OpenAPI additions, fixtures.
+- P7.3 Shared-core destination selection: Rust normalization, dedupe, budget/region filters,
+  prioritization, discovery-to-search plan; Python-reference fixtures like P5.1/P5.5.
+- P7.4 Planner and scheduler integration: discovery as paced, bounded provider work in the
+  existing pool; shortlist feeds normal work items; persistence, resume, cancel.
+- P7.5 Web interface: Search | Discover choice, Explore form, progressive destination list,
+  evidence labels, Surprise Me.
+- P7.6 Native iPad interface: same, SwiftUI over the same Rust logic (native discovery only if
+  P7.1 shows it works without a server).
+- P7.7 Validation: accuracy (discovery price vs checked fare), coverage reporting, pacing and
+  reliability, web/iPad parity for the same inputs.
+
+**Acceptance criteria:**
+- No second scheduler or search engine; Explore detailed searches are ordinary work items
+  under existing pacing, retries, cooldowns, cache and persistence.
+- Shortlist always within the 120 route/date cap; discovery calls bounded and paced.
+- Every destination shows its evidence level; discovery prices never rank as checked or
+  verified; "checked N of M candidates" is visible; no "cheapest anywhere" claim.
+- Same inputs give the same shortlist and order on web and iPad (shared Rust fixtures).
+- Surprise Me only picks from results that meet the user's budget/limits.
+- A discovery-source failure leaves an honest partial/empty state, never fabricated candidates.
 
 ## Agent collaboration / handoffs
 

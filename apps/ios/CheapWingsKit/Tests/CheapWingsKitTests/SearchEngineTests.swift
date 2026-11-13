@@ -101,7 +101,8 @@ final class SearchEngineTests: XCTestCase {
                                        page("CGK", "DPS", "2026-12-17", prices: ["1100000"])])
         let clock = FakeClock()
         let events = await collect(SearchEngine(transport: transport, sleep: clock.sleep), try combos())
-        XCTAssertEqual(clock.sleeps, [.seconds(1), .seconds(1)])
+        // 0.25 s owner-approved after the 270-request live test (docs/log/p5.5-fli-interval.md).
+        XCTAssertEqual(clock.sleeps, [.milliseconds(250), .milliseconds(250)])
         let fetched = await transport.fetched
         XCTAssertEqual(fetched.map { $0.absoluteString }, try combos().map {
             fliSearchUrl(origin: $0.origin, destination: $0.destination, date: $0.date, currency: "IDR", country: "ID")

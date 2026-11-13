@@ -159,7 +159,7 @@ Fli is a fourth, independent scheduling option using Google's public search
 page. Its current 0.10.0 source is pinned to commit
 `881aee5ff4321e81ea2157cb44be94ce6a21dc1b` (PyPI's older 0.9.0 is not used),
 with curl-cffi 0.17.0 and explicit HTTP/2. Installing the live extra requires
-Git to fetch that commit. Set `FLI_INTERVAL_SECONDS=1` in both API/worker
+Git to fetch that commit. `FLI_INTERVAL_SECONDS` defaults to 0.25 (P5.5 live test); keep it equal in both API/worker
 environments.
 
 Fli offers appear under **Lowest advertised** as indicative shopping quotes;

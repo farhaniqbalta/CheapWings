@@ -33,8 +33,9 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | P5.05/P5.06 Native iPad feasibility + spikes | Done; [PR #9](https://github.com/farhaniqbalta/CheapWings/pull/9) merged `ce7b343` | [P5.05 analysis](docs/log/p5.05.md), [P5.06 spikes](docs/log/p5.06.md) |
 | P5.1 Shared Rust core | Done; [PR #10](https://github.com/farhaniqbalta/CheapWings/pull/10) merged `26dfc95` | [P5.1](docs/log/p5.1.md), [plan](docs/log/p5.1-plan.md) |
 | P5.2 iPad app shell | Done; [PR #11](https://github.com/farhaniqbalta/CheapWings/pull/11) + follow-up [#12](https://github.com/farhaniqbalta/CheapWings/pull/12) merged `53c0f6c` | [P5.2](docs/log/p5.2.md), [plan](docs/log/p5.2-plan.md) |
-| P5.3 Persistence + resume | Implemented on branch `p5.3-persistence-resume`; owner device checks passed; awaiting owner review | [P5.3](docs/log/p5.3.md), [plan](docs/log/p5.3-plan.md) |
+| P5.3 Persistence + resume | Done; [PR #13](https://github.com/farhaniqbalta/CheapWings/pull/13) merged `6c431e9` | [P5.3](docs/log/p5.3.md), [plan](docs/log/p5.3-plan.md) |
 | P5.4 More providers on iPad | Deferred by owner (2026-11-14) | |
+| P5.5 iPad feature parity | Implemented on branch `p5.5-ipad-parity`; owner device checks passed; awaiting owner review | [P5.5](docs/log/p5.5.md), [plan](docs/log/p5.5-plan.md) |
 | P6 Release acceptance | Not started | |
 
 ## Provider decision ledger
@@ -46,14 +47,13 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | Fli | Owner-requested personal-use integration (2026-11-12) | Google Flights public page; indicative quotes/search links; basic-economy exclusion unsupported; same inventory as swoop. |
 
 ## Latest checkpoint
-- P5.3 (branch `p5.3-persistence-resume`): iPad searches saved on-device after every route/date (Rust `cheapwings-store`, SQLite); relaunch restores results with their age and offers Resume of unfinished route/dates (30 min wait after a Google block).
-- Owner device checks passed ("works normally"): Home → pause → Resume; force-quit → Resume; history kept.
-- First device build crashed on Search (iOS 26 continued-processing submit without a registered handler); fixed. Registration is rejected on the owner's iPad (iOS 27.0.1, free signing) → continued processing deferred, foreground-first + resume.
-- Gates: Rust core 12 + store 9, backend 252, Swift Core 9 + Kit 30, iOS Release build. Fresh-subagent review: 0 critical, 3 important fixed (resume without history, cooldown redraw, README claim).
-- Details and rulings: [P5.3](docs/log/p5.3.md). Open: web `providers/fli.py` whole-page currency rule (p5.2.md).
+- P5.5 (branch `p5.5-ipad-parity`): iPad airport picker over the shared location catalog (Rust port of `catalog.py`, same `catalog.json`): one-tap Major airports for cities/countries, several places per side, remove single airports after choosing; Max stops filter (Rust, per offer); itinerary details (flight numbers, local times, durations from airport time zones, layovers, airport-change warning).
+- Owner device checks passed (picker, stops, details, resume); missing Back button on details fixed.
+- Gates: Rust 28, backend 252, Swift Core 12 + Kit 43, iOS Release build.
+- Details and rulings: [P5.5](docs/log/p5.5.md). Open: iOS 26 continued processing; web `providers/fli.py` whole-page currency rule (p5.2.md); web picker parity with the iPad token picker.
 
 ## Next task
-Owner review of the P5.3 PR. Then P5.5 (P5.4 deferred by owner) — Major-airport selection from the location catalog, more filters, itinerary details on iPad. Plan first; owner reviews and merges every checkpoint PR.
+Owner review of the P5.5 PR. Then P5.6 — iPhone layout polish, Dynamic Type / VoiceOver audit, dark mode, offline states. Plan first; owner reviews and merges every checkpoint PR.
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

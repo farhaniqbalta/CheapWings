@@ -11,7 +11,7 @@ struct CheapWingsApp: App {
             NavigationSplitView(preferredCompactColumn: $compactColumn) {
                 SearchView(model: model)
             } detail: {
-                ResultsView(session: model.session)
+                ResultsView(model: model)
             }
             .onChange(of: model.session.isRunning) { _, running in
                 if running { compactColumn = .detail }

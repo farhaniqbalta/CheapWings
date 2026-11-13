@@ -3,10 +3,21 @@ import CheapWingsKit
 import SwiftUI
 
 struct ResultsView: View {
-    let session: SearchSession
+    let model: SearchModel
+    private var session: SearchSession { model.session }
 
     var body: some View {
         List {
+            if let info = session.resumable, !session.isRunning {
+                Section {
+                    Text("Unfinished search: \(Self.route(info.request)), \(info.done) of \(info.total) done")
+                    if let after = session.resumeAllowedAfter, !session.canResume {
+                        Text("Google asked us to slow down — try again after \(after.formatted(date: .omitted, time: .shortened)).")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Button("Resume", action: model.resume).disabled(!session.canResume)
+                }
+            }
             if case .running(let done, let total) = session.phase {
                 Section {
                     ProgressView(value: Double(done), total: Double(max(total, 1))) {
@@ -21,8 +32,14 @@ struct ResultsView: View {
                 Section { Self.emptyLabel(outcome) }
             }
             if !session.offers.isEmpty {
-                Section("Lowest advertised · \(session.offers.count) flights") {
+                Section {
                     ForEach(session.offers) { OfferRow(found: $0, currency: session.currency) }
+                } header: {
+                    Text("Lowest advertised · \(session.offers.count) flights")
+                } footer: {
+                    if let oldest = session.offers.map(\.fetchedAt).min() {
+                        Text("Searched \(oldest, style: .relative) ago")
+                    }
                 }
             } else if session.phase == .idle {
                 ContentUnavailableView("Search one-way fares", systemImage: "airplane",
@@ -44,8 +61,16 @@ struct ResultsView: View {
                     }
                 }
             }
+            if let note = model.historyError ?? session.storeError {
+                Section { Text(note).font(.footnote).foregroundStyle(.secondary) }
+            }
         }
         .navigationTitle("Results")
+        .onChange(of: session.phase) { _, _ in model.progressChanged() }
+    }
+
+    static func route(_ request: SearchRequest) -> String {
+        "\(request.origins.joined(separator: ","))→\(request.destinations.joined(separator: ","))"
     }
 
     @ViewBuilder
@@ -93,6 +118,9 @@ struct OfferRow: View {
                 Text("Indicative · fees & bags unknown")
             }
             .font(.caption).foregroundStyle(.secondary)
+            if found.isStale {
+                Text("Older than 1 hour — prices may have changed").font(.caption).foregroundStyle(.orange)
+            }
             Link("Open on Google Flights", destination: found.searchURL).font(.caption)
         }
         .padding(.vertical, 2)

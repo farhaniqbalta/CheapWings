@@ -57,7 +57,8 @@ public final class SearchSession {
 
     // The search being shown/run.
     private var searchID: Int64?
-    private var request: SearchRequest?
+    /// The request of the search being shown (new, running or restored).
+    public private(set) var request: SearchRequest?
     private var total = 0
     private var doneBefore = 0
     private var run: [(index: UInt32, routeDate: RouteDate)] = []

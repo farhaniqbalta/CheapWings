@@ -94,6 +94,13 @@ Free Apple accounts allow three self-signed apps per device and need the develop
 profile trusted once (Settings › General › VPN & Device Management). Prices shown are
 indicative; a search stops on any Google rate-limit or block and never retries.
 
+Searches are saved on the device (`Application Support/CheapWings/searches.sqlite`, newest
+10 kept) after every route/date. Relaunching shows the last results with their age and, if a
+search was interrupted, offers **Resume** (only the unfinished route/dates are fetched; after a
+Google block, Resume waits 30 minutes). On iOS 26+ a search you start keeps running when you
+leave the app, with progress in the system UI; on older iOS it pauses after the current
+request. A force-quit always stops the search — reopen and Resume.
+
 ## Smart location selection (P4.10)
 
 Origin and destination accept airport codes/names, cities and countries using an

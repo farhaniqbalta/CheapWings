@@ -14,6 +14,11 @@ targets:
     type: application
     platform: iOS
     sources: [Sources]
+    info:
+      path: Generated/Info.plist
+      properties:
+        # iOS 26+ continued processing for user-started searches (P5.3).
+        BGTaskSchedulerPermittedIdentifiers: [dev.cheapwings.app.search.*]
     dependencies:
       - package: CheapWingsKit
       - package: CheapWingsCore

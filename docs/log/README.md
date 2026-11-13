@@ -24,6 +24,7 @@ their original sessions; they are not current instructions or deployment state.
 | [P5.06 native engine spikes](p5.06.md) | S1 Fli on iPad via URLSession 3/3 PASS, S2 wreq iOS build, S3 macOS 3/3 PASS, S4 Rust money via PyO3 parity; S5 Rust vs Swift core both exact on iPad; owner chose shared Rust core |
 | [P5.1 shared Rust core](p5.1.md) | Rust money/fingerprint/ranking/Fli decoder; backend money via PyO3 (252 tests); iPad Swift package via UniFFI; shared fixtures. [Plan](p5.1-plan.md) |
 | [P5.2 iPad app shell](p5.2.md) | Rust search planning; CheapWingsKit transport + paced engine; SwiftUI iPad app running Fli searches on-device; owner device check. [Plan](p5.2-plan.md) |
+| [P5.3 persistence + resume](p5.3.md) | Rust SQLite store, checkpoint per route/date, restore + Resume on iPad; continued processing deferred (registration rejected on device). [Plan](p5.3-plan.md) |
 
 ## Reporting convention
 

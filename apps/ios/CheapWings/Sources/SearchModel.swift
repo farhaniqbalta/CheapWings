@@ -41,7 +41,7 @@ final class SearchModel {
         session.onStop = { [weak self] in self?.searchStopped() }
         session.restoreLatest()
         if let request = session.request { fillForm(from: request) }
-        if #available(iOS 26.0, *) { ContinuedSearch.register(model: self) }
+        if #available(iOS 26.0, *) { ContinuedSearch.onTask = { [weak self] task in self?.attach(task) } }
     }
 
     var request: SearchRequest {

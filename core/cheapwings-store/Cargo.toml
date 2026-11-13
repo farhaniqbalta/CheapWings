@@ -1,0 +1,16 @@
+[package]
+name = "cheapwings-store"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "On-device search store (SQLite) for the CheapWings iPad app."
+
+[dependencies]
+cheapwings-core = { path = "../cheapwings-core" }
+# OS libsqlite3 (no bundled copy); the iOS app links sqlite3.
+rusqlite = "=0.42.0"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["arbitrary_precision"] }
+
+[dev-dependencies]
+tempfile = "3"

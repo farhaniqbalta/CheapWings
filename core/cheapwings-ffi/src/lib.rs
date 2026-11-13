@@ -276,3 +276,177 @@ pub fn fli_filter_offers(page: FliPage, origin: String, destination: String, dat
 pub fn fli_cross_check(page: FliPage, origin: String, destination: String, date: String, currency: String) -> Option<String> {
     fli::cross_check(&page.into(), &origin, &destination, &date, &currency)
 }
+
+// ---------- on-device search store ----------
+
+use cheapwings_store as store;
+use std::sync::Arc;
+
+#[derive(Debug, thiserror::Error, uniffi::Error)]
+pub enum StoreError {
+    /// `code`: `open | sql | not_found`.
+    #[error("{code}: {message}")]
+    Failed { code: String, message: String },
+}
+
+impl From<store::StoreError> for StoreError {
+    fn from(err: store::StoreError) -> Self {
+        Self::Failed { code: err.code().to_owned(), message: err.to_string() }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct StoredRequest {
+    pub origins: Vec<String>,
+    pub destinations: Vec<String>,
+    pub date_from: String,
+    pub date_through: String,
+    pub currency: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+pub enum ComboStatus {
+    Pending,
+    Done,
+    Failed,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct StoredCombo {
+    pub index: u32,
+    pub route_date: RouteDate,
+    pub status: ComboStatus,
+    pub code: Option<String>,
+    pub finished_at_ms: Option<i64>,
+}
+
+#[derive(Debug, PartialEq, Eq, uniffi::Record)]
+pub struct StoredOffer {
+    pub combo_index: u32,
+    pub offer_index: u32,
+    pub offer: FliOffer,
+    pub fetched_at_ms: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct HiddenCount {
+    pub reason: String,
+    pub count: u32,
+}
+
+#[derive(Debug, PartialEq, Eq, uniffi::Record)]
+pub struct StoredSearch {
+    pub id: i64,
+    pub request: StoredRequest,
+    pub created_at_ms: i64,
+    pub updated_at_ms: i64,
+    pub stop_reason: Option<String>,
+    pub combos: Vec<StoredCombo>,
+    pub offers: Vec<StoredOffer>,
+    pub hidden: Vec<HiddenCount>,
+}
+
+fn route_to_core(c: RouteDate) -> planning::RouteDate {
+    planning::RouteDate { origin: c.origin, destination: c.destination, date: c.date }
+}
+
+fn route_from_core(c: planning::RouteDate) -> RouteDate {
+    RouteDate { origin: c.origin, destination: c.destination, date: c.date }
+}
+
+fn combo_from_store(c: store::StoredCombo) -> StoredCombo {
+    StoredCombo {
+        index: c.index,
+        route_date: route_from_core(c.route_date),
+        status: match c.status {
+            store::ComboStatus::Pending => ComboStatus::Pending,
+            store::ComboStatus::Done => ComboStatus::Done,
+            store::ComboStatus::Failed => ComboStatus::Failed,
+        },
+        code: c.code,
+        finished_at_ms: c.finished_at_ms,
+    }
+}
+
+/// The app's on-device history: one SQLite file, one transaction per finished route/date.
+#[derive(uniffi::Object)]
+pub struct SearchStore {
+    inner: store::Store,
+}
+
+#[uniffi::export]
+impl SearchStore {
+    #[uniffi::constructor]
+    pub fn new(path: String) -> Result<Arc<Self>, StoreError> {
+        Ok(Arc::new(Self { inner: store::Store::open(&path)? }))
+    }
+
+    pub fn create_search(&self, request: StoredRequest, combos: Vec<RouteDate>, now_ms: i64) -> Result<i64, StoreError> {
+        let request = store::StoredRequest {
+            origins: request.origins,
+            destinations: request.destinations,
+            date_from: request.date_from,
+            date_through: request.date_through,
+            currency: request.currency,
+        };
+        let combos: Vec<planning::RouteDate> = combos.into_iter().map(route_to_core).collect();
+        Ok(self.inner.create_search(&request, &combos, now_ms)?)
+    }
+
+    pub fn finish_combo(
+        &self,
+        search_id: i64,
+        index: u32,
+        offers: Vec<FliOffer>,
+        hidden: Vec<String>,
+        failure: Option<String>,
+        now_ms: i64,
+    ) -> Result<(), StoreError> {
+        let offers = fli::FliPage::from(FliPage { offers, unpriced: 0 }).offers;
+        Ok(self.inner.finish_combo(search_id, index, &offers, &hidden, failure.as_deref(), now_ms)?)
+    }
+
+    pub fn set_stopped(&self, search_id: i64, reason: String, now_ms: i64) -> Result<(), StoreError> {
+        Ok(self.inner.set_stopped(search_id, &reason, now_ms)?)
+    }
+
+    pub fn clear_stopped(&self, search_id: i64) -> Result<(), StoreError> {
+        Ok(self.inner.clear_stopped(search_id)?)
+    }
+
+    pub fn pending(&self, search_id: i64) -> Result<Vec<StoredCombo>, StoreError> {
+        Ok(self.inner.pending(search_id)?.into_iter().map(combo_from_store).collect())
+    }
+
+    pub fn latest(&self) -> Result<Option<StoredSearch>, StoreError> {
+        let Some(s) = self.inner.latest()? else { return Ok(None) };
+        let offer_page = FliPage::from(fli::FliPage { offers: s.offers.iter().map(|o| o.offer.clone()).collect(), unpriced: 0 });
+        let offers = s
+            .offers
+            .iter()
+            .zip(offer_page.offers)
+            .map(|(stored, offer)| StoredOffer {
+                combo_index: stored.combo_index,
+                offer_index: stored.offer_index,
+                offer,
+                fetched_at_ms: stored.fetched_at_ms,
+            })
+            .collect();
+        Ok(Some(StoredSearch {
+            id: s.id,
+            request: StoredRequest {
+                origins: s.request.origins,
+                destinations: s.request.destinations,
+                date_from: s.request.date_from,
+                date_through: s.request.date_through,
+                currency: s.request.currency,
+            },
+            created_at_ms: s.created_at_ms,
+            updated_at_ms: s.updated_at_ms,
+            stop_reason: s.stop_reason,
+            combos: s.combos.into_iter().map(combo_from_store).collect(),
+            offers,
+            hidden: s.hidden.into_iter().map(|(reason, count)| HiddenCount { reason, count }).collect(),
+        }))
+    }
+}

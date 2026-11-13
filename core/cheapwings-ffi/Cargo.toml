@@ -15,5 +15,6 @@ path = "uniffi-bindgen.rs"
 
 [dependencies]
 cheapwings-core = { path = "../cheapwings-core" }
+cheapwings-store = { path = "../cheapwings-store" }
 thiserror = "2"
 uniffi = { version = "=0.32.2", features = ["cli"] }

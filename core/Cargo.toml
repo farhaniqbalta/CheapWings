@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["cheapwings-core", "cheapwings-ffi", "cheapwings-py"]
+members = ["cheapwings-core", "cheapwings-ffi", "cheapwings-py", "cheapwings-store"]
 
 [profile.release]
 lto = true

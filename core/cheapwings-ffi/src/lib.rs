@@ -258,6 +258,20 @@ pub fn fli_decode_page(html: String) -> Result<FliPage, FliDecodeError> {
         .map_err(|e| FliDecodeError::Failed { code: e.code().to_owned(), detail: e.to_string() })
 }
 
+#[derive(Debug, PartialEq, Eq, uniffi::Record)]
+pub struct FliCheckedOffers {
+    pub offers: Vec<FliOffer>,
+    /// One reason per dropped offer (e.g. `currency None`).
+    pub rejected: Vec<String>,
+}
+
+#[uniffi::export]
+pub fn fli_filter_offers(page: FliPage, origin: String, destination: String, date: String, currency: String) -> FliCheckedOffers {
+    let checked = fli::filter_offers(&page.into(), &origin, &destination, &date, &currency);
+    let offers = FliPage::from(fli::FliPage { offers: checked.offers, unpriced: 0 }).offers;
+    FliCheckedOffers { offers, rejected: checked.rejected }
+}
+
 #[uniffi::export]
 pub fn fli_cross_check(page: FliPage, origin: String, destination: String, date: String, currency: String) -> Option<String> {
     fli::cross_check(&page.into(), &origin, &destination, &date, &currency)

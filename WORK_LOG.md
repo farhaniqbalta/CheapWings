@@ -46,7 +46,8 @@ Source of truth for **current** phase status, approvals, and the exact next task
 ## Latest checkpoint
 - P5.2 (branch `p5.2-ipad-app-shell`): standalone SwiftUI iPad app `apps/ios/CheapWings` runs flexible-date one-way Fli searches on-device; no server.
 - Rust core gained search planning (120 cap, Python-identical expansion); `apps/ios/CheapWingsKit` holds the `URLSession` transport and paced `SearchEngine` (1 s, sequential, stops on any block, no retries).
-- Gates: Rust 11, backend 252, Swift Core 7 + Kit 19 passed; iOS Release build installed on iPad Pro 11"; owner device search CGK→DPS ×3 dates "seems good". Fresh-subagent review: 0 critical, 4 important fixed (401/403 stop, empty-result kinds, no parallel searches, background task).
+- Owner test found CGK→HND pages fully rejected (2 of 10 rows lacked a currency token); fixed with per-offer filtering in Rust. Same whole-page rule exists in web `providers/fli.py` (open).
+- Gates: Rust 12, backend 252, Swift Core 7 + Kit 21 passed; iOS Release build installed on iPad Pro 11"; owner device search CGK→DPS ×3 dates "seems good". Fresh-subagent review: 0 critical, 4 important fixed (401/403 stop, empty-result kinds, no parallel searches, background task).
 - Foreground-first only: backgrounding pauses the search; no persistence or resume yet.
 - Details and rulings: [P5.2](docs/log/p5.2.md).
 

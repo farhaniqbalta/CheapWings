@@ -28,6 +28,14 @@ struct ResultsView: View {
                 ContentUnavailableView("Search one-way fares", systemImage: "airplane",
                                        description: Text("Enter airports and a date range, then search."))
             }
+            if !session.hiddenOffers.isEmpty {
+                Section("Hidden offers") {
+                    ForEach(session.hiddenOffers.sorted { $0.key < $1.key }, id: \.key) { reason, count in
+                        Text("\(count) offer\(count == 1 ? "" : "s") hidden: \(reason)")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+            }
             if !session.failures.isEmpty {
                 Section("Skipped searches") {
                     ForEach(Array(session.failures.enumerated()), id: \.offset) { _, failure in

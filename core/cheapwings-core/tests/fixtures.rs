@@ -1,7 +1,7 @@
 //! Shared fixtures generated from the Python reference (scripts/gen_core_fixtures.py).
 
 use cheapwings_core::fingerprint::{fingerprint, isoformat, LocalInstant, Segment};
-use cheapwings_core::fli::{cross_check, decode_page, search_url, tfs, FliOffer};
+use cheapwings_core::fli::{cross_check, decode_page, filter_offers, search_url, tfs, FliOffer};
 use cheapwings_core::money::{as_minor_units, from_minor_units, fx_convert};
 use cheapwings_core::planning::{plan_search, RouteDate};
 use cheapwings_core::ranking::{best_checked_deal, lowest_advertised, RankOffer};
@@ -208,6 +208,23 @@ fn planning_counts_leap_day() {
     let combos = plan_search(&one("CGK"), &one("DPS"), "2028-02-28", "2028-03-01", 120).expect("plans");
     let dates: Vec<&str> = combos.iter().map(|c| c.date.as_str()).collect();
     assert_eq!(dates, ["2028-02-28", "2028-02-29", "2028-03-01"]);
+}
+
+#[test]
+fn filter_offers_keeps_good_rows_and_explains_dropped_ones() {
+    // Live CGK→HND page (2027-01-01) had 8 good rows and 2 without a currency token;
+    // one bad row must not discard the whole page.
+    let good = one_row_page("1250000");
+    let no_token = one_row_page("4161210").replace("\"GgUaA0lEUg\"", "null");
+    let mut page = decode_page(&good).expect("decodes");
+    page.offers.extend(decode_page(&no_token).expect("decodes").offers);
+    assert_eq!(page.offers[1].currency, None);
+
+    let checked = filter_offers(&page, "CGK", "DPS", "2026-12-15", "IDR");
+    assert_eq!(checked.offers.iter().map(|o| o.price.as_str()).collect::<Vec<_>>(), ["1250000"]);
+    assert_eq!(checked.rejected, ["currency None"]);
+    // The all-or-nothing check still reports the first mismatch.
+    assert_eq!(cross_check(&page, "CGK", "DPS", "2026-12-15", "IDR").as_deref(), Some("currency None"));
 }
 
 #[test]

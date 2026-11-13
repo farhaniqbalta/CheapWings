@@ -28,6 +28,8 @@ public final class SearchSession {
     public private(set) var phase: Phase = .idle
     public private(set) var offers: [FoundOffer] = []
     public private(set) var failures: [SkippedSearch] = []
+    /// Offers dropped by the per-offer query check, counted by reason (e.g. `currency None`).
+    public private(set) var hiddenOffers: [String: Int] = [:]
     public private(set) var currency = ""
 
     private let engine: SearchEngine
@@ -57,6 +59,7 @@ public final class SearchSession {
         let current = generation
         offers = []
         failures = []
+        hiddenOffers = [:]
         pauseRequested = false
         currency = request.currency
         phase = .running(done: 0, total: combos.count)
@@ -110,6 +113,8 @@ public final class SearchSession {
             offers = rankLowestAdvertised(offers + found)
         case .comboFailed(let combo, let code):
             failures.append(SkippedSearch(routeDate: combo, code: code))
+        case .offersHidden(_, let reasons):
+            for reason in reasons { hiddenOffers[reason, default: 0] += 1 }
         case .stopped(let reason):
             if isRunning { finish(reason) }
         }

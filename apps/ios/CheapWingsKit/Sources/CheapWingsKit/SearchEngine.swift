@@ -63,6 +63,9 @@ public enum SearchEvent: Sendable {
     case progress(done: Int, total: Int)
     case offers([FoundOffer])
     case comboFailed(RouteDate, code: String)
+    /// Offers on a usable page that failed the query check (one reason each), so they are
+    /// counted instead of silently lost.
+    case offersHidden(RouteDate, reasons: [String])
     case stopped(StopReason)
 }
 
@@ -120,13 +123,19 @@ public actor SearchEngine {
             } else {
                 do {
                     let decoded = try fliDecodePage(html: String(decoding: page.body, as: UTF8.self))
-                    if fliCrossCheck(page: decoded, origin: combo.origin, destination: combo.destination,
-                                     date: combo.date, currency: request.currency) != nil {
-                        out.yield(.comboFailed(combo, code: "cross_check"))
-                    } else if !decoded.offers.isEmpty {
-                        out.yield(.offers(decoded.offers.enumerated().map {
-                            FoundOffer(routeDate: combo, index: $0.offset, offer: $0.element, searchURL: url)
-                        }))
+                    // Per-offer check: a row Google sends without a currency token must not
+                    // discard the page's other offers (P5.2 owner test, CGK→HND).
+                    let checked = fliFilterOffers(page: decoded, origin: combo.origin, destination: combo.destination,
+                                                  date: combo.date, currency: request.currency)
+                    if checked.offers.isEmpty, let reason = checked.rejected.first {
+                        out.yield(.comboFailed(combo, code: "cross_check: \(reason)"))
+                    } else {
+                        if !checked.offers.isEmpty {
+                            out.yield(.offers(checked.offers.enumerated().map {
+                                FoundOffer(routeDate: combo, index: $0.offset, offer: $0.element, searchURL: url)
+                            }))
+                        }
+                        if !checked.rejected.isEmpty { out.yield(.offersHidden(combo, reasons: checked.rejected)) }
                     }
                 } catch FliDecodeError.Failed(let code, _) {
                     if code == "auth_denied" { return stop(.blocked("auth_denied")) }

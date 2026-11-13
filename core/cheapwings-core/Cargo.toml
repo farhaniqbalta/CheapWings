@@ -13,3 +13,4 @@ serde = { version = "1", features = ["derive"] }
 # arbitrary_precision keeps each JSON number's original text (exact price lexemes).
 serde_json = { version = "1", features = ["arbitrary_precision"] }
 sha2 = "0.10"
+unicode-normalization = "0.1"

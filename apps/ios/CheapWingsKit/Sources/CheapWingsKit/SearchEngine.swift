@@ -136,7 +136,7 @@ public actor SearchEngine {
                     // Per-offer check: a row Google sends without a currency token must not
                     // discard the page's other offers (P5.2 owner test, CGK→HND).
                     let checked = fliFilterOffers(page: decoded, origin: combo.origin, destination: combo.destination,
-                                                  date: combo.date, currency: request.currency)
+                                                  date: combo.date, currency: request.currency, maxStops: nil)
                     if checked.offers.isEmpty, let reason = checked.rejected.first {
                         out.yield(.comboFailed(combo, code: "cross_check: \(reason)"))
                     } else {

@@ -308,6 +308,63 @@ def planning_cases(n):
     return cases
 
 
+LOCATION_QUERIES = ["CGK", "cgk", "tokyo", "Tokyo", "jakarta", "sao paulo", "São Paulo", "zurich", "Zürich",
+                    "NRT", "japan", "Indonesia", "london", "new york", "bali", "  dps  ", "xyzxyz", "ber", "a",
+                    "Haneda", "osaka", "singapore", "united", "san", "los angeles", "ä", "mumbai", "Bombay"]
+
+
+def location_search_cases():
+    from cheapwings.locations.catalog import catalog
+
+    cat = catalog()
+    cases = []
+
+    def case(text, within=None):
+        try:
+            ids = [e["id"] for e in cat.search(text, within)][:15]
+            return {"text": text, "within": within, "expect": ids}
+        except ValueError as exc:
+            code = "too_long" if "exceeds 100" in str(exc) else "unknown_location"
+            return {"text": text, "within": within, "expect": {"error": code}}
+
+    cases += [case(q) for q in LOCATION_QUERIES]
+    cases += [case("", "country:JP"), case("", "metro:JP:TYO"), case("hnd", "metro:JP:TYO"),
+              case("", "airport:CGK"), case("x" * 101), case("tokyo", "nowhere:XX")]
+    names = [e["name"] for e in cat.entities.values() if e["type"] != "country"]
+    cases += [case(rng.choice(names)) for _ in range(20)]
+    return cases
+
+
+def location_major_cases():
+    from cheapwings.locations.catalog import MajorSelection, catalog
+
+    cat = catalog()
+
+    def case(kind, location_id, version=None):
+        version = version or cat.version
+        entry = {"kind": kind, "id": location_id, "version": version}
+        try:
+            r = cat.resolve(MajorSelection(type=kind, location_id=location_id, catalog_version=version))
+            return {**entry, "expect": {"codes": r.codes, "rationale": r.rationale, "definition": r.definition}}
+        except ValueError as exc:
+            msg = str(exc)
+            if "Stale catalog" in msg:
+                code = "stale_version"
+            elif "No curated" in msg:
+                code = "no_major_mapping"
+            else:
+                code = "unknown_location" if location_id not in cat.entities else "type_mismatch"
+            return {**entry, "expect": {"error": code}}
+
+    cases = [case(cat.entities[i]["type"], i) for i in sorted(cat.data["major"])]
+    no_mapping = next(i for i, e in sorted(cat.entities.items()) if e["type"] == "city" and i not in cat.data["major"])
+    first = sorted(cat.data["major"])[0]
+    other = "city" if cat.entities[first]["type"] == "country" else "country"
+    cases += [case("city", no_mapping), case(cat.entities[first]["type"], first, "old-version"),
+              case(other, first), case("city", "metro:XX:NOPE")]
+    return cases
+
+
 def main():
     root = Path(__file__).resolve().parents[1]
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True,
@@ -316,12 +373,14 @@ def main():
                           f"backend/src/cheapwings @ {commit}; fli 881aee5",
                 "money": money_cases(1000), "fingerprint": fingerprint_cases(500),
                 "ranking": ranking_cases(300), "fli_tfs": fli_tfs_cases(50), "fli_pages": fli_page_cases(40),
-                "planning": planning_cases(60)}
+                "planning": planning_cases(60), "location_search": location_search_cases(),
+                "location_major": location_major_cases()}
     out = root / "contracts" / "fixtures" / "core" / "core_fixtures.json"
     out.write_text(json.dumps(fixtures, separators=(",", ":")))
     print(f"wrote {out.name}: {len(fixtures['money'])} money, {len(fixtures['fingerprint'])} fingerprint, "
           f"{len(fixtures['ranking'])} ranking, {len(fixtures['fli_tfs'])} fli_tfs, "
-          f"{len(fixtures['fli_pages'])} fli_pages, {len(fixtures['planning'])} planning cases, "
+          f"{len(fixtures['fli_pages'])} fli_pages, {len(fixtures['planning'])} planning, "
+          f"{len(fixtures['location_search'])} location_search, {len(fixtures['location_major'])} location_major cases, "
           f"{out.stat().st_size} bytes")
 
 

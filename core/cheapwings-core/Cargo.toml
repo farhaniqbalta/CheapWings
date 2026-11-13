@@ -7,7 +7,8 @@ description = "CheapWings shared engine core: money, identity, ranking, Fli deco
 
 [dependencies]
 rust_decimal = "=1.43.0"
+serde = { version = "1", features = ["derive"] }
+sha2 = "0.10"
 
 [dev-dependencies]
-serde = { version = "1", features = ["derive"] }
 serde_json = "1"

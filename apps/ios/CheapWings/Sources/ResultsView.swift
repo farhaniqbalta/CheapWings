@@ -9,13 +9,16 @@ struct ResultsView: View {
     var body: some View {
         List {
             if let info = session.resumable, !session.isRunning {
-                Section {
-                    Text("Unfinished search: \(Self.route(info.request)), \(info.done) of \(info.total) done")
-                    if let after = session.resumeAllowedAfter, !session.canResume {
-                        Text("Google asked us to slow down — try again after \(after.formatted(date: .omitted, time: .shortened)).")
-                            .font(.caption).foregroundStyle(.secondary)
+                // Redraw when the post-block cooldown ends, so Resume enables itself on time.
+                TimelineView(.explicit([session.resumeAllowedAfter].compactMap { $0 })) { _ in
+                    Section {
+                        Text("Unfinished search: \(Self.route(info.request)), \(info.done) of \(info.total) done")
+                        if let after = session.resumeAllowedAfter, !session.canResume {
+                            Text("Google asked us to slow down — try again after \(after.formatted(date: .omitted, time: .shortened)).")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        Button("Resume", action: model.resume).disabled(!session.canResume)
                     }
-                    Button("Resume", action: model.resume).disabled(!session.canResume)
                 }
             }
             if case .running(let done, let total) = session.phase {

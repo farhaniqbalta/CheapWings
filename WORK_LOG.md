@@ -49,7 +49,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 - P5.3 (branch `p5.3-persistence-resume`): iPad searches saved on-device after every route/date (Rust `cheapwings-store`, SQLite); relaunch restores results with their age and offers Resume of unfinished route/dates (30 min wait after a Google block).
 - Owner device checks passed ("works normally"): Home → pause → Resume; force-quit → Resume; history kept.
 - First device build crashed on Search (iOS 26 continued-processing submit without a registered handler); fixed. Registration is rejected on the owner's iPad (iOS 27.0.1, free signing) → continued processing deferred, foreground-first + resume.
-- Gates: Rust core 12 + store 9, backend 252, Swift Core 9 + Kit 28, iOS Release build.
+- Gates: Rust core 12 + store 9, backend 252, Swift Core 9 + Kit 30, iOS Release build. Fresh-subagent review: 0 critical, 3 important fixed (resume without history, cooldown redraw, README claim).
 - Details and rulings: [P5.3](docs/log/p5.3.md). Open: web `providers/fli.py` whole-page currency rule (p5.2.md).
 
 ## Next task

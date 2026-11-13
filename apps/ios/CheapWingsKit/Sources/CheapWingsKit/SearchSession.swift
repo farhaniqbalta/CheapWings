@@ -145,7 +145,13 @@ public final class SearchSession {
 
     /// Runs only the route/dates the stored search has not finished, with its stored request.
     public func resume() {
-        guard canResume, let info = resumable, let store, let id = searchID else { return }
+        guard canResume, let info = resumable else { return }
+        guard let store, let id = searchID else {
+            // No working history: resume from memory — the unfinished tail of the last run.
+            let pending = Array(run.dropFirst(finishedInRun))
+            guard !pending.isEmpty else { resumable = nil; return }
+            return launch(info.request, run: pending, total: info.total, doneBefore: info.total - pending.count)
+        }
         let pending: [StoredCombo]
         do { pending = try store.pending(searchId: id) } catch { return record(error) }
         guard !pending.isEmpty else { resumable = nil; return }

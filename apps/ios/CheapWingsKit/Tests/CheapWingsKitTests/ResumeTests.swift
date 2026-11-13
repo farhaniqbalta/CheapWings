@@ -142,6 +142,32 @@ final class ResumeTests: XCTestCase {
         XCTAssertNotNil(s.storeError)
     }
 
+    /// Without working history, Resume must still work (from memory) instead of a dead button.
+    func resumeWithoutHistory(_ store: SearchPersistence?) async throws {
+        let transport = FakeTransport([page("CGK", "DPS", "2026-12-15", prices: ["1250000"]),
+                                       page("CGK", "DPS", "2026-12-16", prices: ["1300000"])], hangWhenEmpty: true)
+        let s = session(transport, store: store)
+        s.start(request, combos: try request.plan())
+        try await waitForDone(s, 2)
+        s.stopForBackground()
+        XCTAssertTrue(s.canResume)
+        s.resume()
+        try await Task.sleep(for: .milliseconds(100))
+        let fetched = await transport.fetched
+        XCTAssertEqual(fetched.count, 4, "date 3 interrupted, then re-fetched once on resume")
+        XCTAssertTrue(fetched[3].absoluteString.contains(Tfs.forTesting("CGK", "DPS", "2026-12-17")))
+        XCTAssertTrue(s.isRunning)
+        s.cancel()
+    }
+
+    func testResumeWorksWithoutAStore() async throws {
+        try await resumeWithoutHistory(nil)
+    }
+
+    func testResumeWorksWhenTheStoreFails() async throws {
+        try await resumeWithoutHistory(ThrowingStore())
+    }
+
     func testStaleOffersAreFlagged() throws {
         let combo = try request.plan()[0]
         let offer = FliOffer(price: "1", currency: "IDR", legs: [])

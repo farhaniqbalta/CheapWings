@@ -52,13 +52,13 @@ extension StopReason {
 extension SearchRequest {
     var stored: StoredRequest {
         StoredRequest(origins: origins, destinations: destinations, dateFrom: dateFrom, dateThrough: dateThrough,
-                      currency: currency, maxStops: maxStops, originMajor: originMajorID, destinationMajor: destinationMajorID)
+                      currency: currency, maxStops: maxStops, originMajors: originMajorIDs, destinationMajors: destinationMajorIDs)
     }
 
     init(stored: StoredRequest) {
         self.init(origins: stored.origins, destinations: stored.destinations, dateFrom: stored.dateFrom,
                   dateThrough: stored.dateThrough, currency: stored.currency, maxStops: stored.maxStops,
-                  originMajorID: stored.originMajor, destinationMajorID: stored.destinationMajor)
+                  originMajorIDs: stored.originMajors, destinationMajorIDs: stored.destinationMajors)
     }
 }
 

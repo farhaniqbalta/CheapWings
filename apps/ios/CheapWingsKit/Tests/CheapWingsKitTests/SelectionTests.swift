@@ -10,34 +10,68 @@ let testCatalog: LocationCatalog = {
     return try! LocationCatalog(json: json)
 }()
 
+let tokyo = AirportToken.major(kind: "city", locationID: "metro:JP:TYO", name: "Tokyo")
+let osaka = AirportToken.major(kind: "city", locationID: "metro:JP:OSA", name: "Osaka")
+
 final class SelectionTests: XCTestCase {
-    func testMajorSelectionResolvesCuratedCodes() throws {
-        let japan = AirportSelection.major(kind: "country", locationID: "country:JP", name: "Japan")
-        XCTAssertEqual(try japan.codes(using: testCatalog), ["CTS", "FUK", "HND", "ITM", "KIX", "NGO", "NRT", "OKA"])
-        XCTAssertEqual(japan.majorID, "country:JP")
-        XCTAssertEqual(AirportSelection.specific(["CGK", "HLP"]).majorID, nil)
+    func testStackedPlacesResolveToUnionInOrder() throws {
+        let side = AirportSelection([tokyo, .airport("CGK"), osaka])
+        XCTAssertEqual(try side.codes(using: testCatalog), ["HND", "NRT", "CGK", "ITM", "KIX"])
+        XCTAssertEqual(side.majorIDs, ["metro:JP:TYO", "metro:JP:OSA"])
+    }
+
+    func testDuplicatesAreIgnored() throws {
+        var side = AirportSelection([tokyo])
+        side.add(.airport("HND"), using: testCatalog)  // already covered by Tokyo
+        side.add(tokyo, using: testCatalog)
+        XCTAssertEqual(side.tokens, [tokyo])
+        side.add(.airport("CGK"), using: testCatalog)
+        side.add(.airport("CGK"), using: testCatalog)
+        XCTAssertEqual(side.tokens, [tokyo, .airport("CGK")])
+    }
+
+    func testRemovingAirportFromMajorExpandsIntoPlainAirports() throws {
+        var side = AirportSelection([.airport("CGK"), tokyo, osaka])
+        side.remove(code: "NRT", using: testCatalog)
+        XCTAssertEqual(side.tokens, [.airport("CGK"), .airport("HND"), osaka])
+        side.remove(code: "CGK", using: testCatalog)
+        XCTAssertEqual(side.tokens, [.airport("HND"), osaka])
+        XCTAssertEqual(try side.codes(using: testCatalog), ["HND", "ITM", "KIX"])
+    }
+
+    func testRemovingWholeToken() {
+        var side = AirportSelection([tokyo, .airport("CGK")])
+        side.remove(token: tokyo)
+        XCTAssertEqual(side.tokens, [.airport("CGK")])
     }
 
     func testNoMajorMappingThrows() {
-        let noMapping = AirportSelection.major(kind: "city", locationID: "city:AE:Abu%20Dhabi:Abu%20Dhabi", name: "Abu Dhabi")
-        XCTAssertThrowsError(try noMapping.codes(using: testCatalog)) { error in
+        let side = AirportSelection([.major(kind: "city", locationID: "city:AE:Abu%20Dhabi:Abu%20Dhabi", name: "Abu Dhabi")])
+        XCTAssertThrowsError(try side.codes(using: testCatalog)) { error in
             guard case CatalogError.Failed(let code, _) = error else { return XCTFail("\(error)") }
             XCTAssertEqual(code, "no_major_mapping")
         }
     }
 
-    func testRequestFromSelectionsKeepsMajorAndStops() throws {
-        let request = try SearchRequest.make(origin: .specific(["CGK"]),
-                                             destination: .major(kind: "city", locationID: "metro:JP:TYO", name: "Tokyo"),
+    func testRestoreRebuildsTokens() throws {
+        let side = AirportSelection.restore(codes: ["HND", "NRT", "CGK"], majorIDs: ["metro:JP:TYO"], catalog: testCatalog)
+        XCTAssertEqual(side.tokens, [tokyo, .airport("CGK")])
+        // No catalog, or a Major id it no longer knows: fall back to the stored codes.
+        XCTAssertEqual(AirportSelection.restore(codes: ["HND"], majorIDs: ["metro:JP:TYO"], catalog: nil).tokens, [.airport("HND")])
+        XCTAssertEqual(AirportSelection.restore(codes: ["CGK"], majorIDs: ["metro:XX:NOPE"], catalog: testCatalog).tokens, [.airport("CGK")])
+    }
+
+    func testRequestFromSelectionsKeepsMajorsAndStops() throws {
+        let request = try SearchRequest.make(origin: AirportSelection([.airport("CGK")]),
+                                             destination: AirportSelection([tokyo]),
                                              dateFrom: "2026-12-15", dateThrough: "2026-12-17", currency: "IDR",
                                              maxStops: 1, catalog: testCatalog)
         XCTAssertEqual(request.origins, ["CGK"])
         XCTAssertEqual(request.destinations, ["HND", "NRT"])
-        XCTAssertEqual(request.destinationMajorID, "metro:JP:TYO")
-        XCTAssertNil(request.originMajorID)
+        XCTAssertEqual(request.destinationMajorIDs, ["metro:JP:TYO"])
+        XCTAssertEqual(request.originMajorIDs, [])
         XCTAssertEqual(request.maxStops, 1)
         XCTAssertEqual(try request.plan().count, 6)
-        // Round trip through the stored form keeps the new fields.
         XCTAssertEqual(SearchRequest(stored: request.stored), request)
     }
 

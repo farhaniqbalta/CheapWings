@@ -418,10 +418,10 @@ pub struct StoredRequest {
     pub currency: String,
     #[uniffi(default = None)]
     pub max_stops: Option<u32>,
-    #[uniffi(default = None)]
-    pub origin_major: Option<String>,
-    #[uniffi(default = None)]
-    pub destination_major: Option<String>,
+    #[uniffi(default = [])]
+    pub origin_majors: Vec<String>,
+    #[uniffi(default = [])]
+    pub destination_majors: Vec<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
@@ -509,8 +509,8 @@ impl SearchStore {
             date_through: request.date_through,
             currency: request.currency,
             max_stops: request.max_stops,
-            origin_major: request.origin_major,
-            destination_major: request.destination_major,
+            origin_majors: request.origin_majors,
+            destination_majors: request.destination_majors,
         };
         let combos: Vec<planning::RouteDate> = combos.into_iter().map(route_to_core).collect();
         Ok(self.inner.create_search(&request, &combos, now_ms)?)
@@ -564,8 +564,8 @@ impl SearchStore {
                 date_through: s.request.date_through,
                 currency: s.request.currency,
                 max_stops: s.request.max_stops,
-                origin_major: s.request.origin_major,
-                destination_major: s.request.destination_major,
+                origin_majors: s.request.origin_majors,
+                destination_majors: s.request.destination_majors,
             },
             created_at_ms: s.created_at_ms,
             updated_at_ms: s.updated_at_ms,

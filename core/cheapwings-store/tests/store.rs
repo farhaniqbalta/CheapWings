@@ -10,8 +10,8 @@ fn request() -> StoredRequest {
         date_through: "2026-12-17".into(),
         currency: "IDR".into(),
         max_stops: Some(1),
-        origin_major: None,
-        destination_major: Some("metro:JP:TYO".into()),
+        origin_majors: vec![],
+        destination_majors: vec!["metro:JP:TYO".into(), "metro:JP:OSA".into()],
     }
 }
 

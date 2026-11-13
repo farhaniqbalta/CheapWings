@@ -11,21 +11,21 @@ public struct SearchRequest: Sendable, Equatable {
     /// Any / 0 / 1 / 2 stops, applied per offer by the Rust core.
     public var maxStops: UInt32?
     /// Catalog location ids when a side used "Major airports" (for display and persistence).
-    public var originMajorID: String?
-    public var destinationMajorID: String?
+    public var originMajorIDs: [String]
+    public var destinationMajorIDs: [String]
 
     public static let maxCombinations: UInt32 = 120
 
     public init(origins: [String], destinations: [String], dateFrom: String, dateThrough: String, currency: String,
-                maxStops: UInt32? = nil, originMajorID: String? = nil, destinationMajorID: String? = nil) {
+                maxStops: UInt32? = nil, originMajorIDs: [String] = [], destinationMajorIDs: [String] = []) {
         self.origins = origins
         self.destinations = destinations
         self.dateFrom = dateFrom
         self.dateThrough = dateThrough
         self.currency = currency
         self.maxStops = maxStops
-        self.originMajorID = originMajorID
-        self.destinationMajorID = destinationMajorID
+        self.originMajorIDs = originMajorIDs
+        self.destinationMajorIDs = destinationMajorIDs
     }
 
     /// Point-of-sale country as `providers/fli.py` maps it.

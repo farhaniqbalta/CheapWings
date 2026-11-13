@@ -14,8 +14,8 @@ final class SearchModel {
     /// Typed-code fallback, used only if the airport catalog failed to load.
     var originsText = "CGK"
     var destinationsText = "DPS"
-    var origin = AirportSelection.specific(["CGK"])
-    var destination = AirportSelection.specific(["DPS"])
+    var origin = AirportSelection([.airport("CGK")])
+    var destination = AirportSelection([.airport("DPS")])
     var maxStops: UInt32?
     var dateFrom = Calendar.current.date(byAdding: .day, value: 30, to: .now)!
     var dateThrough = Calendar.current.date(byAdding: .day, value: 32, to: .now)!
@@ -93,14 +93,15 @@ final class SearchModel {
         requestContinuedProcessing()
     }
 
-    /// "CGK, HLP" or "Tokyo · Major airports (2)".
+    /// "Tokyo (Major), CGK" — or a prompt when empty.
     func label(_ selection: AirportSelection) -> String {
-        switch selection {
-        case .specific(let codes): return codes.isEmpty ? "Choose airports" : codes.joined(separator: ", ")
-        case .major(_, _, let name):
-            let count = (try? catalog.map { try selection.codes(using: $0).count }) ?? nil
-            return "\(name) · Major airports" + (count.map { " (\($0))" } ?? "")
-        }
+        guard !selection.tokens.isEmpty else { return "Choose airports" }
+        return selection.tokens.map { token in
+            switch token {
+            case .airport(let code): return code
+            case .major(_, _, let name): return "\(name) (Major)"
+            }
+        }.joined(separator: ", ")
     }
 
     func resume() {
@@ -175,8 +176,8 @@ final class SearchModel {
     private func fillForm(from request: SearchRequest) {
         originsText = request.origins.joined(separator: ", ")
         destinationsText = request.destinations.joined(separator: ", ")
-        origin = AirportSelection.restore(codes: request.origins, majorID: request.originMajorID, catalog: catalog)
-        destination = AirportSelection.restore(codes: request.destinations, majorID: request.destinationMajorID, catalog: catalog)
+        origin = AirportSelection.restore(codes: request.origins, majorIDs: request.originMajorIDs, catalog: catalog)
+        destination = AirportSelection.restore(codes: request.destinations, majorIDs: request.destinationMajorIDs, catalog: catalog)
         maxStops = request.maxStops
         currency = request.currency
         if let from = Self.date(request.dateFrom), let through = Self.date(request.dateThrough) {

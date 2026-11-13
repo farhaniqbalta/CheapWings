@@ -73,6 +73,27 @@ URL or browser storage, and must be re-entered after refresh. Do not put tokens
 or upstream credentials in `VITE_*` variables: these become public build assets.
 Use HTTPS for remote private access; no public deployment is configured.
 
+## Run the iPad app (P5.2)
+
+Standalone: the iPad searches Google Flights itself (one request per second, foreground
+only); no backend is needed. Requires Xcode, Rust with the iOS targets
+(`rustup target add aarch64-apple-ios aarch64-apple-ios-sim`) and `brew install xcodegen`.
+
+```sh
+core/build-ios.sh                                   # Rust core → XCFramework + Swift bindings
+(cd apps/ios/CheapWingsCore && swift test)          # core fixtures through Swift
+(cd apps/ios/CheapWingsKit && swift test)           # transport/engine with fake responses
+cd apps/ios/CheapWings && xcodegen generate
+xcodebuild -project CheapWings.xcodeproj -scheme CheapWings -configuration Release \
+  -destination 'id=<DEVICE_UDID>' -derivedDataPath build DEVELOPMENT_TEAM=<TEAM_ID> \
+  -allowProvisioningUpdates build
+xcrun devicectl device install app --device <DEVICE_UDID> build/Build/Products/Release-iphoneos/CheapWings.app
+```
+
+Free Apple accounts allow three self-signed apps per device and need the developer
+profile trusted once (Settings › General › VPN & Device Management). Prices shown are
+indicative; a search stops on any Google rate-limit or block and never retries.
+
 ## Smart location selection (P4.10)
 
 Origin and destination accept airport codes/names, cities and countries using an

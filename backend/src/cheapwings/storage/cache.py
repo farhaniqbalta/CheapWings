@@ -6,7 +6,7 @@ from importlib.metadata import PackageNotFoundError, version
 from uuid import uuid4
 
 from pydantic import TypeAdapter
-from sqlalchemy import delete, select
+from sqlalchemy import Text, cast, delete, select, update
 
 from cheapwings.domain.offer import PriceStatus
 from cheapwings.domain.query import SearchQuery
@@ -425,10 +425,16 @@ class CacheRepository:
                 operation.lease_token = operation.leased_until = None
                 self.fail_subscribers(s, operation, "network_timeout", now, terminal=terminal)
             # Do not keep immutable query payload after its originating retention deadline.
-            for operation in s.scalars(
-                select(ProviderOperation).where(ProviderOperation.hard_expires_at <= now)
-            ):
-                operation.query_json = {}
+            # One set-based UPDATE of rows still holding a payload, instead of loading
+            # and JSON-decoding every retained operation on each 100ms pass.
+            s.execute(
+                update(ProviderOperation)
+                .where(
+                    ProviderOperation.hard_expires_at <= now,
+                    cast(ProviderOperation.query_json, Text) != "{}",
+                )
+                .values(query_json={})
+            )
 
     def reconcile_operations(self, s, registry, now):
         registrations = {r.provider.provider_id: r for r in registry}

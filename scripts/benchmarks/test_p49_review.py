@@ -232,10 +232,9 @@ def test_global_capacity_is_atomic_across_repository_claimants(engine, cache):
     with ThreadPoolExecutor(max_workers=12) as pool:
         results = list(pool.map(claim, range(12)))
     won = [r[0] for r in results if r is not None]
+    # Exactly G distinct claims under racing claimants. P4.12 removed per-provider
+    # ceilings, so one provider may legitimately win every slot of the race.
     assert len(won) == 3 and len({r.id for r in won}) == 3
-    assert all(
-        sum(x.provider_id == reg.provider.provider_id for x in won) <= 2 for reg in regs
-    )
 
 
 @pytest.mark.parametrize("variant", ["A", "B"])

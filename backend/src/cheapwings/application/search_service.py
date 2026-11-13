@@ -6,7 +6,6 @@ from collections import Counter
 from datetime import UTC, datetime
 from urllib.parse import urlsplit
 
-from pydantic import TypeAdapter
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -26,12 +25,13 @@ from cheapwings.engine.ranking import best_checked_deal, lowest_advertised
 from cheapwings.storage.models import (
     FareQuote,
     ItineraryRow,
+    ProviderOperation,
     QuoteRevision,
     SegmentRow,
-    ProviderOperation,
     WorkItem,
 )
 from cheapwings.storage.repository import SUCCESS, now_ms
+from cheapwings.typeadapters import adapter
 
 
 def instant(ms):
@@ -263,15 +263,15 @@ def results_projection(repo, job_id, sort, cursor=None, limit=50):
                     Itinerary(
                         itinerary_id=itin.id,
                         segments=tuple(
-                            TypeAdapter(FlightSegment).validate_python(seg.canonical_json)
+                            adapter(FlightSegment).validate_python(seg.canonical_json)
                             for seg in segments
                         ),
                         identity_confidence=IdentityConfidence(itin.identity_confidence),
                         fingerprint=itin.fingerprint,
-                        airport_transfers=TypeAdapter(tuple[AirportTransfer, ...]).validate_python(
+                        airport_transfers=adapter(tuple[AirportTransfer, ...]).validate_python(
                             itin.airport_transfers_json or []
                         ),
-                        summary=TypeAdapter(ItinerarySummary).validate_python(itin.summary_json)
+                        summary=adapter(ItinerarySummary).validate_python(itin.summary_json)
                         if itin.summary_json
                         else None,
                     )
@@ -287,7 +287,7 @@ def results_projection(repo, job_id, sort, cursor=None, limit=50):
                 if revision and revision.canonical_json
                 else row.canonical_json
             )
-            offer = TypeAdapter(Offer).validate_python(dict(data, provider_quote_handle=None))
+            offer = adapter(Offer).validate_python(dict(data, provider_quote_handle=None))
             # Internal DB key disambiguates quote identifiers shared by different adapters.
             from dataclasses import replace
 
@@ -353,7 +353,7 @@ def results_projection(repo, job_id, sort, cursor=None, limit=50):
                     duration_minutes=itin.duration_minutes,
                     stops=itin.stops,
                     segments=[
-                        dto.Segment(**TypeAdapter(FlightSegment).dump_python(seg))
+                        dto.Segment(**adapter(FlightSegment).dump_python(seg))
                         for seg in itin.segments
                     ],
                     offers=[

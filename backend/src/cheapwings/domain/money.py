@@ -1,56 +1,44 @@
-"""Exact monetary values. Float is forbidden for money anywhere in this codebase."""
+"""Exact monetary values. Float is forbidden for money anywhere in this codebase.
+
+Arithmetic (minor units, FX rounding) and the ISO 4217 minor-unit table live in the shared
+Rust core (`core/cheapwings-core`), so the web backend and the iPad app compute identically.
+Values cross into Rust as decimal text; this module keeps the Python types and validation.
+"""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 
-# ISO 4217 minor-unit exponents for currencies this project is likely to see.
-# Not exhaustive; unknown currencies fail closed rather than guessing 2.
-_MINOR_UNIT_EXPONENTS: dict[str, int] = {
-    "IDR": 0,
-    "JPY": 0,
-    "KRW": 0,
-    "VND": 0,
-    "USD": 2,
-    "AUD": 2,
-    "EUR": 2,
-    "GBP": 2,
-    "CAD": 2,
-    "SGD": 2,
-    "MYR": 2,
-    "INR": 2,
-    "CNY": 2,
-    "HKD": 2,
-    "NZD": 2,
-    "CHF": 2,
-    "THB": 2,
-    "PHP": 2,
-    "BRL": 2,
-    "MXN": 2,
-    "CZK": 2,
-    "DKK": 2,
-    "SEK": 2,
-    "PLN": 2,
-    "RON": 2,
-    "TRY": 2,
-    "TWD": 2,
-    "UAH": 2,
-}
+try:
+    import cheapwings_core as _core
+except ImportError as exc:
+    raise ImportError(
+        "cheapwings_core is not built; run: "
+        ".venv/bin/maturin develop --release -m core/cheapwings-py/Cargo.toml"
+    ) from exc
 
 
 class UnknownCurrencyError(ValueError):
     """Raised when a currency's minor-unit convention is not configured."""
 
 
-def minor_unit_exponent(currency: str) -> int:
+def _core_call(function, *args):
+    """Call the Rust core, mapping its errors onto this module's exception types."""
     try:
-        return _MINOR_UNIT_EXPONENTS[currency.upper()]
-    except KeyError as exc:
-        raise UnknownCurrencyError(
-            f"Minor-unit exponent for currency {currency!r} is not configured; "
-            "add it explicitly rather than assuming 2."
-        ) from exc
+        return function(*args)
+    except ValueError as exc:
+        if str(exc).startswith("unknown_currency:"):
+            raise UnknownCurrencyError(
+                f"{exc}; add it explicitly rather than assuming 2."
+            ) from exc
+        raise
+    except OverflowError as exc:  # integers beyond the core's 128-bit range
+        raise ValueError(f"amount out of range: {exc}") from exc
+
+
+def minor_unit_exponent(currency: str) -> int:
+    return _core_call(_core.minor_unit_exponent, currency)
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,9 +72,7 @@ class Money:
 
     @classmethod
     def from_minor_units(cls, minor_units: int, currency: str) -> Money:
-        exponent = minor_unit_exponent(currency)
-        amount = Decimal(minor_units).scaleb(-exponent)
-        return cls(amount, currency)
+        return cls(Decimal(_core_call(_core.from_minor_units, minor_units, currency)), currency)
 
     def require_same_currency(self, other: Money) -> None:
         if self.currency != other.currency:
@@ -108,14 +94,7 @@ class Money:
         return self.amount <= other.amount
 
     def as_minor_units(self) -> int:
-        exponent = minor_unit_exponent(self.currency)
-        scaled = self.amount.scaleb(exponent)
-        if scaled != scaled.to_integral_value():
-            raise ValueError(
-                f"Amount {self.amount} for {self.currency} does not scale cleanly "
-                f"to {exponent} minor-unit digits."
-            )
-        return int(scaled)
+        return _core_call(_core.as_minor_units, str(self.amount), self.currency)
 
     def __str__(self) -> str:
         return f"{self.amount} {self.currency}"
@@ -136,7 +115,7 @@ class FXSnapshot:
             raise ValueError(
                 f"FXSnapshot base is {self.base_currency}, cannot convert {amount.currency}"
             )
-        converted = (amount.amount * self.rate).quantize(
-            Decimal(1).scaleb(-minor_unit_exponent(self.quote_currency))
+        converted = _core_call(
+            _core.fx_convert, str(amount.amount), str(self.rate), self.quote_currency
         )
-        return Money(converted, self.quote_currency)
+        return Money(Decimal(converted), self.quote_currency)

@@ -87,7 +87,9 @@ final class SelectionTests: XCTestCase {
             events.append(e)
         }
         XCTAssertTrue(events.allSatisfy { if case .offers = $0 { return false } else { return true } })
-        XCTAssertTrue(events.contains { if case .comboFailed(_, "cross_check: stops 1 > 0") = $0 { return true } else { return false } })
+        // Only the stop limit removed flights: the route/date finished, it did not fail.
+        XCTAssertFalse(events.contains { if case .comboFailed = $0 { return true } else { return false } })
+        XCTAssertTrue(events.contains { if case .offersHidden(_, [SearchEngine.stopLimitReason]) = $0 { return true } else { return false } })
 
         let upToOne = oneDay(1)
         var kept = 0

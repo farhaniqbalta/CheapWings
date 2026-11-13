@@ -345,7 +345,9 @@ fn filter_offers_applies_max_stops() {
     page.offers = vec![nonstop, one_stop];
     let only_nonstop = filter_offers(&page, "CGK", "DPS", "2026-12-15", "IDR", Some(0));
     assert_eq!(only_nonstop.offers.len(), 1);
-    assert_eq!(only_nonstop.rejected, ["stops 1 > 0"]);
+    // The stop limit is the user's filter, not a data problem: counted apart from rejections.
+    assert!(only_nonstop.rejected.is_empty());
+    assert_eq!(only_nonstop.excluded_by_stops, 1);
     assert_eq!(filter_offers(&page, "CGK", "DPS", "2026-12-15", "IDR", Some(1)).offers.len(), 2);
     assert_eq!(filter_offers(&page, "CGK", "DPS", "2026-12-15", "IDR", None).offers.len(), 2);
 }

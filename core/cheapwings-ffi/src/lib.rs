@@ -263,6 +263,8 @@ pub struct FliCheckedOffers {
     pub offers: Vec<FliOffer>,
     /// One reason per dropped offer (e.g. `currency None`).
     pub rejected: Vec<String>,
+    /// Offers left out by Max stops (the user's filter, not a data problem).
+    pub excluded_by_stops: u32,
 }
 
 #[uniffi::export]
@@ -276,7 +278,7 @@ pub fn fli_filter_offers(
 ) -> FliCheckedOffers {
     let checked = fli::filter_offers(&page.into(), &origin, &destination, &date, &currency, max_stops);
     let offers = FliPage::from(fli::FliPage { offers: checked.offers, unpriced: 0 }).offers;
-    FliCheckedOffers { offers, rejected: checked.rejected }
+    FliCheckedOffers { offers, rejected: checked.rejected, excluded_by_stops: checked.excluded_by_stops }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]

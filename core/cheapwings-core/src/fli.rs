@@ -295,6 +295,8 @@ pub fn cross_check(page: &FliPage, origin: &str, destination: &str, date: &str, 
 pub struct CheckedOffers {
     pub offers: Vec<FliOffer>,
     pub rejected: Vec<String>,
+    /// Offers left out by the user's Max stops (a filter, not a data problem).
+    pub excluded_by_stops: u32,
 }
 
 /// Per-offer version of `cross_check`: one bad row (e.g. a row Google sends without a
@@ -309,14 +311,15 @@ pub fn filter_offers(
     currency: &str,
     max_stops: Option<u32>,
 ) -> CheckedOffers {
-    let mut checked = CheckedOffers { offers: Vec::new(), rejected: Vec::new() };
+    let mut checked = CheckedOffers { offers: Vec::new(), rejected: Vec::new(), excluded_by_stops: 0 };
     for offer in &page.offers {
         let stops = offer.legs.len().saturating_sub(1) as u32;
-        let reason = offer_mismatch(offer, origin, destination, date, currency)
-            .or_else(|| max_stops.filter(|max| stops > *max).map(|max| format!("stops {stops} > {max}")));
-        match reason {
-            None => checked.offers.push(offer.clone()),
-            Some(reason) => checked.rejected.push(reason),
+        if let Some(reason) = offer_mismatch(offer, origin, destination, date, currency) {
+            checked.rejected.push(reason);
+        } else if max_stops.is_some_and(|max| stops > max) {
+            checked.excluded_by_stops += 1;
+        } else {
+            checked.offers.push(offer.clone());
         }
     }
     checked

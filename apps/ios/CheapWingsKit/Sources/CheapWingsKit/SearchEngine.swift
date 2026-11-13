@@ -92,6 +92,9 @@ public enum SearchEvent: Sendable {
 /// sign of blocking (429, refused redirect, traffic page). Offers are only delivered while
 /// the search is still running.
 public actor SearchEngine {
+    /// Hidden-offer reason for itineraries over the user's Max stops.
+    public static let stopLimitReason = "more stops than your Max stops"
+
     private let transport: FliTransport
     private let interval: Duration
     private let sleep: @Sendable (Duration) async throws -> Void
@@ -146,7 +149,8 @@ public actor SearchEngine {
                     // discard the page's other offers (P5.2 owner test, CGK→HND).
                     let checked = fliFilterOffers(page: decoded, origin: combo.origin, destination: combo.destination,
                                                   date: combo.date, currency: request.currency, maxStops: request.maxStops)
-                    if checked.offers.isEmpty, let reason = checked.rejected.first {
+                    // Failed only when bad data removed everything; Max stops alone is a normal result.
+                    if checked.offers.isEmpty, checked.excludedByStops == 0, let reason = checked.rejected.first {
                         out.yield(.comboFailed(combo, code: "cross_check: \(reason)"))
                     } else {
                         if !checked.offers.isEmpty {
@@ -154,7 +158,9 @@ public actor SearchEngine {
                                 FoundOffer(routeDate: combo, index: $0.offset, offer: $0.element, searchURL: url)
                             }))
                         }
-                        if !checked.rejected.isEmpty { out.yield(.offersHidden(combo, reasons: checked.rejected)) }
+                        let hidden = checked.rejected
+                            + Array(repeating: Self.stopLimitReason, count: Int(checked.excludedByStops))
+                        if !hidden.isEmpty { out.yield(.offersHidden(combo, reasons: hidden)) }
                     }
                 } catch FliDecodeError.Failed(let code, _) {
                     if code == "auth_denied" { return stop(.blocked("auth_denied")) }

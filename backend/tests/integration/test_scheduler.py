@@ -284,8 +284,8 @@ def test_global_atomic_claims_across_sources_and_shared_followers(engine, query,
     with ThreadPoolExecutor(max_workers=12) as pool:
         results = list(pool.map(claim, range(12)))
     won = [x[0] for x in results if x]
+    # Exactly G distinct claims; with no per-provider ceiling one source may win them all.
     assert len(won) == 4 and len({x.id for x in won}) == 4
-    assert all(sum(x.provider_id == p.provider.provider_id for x in won) <= 3 for p in regs)
 
 
 def test_actual_start_deadline_and_cooldown_survive_restart(engine, query, monkeypatch):

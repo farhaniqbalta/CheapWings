@@ -402,3 +402,34 @@ async def test_cache_reuse_is_independent_of_other_selected_sources(engine, quer
     assert cached.result_origin == "cache"
     assert cached.status == "succeeded_results"
     assert reg.provider.calls == 1
+
+
+def test_retained_operation_payload_cleared_without_loading_every_operation(engine, query):
+    from sqlalchemy import event
+
+    repo, reg = setup(engine)
+    repo.create_job(single(query), [reg])
+    now = now_ms()
+    with write_session(engine) as s:
+        operation = s.scalars(select(ProviderOperation)).one()
+        assert operation.query_json
+        operation.hard_expires_at = now - 1
+    statements = []
+
+    def record(conn, cursor, statement, *rest):
+        statements.append(statement)
+
+    event.listen(engine, "before_cursor_execute", record)
+    try:
+        for _ in range(3):  # maintenance runs every 100ms
+            repo.sweep_operations(now=now, max_attempts=3)
+    finally:
+        event.remove(engine, "before_cursor_execute", record)
+    with Session(engine) as s:
+        assert s.scalars(select(ProviderOperation)).one().query_json == {}
+    # Idle passes must not load every retained operation to clear payloads.
+    assert not [
+        x
+        for x in statements
+        if x.startswith("SELECT") and "provider_operations.hard_expires_at <=" in x
+    ]

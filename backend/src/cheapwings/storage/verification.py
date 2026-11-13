@@ -4,7 +4,7 @@ from dataclasses import replace
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, or_, select
 from sqlalchemy.orm import Session
 
 from cheapwings.application.verification_service import shortlist
@@ -108,8 +108,7 @@ class VerificationRepository:
             return RepriceRequest(
                 offer_from_row(row, private=True),
                 tuple(
-                    adapter(FlightSegment).validate_python(seg.canonical_json)
-                    for seg in segments
+                    adapter(FlightSegment).validate_python(seg.canonical_json) for seg in segments
                 ),
                 SingleDateRouteQuery(
                     item.origin,
@@ -124,9 +123,7 @@ class VerificationRepository:
 
     @staticmethod
     def _revise(s, row, offer, reason, now):
-        data = adapter(Offer).dump_python(
-            replace(offer, provider_quote_handle=None), mode="json"
-        )
+        data = adapter(Offer).dump_python(replace(offer, provider_quote_handle=None), mode="json")
         data.pop("provider_quote_handle")
         row.canonical_json = data
         row.raw_amount_decimal_text = str(offer.amount_original.amount)
@@ -295,20 +292,26 @@ class VerificationRepository:
         now = now if now is not None else now_ms()
         with write_session(self.engine) as s:
             # Fare details are restricted; keep only search/coverage metadata after expiry.
-            jobs = {job.id: job for job in s.scalars(select(SearchJob))}
-            expired = set()
-            for item in s.scalars(select(WorkItem)):
-                job = jobs[item.job_id]
-                cutoffs = [x for x in (item.data_expires_at, job.data_expires_at) if x is not None]
-                if cutoffs and min(cutoffs) <= now:
-                    expired.add(item.id)
-            quotes = s.scalars(select(FareQuote).where(FareQuote.work_item_id.in_(expired))).all()
+            # Runs every maintenance pass: select only quotes that still exist under
+            # an expired item or job (the earlier non-null cutoff wins; NULL never
+            # expires), instead of loading every job and work item.
+            quotes = s.scalars(
+                select(FareQuote)
+                .join(WorkItem, FareQuote.work_item_id == WorkItem.id)
+                .join(SearchJob, WorkItem.job_id == SearchJob.id)
+                .where(or_(WorkItem.data_expires_at <= now, SearchJob.data_expires_at <= now))
+            ).all()
             ids = [q.id for q in quotes]
             fx_ids = [q.fx_snapshot_id for q in quotes if q.fx_snapshot_id is not None]
             s.execute(delete(QuoteRevision).where(QuoteRevision.quote_id.in_(ids)))
             s.execute(delete(FareQuote).where(FareQuote.id.in_(ids)))
             s.execute(delete(FXRow).where(FXRow.id.in_(fx_ids)))
             for itinerary_id in {q.itinerary_id for q in quotes}:
-                if s.scalar(select(FareQuote.id).where(FareQuote.itinerary_id == itinerary_id).limit(1)) is None:
+                if (
+                    s.scalar(
+                        select(FareQuote.id).where(FareQuote.itinerary_id == itinerary_id).limit(1)
+                    )
+                    is None
+                ):
                     s.execute(delete(SegmentRow).where(SegmentRow.itinerary_id == itinerary_id))
                     s.execute(delete(ItineraryRow).where(ItineraryRow.id == itinerary_id))

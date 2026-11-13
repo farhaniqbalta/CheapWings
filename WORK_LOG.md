@@ -34,7 +34,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | P5.1 Shared Rust core | Done; [PR #10](https://github.com/farhaniqbalta/CheapWings/pull/10) merged `26dfc95` | [P5.1](docs/log/p5.1.md), [plan](docs/log/p5.1-plan.md) |
 | P5.2 iPad app shell | Done; [PR #11](https://github.com/farhaniqbalta/CheapWings/pull/11) + follow-up [#12](https://github.com/farhaniqbalta/CheapWings/pull/12) merged `53c0f6c` | [P5.2](docs/log/p5.2.md), [plan](docs/log/p5.2-plan.md) |
 | P5.3 Persistence + resume | Done; [PR #13](https://github.com/farhaniqbalta/CheapWings/pull/13) merged `6c431e9` | [P5.3](docs/log/p5.3.md), [plan](docs/log/p5.3-plan.md) |
-| P5.5 iPad feature parity | Implemented on branch `p5.5-ipad-parity`; owner device checks passed; awaiting owner review | [P5.5](docs/log/p5.5.md), [plan](docs/log/p5.5-plan.md), [Fli 0.25 s test](docs/log/p5.5-fli-interval.md) |
+| P5.5 iPad feature parity | Done; [PR #14](https://github.com/farhaniqbalta/CheapWings/pull/14) merged `3c38427`; Fli 0.25 s + P7 docs via [PR #15](https://github.com/farhaniqbalta/CheapWings/pull/15) | [P5.5](docs/log/p5.5.md), [plan](docs/log/p5.5-plan.md), [Fli 0.25 s test](docs/log/p5.5-fli-interval.md) |
 | P5.6 iPad polish | Not started | |
 | P5.4 More providers on iPad | Moved to the bottom by owner (2026-11-14): iPad is Fli-only for now; runs just before the web migration | |
 | P5.7 Web backend onto the Rust core | Not started (web keeps all four providers in Python until then) | |
@@ -58,7 +58,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 - Details and rulings: [P5.5](docs/log/p5.5.md). Open: iOS 26 continued processing; web `providers/fli.py` whole-page currency rule (p5.2.md); web picker parity with the iPad token picker.
 
 ## Next task
-Owner review of the P5.5 PR. Then P5.6 — iPhone layout polish, Dynamic Type / VoiceOver audit, dark mode, offline states. Plan first; owner reviews and merges every checkpoint PR.
+P5.6 — iPhone layout polish, Dynamic Type / VoiceOver audit, dark mode, offline states. Plan first; owner reviews and merges every checkpoint PR.
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

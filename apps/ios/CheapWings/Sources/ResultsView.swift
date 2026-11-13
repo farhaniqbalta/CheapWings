@@ -3,44 +3,55 @@ import CheapWingsKit
 import SwiftUI
 
 struct ResultsView: View {
-    let model: SearchModel
+    let session: SearchSession
 
     var body: some View {
         List {
-            if case .running(let done, let total) = model.phase {
+            if case .running(let done, let total) = session.phase {
                 Section {
                     ProgressView(value: Double(done), total: Double(max(total, 1))) {
                         Text("Searching \(done) of \(total)")
                     }
                 }
             }
-            if case .stopped(let reason) = model.phase, let message = Self.message(for: reason) {
+            if case .stopped(let reason) = session.phase, let message = Self.message(for: reason) {
                 Section { Label(message, systemImage: "exclamationmark.triangle").foregroundStyle(.orange) }
             }
-            if model.allFailed {
-                Section {
-                    Label("No results — Google Flights pages could not be read (page format may have changed).",
-                          systemImage: "xmark.octagon").foregroundStyle(.red)
-                }
+            if let outcome = session.emptyOutcome {
+                Section { Self.emptyLabel(outcome) }
             }
-            if !model.offers.isEmpty {
-                Section("Lowest advertised · \(model.offers.count) flights") {
-                    ForEach(model.offers) { OfferRow(found: $0, currency: model.request.currency) }
+            if !session.offers.isEmpty {
+                Section("Lowest advertised · \(session.offers.count) flights") {
+                    ForEach(session.offers) { OfferRow(found: $0, currency: session.currency) }
                 }
-            } else if model.phase == .idle {
+            } else if session.phase == .idle {
                 ContentUnavailableView("Search one-way fares", systemImage: "airplane",
                                        description: Text("Enter airports and a date range, then search."))
             }
-            if !model.failures.isEmpty && !model.allFailed {
+            if !session.failures.isEmpty {
                 Section("Skipped searches") {
-                    ForEach(Array(model.failures.enumerated()), id: \.offset) { _, failure in
-                        Text("\(failure.0.origin)→\(failure.0.destination) \(failure.0.date): \(failure.1)")
+                    ForEach(Array(session.failures.enumerated()), id: \.offset) { _, failure in
+                        Text("\(failure.routeDate.origin)→\(failure.routeDate.destination) \(failure.routeDate.date): \(failure.code)")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
             }
         }
         .navigationTitle("Results")
+    }
+
+    @ViewBuilder
+    static func emptyLabel(_ outcome: EmptyOutcome) -> some View {
+        switch outcome {
+        case .noFlights:
+            Label("No flights found for these routes and dates.", systemImage: "airplane.circle")
+        case .formatChanged:
+            Label("No results — Google Flights pages could not be read (page format may have changed).",
+                  systemImage: "xmark.octagon").foregroundStyle(.red)
+        case .searchesFailed(let count):
+            Label("No results — \(count) searches failed. Check the connection and see the list below.",
+                  systemImage: "wifi.exclamationmark").foregroundStyle(.red)
+        }
     }
 
     static func message(for reason: StopReason) -> String? {

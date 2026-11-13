@@ -5,7 +5,7 @@ import PackageDescription
 // price display. Business rules stay in CheapWingsCore (Rust).
 let package = Package(
     name: "CheapWingsKit",
-    platforms: [.iOS(.v17), .macOS(.v13)],
+    platforms: [.iOS(.v17), .macOS(.v14)],  // @Observable needs macOS 14 for host tests
     products: [.library(name: "CheapWingsKit", targets: ["CheapWingsKit"])],
     dependencies: [.package(path: "../CheapWingsCore")],
     targets: [

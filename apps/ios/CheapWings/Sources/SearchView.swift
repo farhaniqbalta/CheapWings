@@ -27,10 +27,10 @@ struct SearchView: View {
             }
             Section {
                 Text(model.planSummary)
-                    .foregroundStyle(model.canSearch || model.isRunning ? Color.secondary : Color.red)
+                    .foregroundStyle(model.canSearch || model.session.isRunning ? Color.secondary : Color.red)
                     .font(.footnote)
-                if model.isRunning {
-                    Button("Cancel", role: .destructive, action: model.cancel)
+                if model.session.isRunning {
+                    Button("Cancel", role: .destructive, action: model.session.cancel)
                 } else {
                     Button("Search Google Flights", action: model.start)
                         .disabled(!model.canSearch)
@@ -40,7 +40,7 @@ struct SearchView: View {
             }
         }
         .navigationTitle("CheapWings")
-        .onChange(of: model.isRunning) { _, running in
+        .onChange(of: model.session.isRunning) { _, running in
             UIApplication.shared.isIdleTimerDisabled = running
         }
         .onChange(of: scenePhase) { _, phase in

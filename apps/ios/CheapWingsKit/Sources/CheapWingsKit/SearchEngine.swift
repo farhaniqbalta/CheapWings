@@ -112,6 +112,8 @@ public actor SearchEngine {
             }
             if Task.isCancelled { return stop(.cancelled) }  // never deliver after cancel
             if page.status == 429 { return stop(.rateLimited) }
+            // providers/fli.py `_deny()`: 401/403 block the provider for good.
+            if page.status == 401 || page.status == 403 { return stop(.blocked("http_\(page.status)")) }
             if let refused = page.refusedRedirect { return stop(.blocked((refused.host ?? "?") + refused.path)) }
             if page.status != 200 {
                 out.yield(.comboFailed(combo, code: "http_\(page.status)"))

@@ -8,15 +8,25 @@ actor FakeTransport: FliTransport {
     private(set) var fetched: [URL] = []
     private(set) var cancelledFetches = 0
     private let hang: Bool
+    private var hangFirst: Int
 
-    init(_ pages: [FetchedPage], hangOnFetch: Bool = false) {
+    init(_ pages: [FetchedPage], hangOnFetch: Bool = false, hangFirst: Int = 0) {
         queue = pages.map { .success($0) }
         hang = hangOnFetch
+        self.hangFirst = hangFirst
+    }
+
+    init(results: [Result<FetchedPage, Error>]) {
+        queue = results
+        hang = false
+        hangFirst = 0
     }
 
     func fetch(_ url: URL) async throws -> FetchedPage {
         fetched.append(url)
-        if hang {
+        let hangThis = hang || hangFirst > 0
+        hangFirst = max(0, hangFirst - 1)
+        if hangThis {
             do { try await Task.sleep(for: .seconds(30)) } catch {  // until cancelled
                 cancelledFetches += 1
                 throw error
@@ -119,6 +129,16 @@ final class SearchEngineTests: XCTestCase {
         XCTAssertEqual(stop(events), .blocked("auth_denied"))
         let count = await transport.fetched.count
         XCTAssertEqual(count, 1)
+    }
+
+    func testStopsOn403LikeProvidersFliDeny() async throws {
+        let forbidden = FetchedPage(status: 403, body: Data(), refusedRedirect: nil)
+        let transport = FakeTransport([page("CGK", "DPS", "2026-12-15", prices: ["1250000"]), forbidden])
+        let events = await collect(SearchEngine(transport: transport, sleep: FakeClock().sleep), try combos())
+        XCTAssertEqual(offers(events).count, 1)
+        XCTAssertEqual(stop(events), .blocked("http_403"))
+        let count = await transport.fetched.count
+        XCTAssertEqual(count, 2)
     }
 
     func testSchemaChangedContinues() async throws {

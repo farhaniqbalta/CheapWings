@@ -65,6 +65,8 @@ cheapwings/
     web/{src,package.json}
     ios/                                  # Xcode project + SwiftUI sources (P5.2)
       CheapWingsCore/                     # Swift package over the shared Rust core (P5.1)
+      CheapWingsKit/                      # URLSession Fli transport + paced SearchEngine (P5.2)
+      CheapWings/                         # SwiftUI iPad app, XcodeGen project.yml (P5.2)
   scripts/                              # local dev, canary, fixture refresh helpers
   .env.example
 ```

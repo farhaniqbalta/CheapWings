@@ -1,7 +1,7 @@
 //! UniFFI surface of `cheapwings-core` for Swift. Thin wrappers only: records mirror the core
 //! types and every function delegates. UniFFI has no i128, so minor units cross as text.
 
-use cheapwings_core::{fingerprint as fp, fli, money, ranking};
+use cheapwings_core::{fingerprint as fp, fli, money, planning, ranking};
 
 uniffi::setup_scaffolding!();
 
@@ -22,6 +22,40 @@ pub enum FliDecodeError {
     /// `code` is the backend `ProviderFailure` code (`schema_changed`, `partial_payload`, `auth_denied`).
     #[error("{code}: {detail}")]
     Failed { code: String, detail: String },
+}
+
+#[derive(Debug, thiserror::Error, uniffi::Error)]
+pub enum PlanSearchError {
+    /// `code`: `invalid_airport | no_airports | dates_reversed | invalid_date | same_airport | too_many`.
+    #[error("{code}: {detail}")]
+    Rejected { code: String, detail: String },
+}
+
+// ---------- planning ----------
+
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct RouteDate {
+    pub origin: String,
+    pub destination: String,
+    pub date: String,
+}
+
+#[uniffi::export]
+pub fn plan_search(
+    origins: Vec<String>,
+    destinations: Vec<String>,
+    date_from: String,
+    date_through: String,
+    max_combinations: u32,
+) -> Result<Vec<RouteDate>, PlanSearchError> {
+    planning::plan_search(&origins, &destinations, &date_from, &date_through, max_combinations)
+        .map(|combos| {
+            combos
+                .into_iter()
+                .map(|c| RouteDate { origin: c.origin, destination: c.destination, date: c.date })
+                .collect()
+        })
+        .map_err(|e| PlanSearchError::Rejected { code: e.code().to_owned(), detail: e.to_string() })
 }
 
 // ---------- money ----------

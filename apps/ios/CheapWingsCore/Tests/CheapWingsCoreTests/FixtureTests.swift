@@ -18,12 +18,28 @@ final class FixtureTests: XCTestCase {
     struct OfferExpectJ: Decodable { let price: String; let currency: String?; let legs: [LegJ] }
     struct PageExpect: Decodable { let offers: [OfferExpectJ]?; let unpriced: UInt32?; let error: String? }
     struct PageCase: Decodable { let html: String; let expect: PageExpect }
+    struct RouteDateJ: Decodable { let origin, destination, date: String }
+    enum PlanExpectJ: Decodable {
+        case combos([RouteDateJ]), error(String)
+        init(from decoder: Decoder) throws {
+            if let combos = try? [RouteDateJ](from: decoder) { self = .combos(combos); return }
+            struct E: Decodable { let error: String }
+            self = .error(try E(from: decoder).error)
+        }
+    }
+    struct PlanCase: Decodable {
+        let origins, destinations: [String]
+        let from, through: String
+        let max: UInt32
+        let expect: PlanExpectJ
+    }
     struct Fixtures: Decodable {
         let money: [MoneyCase]
         let fingerprint: [FingerprintCase]
         let ranking: [RankingCase]
         let fli_tfs: [TfsCase]
         let fli_pages: [PageCase]
+        let planning: [PlanCase]
     }
 
     static let fixtures: Fixtures = {
@@ -99,6 +115,24 @@ final class FixtureTests: XCTestCase {
             }
         }
         XCTAssertEqual(Self.fixtures.fli_pages.count, 45)
+    }
+
+    func testPlanning() {
+        for (i, c) in Self.fixtures.planning.enumerated() {
+            do {
+                let combos = try planSearch(origins: c.origins, destinations: c.destinations,
+                                            dateFrom: c.from, dateThrough: c.through, maxCombinations: c.max)
+                guard case .combos(let want) = c.expect else { return XCTFail("case #\(i) should fail") }
+                XCTAssertEqual(combos.map { [$0.origin, $0.destination, $0.date] },
+                               want.map { [$0.origin, $0.destination, $0.date] }, "case #\(i)")
+            } catch PlanSearchError.Rejected(let code, _) {
+                guard case .error(let want) = c.expect else { return XCTFail("case #\(i): \(code)") }
+                XCTAssertEqual(code, want, "case #\(i)")
+            } catch {
+                XCTFail("case #\(i): unexpected \(error)")
+            }
+        }
+        XCTAssertEqual(Self.fixtures.planning.count, 66)
     }
 
     func testFliErrorDoesNotCrash() {

@@ -1,0 +1,33 @@
+# CheapWings iPad app (P5.2). Generate with `xcodegen generate`; signing team is passed at build
+# time (DEVELOPMENT_TEAM=...) so no personal data lives in the repo. Run core/build-ios.sh first.
+name: CheapWings
+options:
+  deploymentTarget:
+    iOS: "17.0"
+packages:
+  CheapWingsKit:
+    path: ../CheapWingsKit
+  CheapWingsCore:
+    path: ../CheapWingsCore
+targets:
+  CheapWings:
+    type: application
+    platform: iOS
+    sources: [Sources]
+    dependencies:
+      - package: CheapWingsKit
+      - package: CheapWingsCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.cheapwings.app
+        PRODUCT_NAME: CheapWings
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: CheapWings
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait"
+        CODE_SIGN_STYLE: Automatic
+        MARKETING_VERSION: "0.2"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.0"

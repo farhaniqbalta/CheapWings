@@ -3,6 +3,7 @@
 use cheapwings_core::fingerprint::{fingerprint, isoformat, LocalInstant, Segment};
 use cheapwings_core::fli::{cross_check, decode_page, search_url, tfs, FliOffer};
 use cheapwings_core::money::{as_minor_units, from_minor_units, fx_convert};
+use cheapwings_core::planning::{plan_search, RouteDate};
 use cheapwings_core::ranking::{best_checked_deal, lowest_advertised, RankOffer};
 use serde::Deserialize;
 
@@ -53,12 +54,30 @@ struct PageCase {
 }
 
 #[derive(Deserialize)]
+#[serde(untagged)]
+enum PlanExpect {
+    Combos(Vec<RouteDate>),
+    Error { error: String },
+}
+
+#[derive(Deserialize)]
+struct PlanCase {
+    origins: Vec<String>,
+    destinations: Vec<String>,
+    from: String,
+    through: String,
+    max: u32,
+    expect: PlanExpect,
+}
+
+#[derive(Deserialize)]
 struct Fixtures {
     money: Vec<MoneyCase>,
     fingerprint: Vec<FingerprintCase>,
     ranking: Vec<RankingCase>,
     fli_tfs: Vec<TfsCase>,
     fli_pages: Vec<PageCase>,
+    planning: Vec<PlanCase>,
 }
 
 /// One priced CGK→DPS row on 2026-12-15 in the ds:1 layout, price spliced in as raw JSON.
@@ -167,6 +186,28 @@ fn fli_cross_check_catches_wrong_date() {
     assert_eq!(cross_check(&page, "CGK", "DPS", "2026-12-15", "IDR"), None);
     assert!(cross_check(&page, "CGK", "DPS", "2026-12-16", "IDR").is_some());
     assert!(cross_check(&page, "CGK", "SUB", "2026-12-15", "IDR").is_some());
+}
+
+#[test]
+fn planning_matches_python() {
+    let cases = fixtures().planning;
+    for (i, c) in cases.iter().enumerate() {
+        let got = plan_search(&c.origins, &c.destinations, &c.from, &c.through, c.max);
+        match (&got, &c.expect) {
+            (Ok(combos), PlanExpect::Combos(want)) => assert_eq!(combos, want, "case #{i}"),
+            (Err(e), PlanExpect::Error { error }) => assert_eq!(e.code(), error, "case #{i}"),
+            _ => panic!("case #{i}: got {got:?}"),
+        }
+    }
+    assert_eq!(cases.len(), 66);
+}
+
+#[test]
+fn planning_counts_leap_day() {
+    let one = |c: &str| vec![c.to_string()];
+    let combos = plan_search(&one("CGK"), &one("DPS"), "2028-02-28", "2028-03-01", 120).expect("plans");
+    let dates: Vec<&str> = combos.iter().map(|c| c.date.as_str()).collect();
+    assert_eq!(dates, ["2028-02-28", "2028-02-29", "2028-03-01"]);
 }
 
 #[test]

@@ -245,6 +245,69 @@ def fli_page_cases(n):
     return cases
 
 
+PLAN_ERRORS = {  # QueryValidationError message fragment -> core PlanError code
+    "At least one airport code": "no_airports",
+    "Invalid IATA code": "invalid_airport",
+    "must not be before": "dates_reversed",
+    "cannot both be": "same_airport",
+    "exceeds the configured": "too_many",
+}
+
+
+def planning_case(origins, destinations, start, end, max_combinations=120):
+    from datetime import date
+
+    from cheapwings.domain.query import SearchQuery
+    from cheapwings.engine.expansion import expand_routes_and_dates
+
+    case = {"origins": origins, "destinations": destinations, "from": start, "through": end,
+            "max": max_combinations}
+    try:
+        query = SearchQuery(origins=origins, destinations=destinations,
+                            departure_date_from=date.fromisoformat(start),
+                            departure_date_through=date.fromisoformat(end),
+                            display_currency="IDR", max_combinations=max_combinations)
+    except Exception as exc:  # pydantic wraps QueryValidationError
+        code = next((c for fragment, c in PLAN_ERRORS.items() if fragment in str(exc)), None)
+        if code is None:
+            raise
+        return {**case, "expect": {"error": code}}
+    combos = [{"origin": c.origin, "destination": c.destination, "date": c.departure_date.isoformat()}
+              for c in expand_routes_and_dates(query)]
+    return {**case, "expect": combos}
+
+
+def planning_cases(n):
+    from datetime import date, timedelta
+
+    def messy(code):
+        return rng.choice([code, code.lower(), f" {code} ", code.title()])
+
+    cases = []
+    starts = ["2026-12-30", "2028-02-27", "2026-06-15", "2027-01-31"]
+    for _ in range(n):
+        origins = [messy(c) for c in rng.sample(AIRPORTS, rng.randint(1, 3))]
+        destinations = [messy(c) for c in rng.sample(AIRPORTS, rng.randint(1, 3))]
+        if rng.random() < 0.2:
+            origins.append(origins[0])  # duplicate after normalization
+        start = date.fromisoformat(rng.choice(starts))
+        end = start + timedelta(days=rng.randint(0, 14))
+        cases.append(planning_case(origins, destinations, start.isoformat(), end.isoformat()))
+    eleven = AIRPORTS[:11]
+    cases += [
+        planning_case(["CG1"], ["DPS"], "2026-12-01", "2026-12-01"),
+        planning_case(["CGK"], ["DPS"], "2026-12-05", "2026-12-01"),
+        planning_case(["CGK"], ["cgk"], "2026-12-01", "2026-12-01"),
+        planning_case(eleven, [c for c in AIRPORTS if c not in eleven] + ["XXA", "XXB", "XXC", "XXD",
+                                                                           "XXE", "XXF", "XXG", "XXH",
+                                                                           "XXI", "XXJ"],
+                      "2026-12-01", "2026-12-01"),
+        planning_case([], ["DPS"], "2026-12-01", "2026-12-01"),
+        planning_case(["CGK"], ["DPS"], "2028-02-28", "2028-03-01"),
+    ]
+    return cases
+
+
 def main():
     root = Path(__file__).resolve().parents[1]
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True,
@@ -252,12 +315,14 @@ def main():
     fixtures = {"source": f"money: pure-Decimal reference in this script; fingerprint/ranking: "
                           f"backend/src/cheapwings @ {commit}; fli 881aee5",
                 "money": money_cases(1000), "fingerprint": fingerprint_cases(500),
-                "ranking": ranking_cases(300), "fli_tfs": fli_tfs_cases(50), "fli_pages": fli_page_cases(40)}
+                "ranking": ranking_cases(300), "fli_tfs": fli_tfs_cases(50), "fli_pages": fli_page_cases(40),
+                "planning": planning_cases(60)}
     out = root / "contracts" / "fixtures" / "core" / "core_fixtures.json"
     out.write_text(json.dumps(fixtures, separators=(",", ":")))
     print(f"wrote {out.name}: {len(fixtures['money'])} money, {len(fixtures['fingerprint'])} fingerprint, "
           f"{len(fixtures['ranking'])} ranking, {len(fixtures['fli_tfs'])} fli_tfs, "
-          f"{len(fixtures['fli_pages'])} fli_pages cases, {out.stat().st_size} bytes")
+          f"{len(fixtures['fli_pages'])} fli_pages, {len(fixtures['planning'])} planning cases, "
+          f"{out.stat().st_size} bytes")
 
 
 if __name__ == "__main__":

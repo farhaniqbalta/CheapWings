@@ -68,7 +68,8 @@ struct ResultsView: View {
         case .cancelled: return "Search cancelled."
         case .rateLimited: return "Stopped: Google rate-limited this device. Try again later."
         case .blocked(let detail): return "Stopped: Google blocked automated access (\(detail)). Try again later."
-        case .backgrounded: return "Paused when the app went to the background. Search again to continue."
+        case .backgrounded: return "Paused when the app went to the background."
+        case .interrupted: return "Interrupted — the app was closed while searching."
         }
     }
 }

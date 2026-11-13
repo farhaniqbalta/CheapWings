@@ -9,22 +9,27 @@ actor FakeTransport: FliTransport {
     private(set) var cancelledFetches = 0
     private let hang: Bool
     private var hangFirst: Int
+    private let hangWhenEmpty: Bool
 
-    init(_ pages: [FetchedPage], hangOnFetch: Bool = false, hangFirst: Int = 0) {
+    /// By default an extra fetch past the scripted pages crashes the test (catches surprise
+    /// requests); `hangWhenEmpty` instead simulates a request still in flight.
+    init(_ pages: [FetchedPage], hangOnFetch: Bool = false, hangFirst: Int = 0, hangWhenEmpty: Bool = false) {
         queue = pages.map { .success($0) }
         hang = hangOnFetch
         self.hangFirst = hangFirst
+        self.hangWhenEmpty = hangWhenEmpty
     }
 
     init(results: [Result<FetchedPage, Error>]) {
         queue = results
         hang = false
         hangFirst = 0
+        hangWhenEmpty = false
     }
 
     func fetch(_ url: URL) async throws -> FetchedPage {
         fetched.append(url)
-        let hangThis = hang || hangFirst > 0
+        let hangThis = hang || hangFirst > 0 || (hangWhenEmpty && queue.isEmpty)
         hangFirst = max(0, hangFirst - 1)
         if hangThis {
             do { try await Task.sleep(for: .seconds(30)) } catch {  // until cancelled

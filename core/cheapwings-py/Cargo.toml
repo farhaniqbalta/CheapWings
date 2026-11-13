@@ -1,0 +1,15 @@
+[package]
+name = "cheapwings-py"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Python bindings (module cheapwings_core) for the CheapWings shared Rust core."
+
+[lib]
+name = "cheapwings_core"
+crate-type = ["cdylib"]
+
+[dependencies]
+# Aliased: the Python module itself must be named `cheapwings_core`.
+engine = { package = "cheapwings-core", path = "../cheapwings-core" }
+pyo3 = { version = "=0.30.1", features = ["extension-module"] }

@@ -14,11 +14,14 @@ Provider observations are in
 ## Local setup
 
 Run from the repository root. Existing `.venv/` is the backend environment.
+Money arithmetic lives in the shared Rust core (`core/`), so a Rust toolchain
+(`rustup`, stable) is required; rebuild the module after any change under `core/`.
 
 ```sh
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -e './backend[dev]'
+.venv/bin/maturin develop --release -m core/cheapwings-py/Cargo.toml
 cp .env.example .env
 set -a
 source .env
@@ -98,6 +101,7 @@ install the pinned extras and change the backend `.env` in both service shells:
 
 ```sh
 .venv/bin/python -m pip install -e './backend[dev,live]'
+.venv/bin/maturin develop --release -m core/cheapwings-py/Cargo.toml
 ```
 
 ```dotenv

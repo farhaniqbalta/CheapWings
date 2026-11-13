@@ -21,7 +21,8 @@ their original sessions; they are not current instructions or deployment state.
 | [P4.11 Fli provider](p4.11.md) | Merged PR #5 (`4c98386`); fourth-source integration, C3/1s verification, HTTP/2 trials, usable API/UI quotes and owner acceptance |
 | [P4.12 shared global pool](p4.12.md) | Per-provider cap removal, admission review, P4.9-vs-P4.12 synthetic benchmark, G100 profile, risks and owner decisions |
 | [P5.05 native iOS feasibility](p5.05.md) | Provider GO/NO-GO for standalone iOS, engine port invariants, iOS lifecycle limits, Rust-vs-Swift shared-core ADR and spike plan (analysis only, nothing run) |
-| [P5.06 native engine spikes](p5.06.md) | S1 Fli on iPad via URLSession 3/3 PASS, S2 wreq iOS build, S3 macOS 3/3 PASS, S4 Rust money via PyO3 parity; S5 Rust vs Swift core both exact on iPad, Swift recommended |
+| [P5.06 native engine spikes](p5.06.md) | S1 Fli on iPad via URLSession 3/3 PASS, S2 wreq iOS build, S3 macOS 3/3 PASS, S4 Rust money via PyO3 parity; S5 Rust vs Swift core both exact on iPad; owner chose shared Rust core |
+| [P5.1 shared Rust core](p5.1.md) | Rust money/fingerprint/ranking/Fli decoder; backend money via PyO3 (252 tests); iPad Swift package via UniFFI; shared fixtures. [Plan](p5.1-plan.md) |
 
 ## Reporting convention
 

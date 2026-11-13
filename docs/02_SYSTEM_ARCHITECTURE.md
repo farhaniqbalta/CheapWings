@@ -41,6 +41,12 @@ cheapwings/
   docs/                                 # copied worker handoff + implementation ADRs
   contracts/openapi.yaml
   contracts/fixtures/{provider,canonical}/
+  contracts/fixtures/core/core_fixtures.json  # generated from Python; gates Rust, PyO3 and Swift
+  core/                                 # shared Rust engine (P5.1), see docs/log/p5.1.md
+    cheapwings-core/                    # pure logic: money, fingerprint, ranking, Fli decoder
+    cheapwings-py/                      # PyO3 module `cheapwings_core` used by domain/money.py
+    cheapwings-ffi/                     # UniFFI; the only Rust library linked into the iPad app
+    build-ios.sh                        # XCFramework + Swift bindings → apps/ios/CheapWingsCore
   backend/
     pyproject.toml
     alembic.ini
@@ -57,7 +63,8 @@ cheapwings/
     tests/{unit,integration,fixtures,live_canary}/
   apps/
     web/{src,package.json}
-    ios/                                  # Xcode project + SwiftUI sources
+    ios/                                  # Xcode project + SwiftUI sources (P5.2)
+      CheapWingsCore/                     # Swift package over the shared Rust core (P5.1)
   scripts/                              # local dev, canary, fixture refresh helpers
   .env.example
 ```

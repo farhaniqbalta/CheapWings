@@ -287,26 +287,48 @@ fn length_field(number: u64, bytes: &[u8]) -> Option<&[u8]> {
 
 /// None when every priced offer matches the query; otherwise the first mismatch.
 pub fn cross_check(page: &FliPage, origin: &str, destination: &str, date: &str, currency: &str) -> Option<String> {
+    page.offers.iter().find_map(|o| offer_mismatch(o, origin, destination, date, currency))
+}
+
+/// Offers that match the query, and one reason per offer that does not.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CheckedOffers {
+    pub offers: Vec<FliOffer>,
+    pub rejected: Vec<String>,
+}
+
+/// Per-offer version of `cross_check`: one bad row (e.g. a row Google sends without a
+/// currency token) no longer discards every other offer on the page.
+pub fn filter_offers(page: &FliPage, origin: &str, destination: &str, date: &str, currency: &str) -> CheckedOffers {
+    let mut checked = CheckedOffers { offers: Vec::new(), rejected: Vec::new() };
     for offer in &page.offers {
-        let (Some(first), Some(last)) = (offer.legs.first(), offer.legs.last()) else {
-            return Some("offer without legs".into());
-        };
-        if first.origin != origin || last.destination != destination {
-            return Some(format!("airports {}-{}", first.origin, last.destination));
+        match offer_mismatch(offer, origin, destination, date, currency) {
+            None => checked.offers.push(offer.clone()),
+            Some(reason) => checked.rejected.push(reason),
         }
-        if !first.depart_local.starts_with(date) {
-            return Some(format!("date {}", first.depart_local));
-        }
-        if offer.currency.as_deref() != Some(currency) {
-            return Some(format!("currency {:?}", offer.currency));
-        }
-        let positive = offer.price.parse::<rust_decimal::Decimal>().map(|p| p > rust_decimal::Decimal::ZERO).unwrap_or(false);
-        if !positive {
-            return Some(format!("price {}", offer.price));
-        }
-        if offer.legs.iter().any(|l| l.airline.is_empty() || l.flight_number.is_empty()) {
-            return Some("missing flight number".into());
-        }
+    }
+    checked
+}
+
+fn offer_mismatch(offer: &FliOffer, origin: &str, destination: &str, date: &str, currency: &str) -> Option<String> {
+    let (Some(first), Some(last)) = (offer.legs.first(), offer.legs.last()) else {
+        return Some("offer without legs".into());
+    };
+    if first.origin != origin || last.destination != destination {
+        return Some(format!("airports {}-{}", first.origin, last.destination));
+    }
+    if !first.depart_local.starts_with(date) {
+        return Some(format!("date {}", first.depart_local));
+    }
+    if offer.currency.as_deref() != Some(currency) {
+        return Some(format!("currency {:?}", offer.currency));
+    }
+    let positive = offer.price.parse::<rust_decimal::Decimal>().map(|p| p > rust_decimal::Decimal::ZERO).unwrap_or(false);
+    if !positive {
+        return Some(format!("price {}", offer.price));
+    }
+    if offer.legs.iter().any(|l| l.airline.is_empty() || l.flight_number.is_empty()) {
+        return Some("missing flight number".into());
     }
     None
 }

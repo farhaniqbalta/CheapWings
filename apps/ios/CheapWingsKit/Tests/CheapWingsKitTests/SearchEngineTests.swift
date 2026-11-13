@@ -182,8 +182,25 @@ final class SearchEngineTests: XCTestCase {
                                        page("CGK", "DPS", "2026-12-16", prices: ["1300000"]),
                                        page("CGK", "DPS", "2026-12-17", prices: ["1100000"])])
         let events = await collect(SearchEngine(transport: transport, sleep: FakeClock().sleep), try combos())
-        XCTAssertEqual(failures(events), ["cross_check"])
+        XCTAssertEqual(failures(events), ["cross_check: airports CGK-SUB"])
         XCTAssertEqual(offers(events).count, 2)
+    }
+
+    func testOneCurrencylessRowDoesNotDiscardThePage() async throws {
+        // Live CGK→HND pages mixed rows with and without a currency token (P5.2 owner test).
+        let mixed = page("CGK", "DPS", "2026-12-15", prices: ["1250000", "4161210"])
+        let html = String(decoding: mixed.body, as: UTF8.self)
+        // Strip the token from the second row only.
+        let second = html.range(of: "\"GgUaA0lEUg\"", options: .backwards)!
+        let patched = html.replacingCharacters(in: second, with: "null")
+        let transport = FakeTransport([FetchedPage(status: 200, body: Data(patched.utf8), refusedRedirect: nil)])
+        let oneDay = try SearchRequest(origins: ["CGK"], destinations: ["DPS"], dateFrom: "2026-12-15",
+                                       dateThrough: "2026-12-15", currency: "IDR").plan()
+        let events = await collect(SearchEngine(transport: transport, sleep: FakeClock().sleep), oneDay)
+        XCTAssertEqual(offers(events).map(\.offer.price), ["1250000"])
+        XCTAssertTrue(failures(events).isEmpty)
+        let hidden = events.compactMap { if case .offersHidden(_, let reasons) = $0 { return reasons } else { return nil } }
+        XCTAssertEqual(hidden, [["currency None"]])
     }
 
     func testRankingIsAscendingByExactPrice() throws {

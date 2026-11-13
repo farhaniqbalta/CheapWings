@@ -80,6 +80,16 @@ final class SearchSessionTests: XCTestCase {
         XCTAssertEqual(session.emptyOutcome, .noFlights)
     }
 
+    func testHiddenOffersAreCountedNotSilentlyLost() async throws {
+        let html = String(decoding: page("CGK", "DPS", "2026-12-15", prices: ["1250000", "4161210"]).body, as: UTF8.self)
+        let patched = html.replacingCharacters(in: html.range(of: "\"GgUaA0lEUg\"", options: .backwards)!, with: "null")
+        let session = session(FakeTransport([FetchedPage(status: 200, body: Data(patched.utf8), refusedRedirect: nil)]))
+        session.start(request, combos: try request.plan())
+        try await waitUntilStopped(session)
+        XCTAssertEqual(session.offers.count, 1)
+        XCTAssertEqual(session.hiddenOffers, ["currency None": 1])
+    }
+
     func testResultsKeepTheCurrencyOfTheSearchThatRan() async throws {
         let session = session(FakeTransport([page("CGK", "DPS", "2026-12-15", prices: ["1250000"])]))
         session.start(request, combos: try request.plan())

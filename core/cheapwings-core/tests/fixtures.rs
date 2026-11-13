@@ -1,6 +1,7 @@
 //! Shared fixtures generated from the Python reference (scripts/gen_core_fixtures.py).
 
 use cheapwings_core::fingerprint::{fingerprint, isoformat, LocalInstant, Segment};
+use cheapwings_core::fli::{cross_check, decode_page, search_url, tfs, FliOffer};
 use cheapwings_core::money::{as_minor_units, from_minor_units, fx_convert};
 use cheapwings_core::ranking::{best_checked_deal, lowest_advertised, RankOffer};
 use serde::Deserialize;
@@ -31,10 +32,49 @@ struct RankingCase {
 }
 
 #[derive(Deserialize)]
+struct TfsCase {
+    origin: String,
+    destination: String,
+    date: String,
+    expect: String,
+}
+
+#[derive(Deserialize)]
+struct PageExpect {
+    offers: Option<Vec<FliOffer>>,
+    unpriced: Option<u32>,
+    error: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct PageCase {
+    html: String,
+    expect: PageExpect,
+}
+
+#[derive(Deserialize)]
 struct Fixtures {
     money: Vec<MoneyCase>,
     fingerprint: Vec<FingerprintCase>,
     ranking: Vec<RankingCase>,
+    fli_tfs: Vec<TfsCase>,
+    fli_pages: Vec<PageCase>,
+}
+
+/// One priced CGK→DPS row on 2026-12-15 in the ds:1 layout, price spliced in as raw JSON.
+fn one_row_page(price: &str) -> String {
+    let mut leg = vec!["null".to_string(); 23];
+    leg[3] = "\"CGK\"".into();
+    leg[6] = "\"DPS\"".into();
+    leg[8] = "[6,5]".into();
+    leg[10] = "[9,0]".into();
+    leg[11] = "115".into();
+    leg[20] = "[2026,12,15]".into();
+    leg[21] = "[2026,12,15]".into();
+    leg[22] = "[\"GA\",\"402\",null]".into();
+    let detail = format!("[null,null,[[{}]],null,null,null,null,null,null,115]", leg.join(","));
+    let data = format!("[null,null,[[[{detail},[[null,{price}],\"GgUaA0lEUg\"]]]],null]");
+    format!("<script>AF_initDataCallback({{key: 'ds:1', hash: '2', data:{data}, sideChannel: {{}}}});</script>")
 }
 
 fn fixtures() -> Fixtures {
@@ -83,6 +123,50 @@ fn ranking_matches_python() {
         .collect();
     assert!(wrong.is_empty(), "{} wrong rankings, first case #{:?}", wrong.len(), wrong.first());
     assert_eq!(cases.len(), 300);
+}
+
+#[test]
+fn fli_tfs_matches_python() {
+    let cases = fixtures().fli_tfs;
+    for c in &cases {
+        assert_eq!(tfs(&c.origin, &c.destination, &c.date), c.expect, "{} {} {}", c.origin, c.destination, c.date);
+    }
+    assert_eq!(cases.len(), 50);
+    assert_eq!(
+        search_url("CGK", "DPS", "2026-12-15", "IDR", "ID"),
+        "https://www.google.com/travel/flights?tfs=CBwQAhoeEgoyMDI2LTEyLTE1agcIARIDQ0dLcgcIARIDRFBTQAFIAXABmAEC&hl=en&gl=ID&curr=IDR"
+    );
+}
+
+#[test]
+fn fli_pages_match_python() {
+    let cases = fixtures().fli_pages;
+    for (i, c) in cases.iter().enumerate() {
+        match (decode_page(&c.html), &c.expect.error) {
+            (Ok(page), None) => {
+                assert_eq!(Some(&page.offers), c.expect.offers.as_ref(), "page #{i} offers");
+                assert_eq!(Some(page.unpriced), c.expect.unpriced, "page #{i} unpriced");
+            }
+            (Err(e), Some(code)) => assert_eq!(e.code(), code, "page #{i} error"),
+            (got, want) => panic!("page #{i}: got {got:?}, want error {want:?}"),
+        }
+    }
+    assert_eq!(cases.len(), 45);
+}
+
+#[test]
+fn fli_price_keeps_trailing_zero() {
+    let page = decode_page(&one_row_page("1234.50")).expect("decodes");
+    assert_eq!(page.offers[0].price, "1234.50");
+    assert_eq!(page.offers[0].currency.as_deref(), Some("IDR"));
+}
+
+#[test]
+fn fli_cross_check_catches_wrong_date() {
+    let page = decode_page(&one_row_page("1250000")).expect("decodes");
+    assert_eq!(cross_check(&page, "CGK", "DPS", "2026-12-15", "IDR"), None);
+    assert!(cross_check(&page, "CGK", "DPS", "2026-12-16", "IDR").is_some());
+    assert!(cross_check(&page, "CGK", "SUB", "2026-12-15", "IDR").is_some());
 }
 
 #[test]

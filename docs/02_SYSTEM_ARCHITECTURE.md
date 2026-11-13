@@ -213,6 +213,31 @@ never on provider name. A discovery-only source never produces ranked offers by 
   restart work like normal searches; detailed work items are ordinary work items.
 - Coverage ledger adds "candidates discovered / shortlisted / checked".
 
+### Keeping current work ready for Discover (owner, 2026-11-14)
+
+Discover is a separate feature next to Search (user chooses one), sharing the engine. Until P7
+is approved, ongoing phases (P5.6, iPad parallel pacing, P5.4, P5.7) should keep these seams
+so Discover can plug in later without rework — no Discover code is written now:
+
+- **Provider capabilities stay additive:** new provider roles are new capability flags and
+  protocols, not changes to the detailed-search contract.
+- **Rust core stays feature-agnostic:** money, catalog/locations, ranking, planning and evidence
+  levels expose general functions (e.g. "normalize these airport codes", "rank offers with
+  evidence"), not Search-form-specific ones, so Discover can call them through PyO3 and UniFFI.
+- **Planner accepts an explicit route/date list:** Search expands origins × destinations ×
+  dates; Discover will hand over a shortlist. Keep expansion separate from scheduling.
+- **Evidence level is per offer/result,** never implied by the screen, so "from" prices can be
+  added as a new lowest level.
+- **Engine entry points are not tied to one screen:** the web job API and the iPad
+  `SearchEngine`/`SearchSession` take a request + route/date list, so a Discover screen can
+  start the same engine.
+- **App navigation leaves room for a second top-level feature** (Search | Discover) on web and
+  iPad.
+
+Owner input: discovery-provider candidates already have destination/price APIs, so the shared
+Rust engine can serve Discover on both platforms; budget rules follow the future API contract,
+shortlist size follows the chosen provider (both settled in P7.1–P7.3).
+
 ### Platform note
 
 Web runs discovery in the Python worker today and moves with the rest of the engine in P5.7.

@@ -133,8 +133,12 @@ fare evidence; Surprise Me picks from those results. One engine, web and iPad.
 
 **Dependencies:** P5.5 location catalog in Rust (done, in review); the shared Rust core and
 its PyO3/UniFFI bindings (P5.1); the existing scheduler, pacing, cache and persistence; P5.7
-(web on the Rust core) preferred before web integration, so selection logic is written once;
-owner approval of the scope conflicts listed in 01.
+(web on the Rust core) preferred before web integration, so selection logic is written once.
+Scope: Discover is a separate feature beside Search (owner 2026-11-14), so Search's rules are
+unchanged; until P7 starts, current phases keep the seams listed in
+[02 → keeping current work ready](02_SYSTEM_ARCHITECTURE.md#keeping-current-work-ready-for-discover-owner-2026-11-14).
+Budget rules follow the future discovery API contract; shortlist size follows the chosen
+provider; Surprise Me randomness and regions are deferred.
 
 **Phases (each its own checkpoint PR, owner-reviewed):**
 - P7.1 Discovery-provider feasibility: probe candidates in 03 (terms, freshness, coverage,
@@ -145,7 +149,8 @@ owner approval of the scope conflicts listed in 01.
   prioritization, discovery-to-search plan; Python-reference fixtures like P5.1/P5.5.
 - P7.4 Planner and scheduler integration: discovery as paced, bounded provider work in the
   existing pool; shortlist feeds normal work items; persistence, resume, cancel.
-- P7.5 Web interface: Explore form, progressive destination list, evidence labels, Surprise Me.
+- P7.5 Web interface: Search | Discover choice, Explore form, progressive destination list,
+  evidence labels, Surprise Me.
 - P7.6 Native iPad interface: same, SwiftUI over the same Rust logic (native discovery only if
   P7.1 shows it works without a server).
 - P7.7 Validation: accuracy (discovery price vs checked fare), coverage reporting, pacing and

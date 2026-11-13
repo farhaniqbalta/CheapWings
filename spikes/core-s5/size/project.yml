@@ -1,0 +1,35 @@
+# S5 size check: identical minimal apps with no core, the Rust core, or the Swift core.
+name: S5Size
+options:
+  deploymentTarget:
+    iOS: "17.0"
+packages:
+  RustCore:
+    path: ../rust-swift
+  SwiftCore:
+    path: ../swift-core
+settingGroups:
+  common:
+    GENERATE_INFOPLIST_FILE: YES
+    INFOPLIST_KEY_UILaunchScreen_Generation: YES
+    TARGETED_DEVICE_FAMILY: "1,2"
+    CODE_SIGNING_ALLOWED: NO
+    SWIFT_VERSION: "5.0"
+targets:
+  Baseline:
+    type: application
+    platform: iOS
+    sources: [Baseline]
+    settings: { groups: [common], base: { PRODUCT_BUNDLE_IDENTIFIER: dev.cheapwings.size.baseline } }
+  RustOnly:
+    type: application
+    platform: iOS
+    sources: [RustOnly]
+    dependencies: [{ package: RustCore }]
+    settings: { groups: [common], base: { PRODUCT_BUNDLE_IDENTIFIER: dev.cheapwings.size.rust } }
+  SwiftOnly:
+    type: application
+    platform: iOS
+    sources: [SwiftOnly]
+    dependencies: [{ package: SwiftCore }]
+    settings: { groups: [common], base: { PRODUCT_BUNDLE_IDENTIFIER: dev.cheapwings.size.swift } }

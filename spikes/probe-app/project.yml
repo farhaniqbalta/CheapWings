@@ -9,14 +9,23 @@ packages:
     path: ../fli-probe
   FliWreq:
     path: ../fli-wreq/swift
+  RustCore:
+    path: ../core-s5/rust-swift
+  SwiftCore:
+    path: ../core-s5/swift-core
 targets:
   FliProbeApp:
     type: application
     platform: iOS
-    sources: [Sources]
+    sources:
+      - Sources
+      - path: ../core-s5/fixtures.json
+        buildPhase: resources
     dependencies:
       - package: FliProbe
       - package: FliWreq
+      - package: RustCore
+      - package: SwiftCore
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.cheapwings.fliprobe

@@ -15,9 +15,10 @@ done
 rm -rf build/bindings build/headers swift/fli_wreqFFI.xcframework
 cargo run -q --release --bin uniffi-bindgen -- generate \
     --library target/aarch64-apple-darwin/release/libfli_wreq.a --language swift --out-dir build/bindings
-mkdir -p build/headers swift/Sources/FliWreq
-cp build/bindings/fli_wreqFFI.h build/headers/
-cp build/bindings/fli_wreqFFI.modulemap build/headers/module.modulemap
+# Headers in a per-module subfolder so several XCFrameworks can coexist in one app.
+mkdir -p build/headers/fli_wreqFFI swift/Sources/FliWreq
+cp build/bindings/fli_wreqFFI.h build/headers/fli_wreqFFI/
+cp build/bindings/fli_wreqFFI.modulemap build/headers/fli_wreqFFI/module.modulemap
 cp build/bindings/fli_wreq.swift swift/Sources/FliWreq/Generated.swift
 
 xcodebuild -create-xcframework \

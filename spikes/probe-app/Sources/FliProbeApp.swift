@@ -46,6 +46,7 @@ struct ProbeView: View {
                         }
                     }
                 }
+                S5Section()
                 Section("Offline checks (no network)") {
                     Button("Decoder self-test") {
                         let failures = SelfTest.run()

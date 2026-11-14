@@ -83,7 +83,7 @@ final class SelectionTests: XCTestCase {
         }
         let nonstopOnly = oneDay(0)
         var events: [SearchEvent] = []
-        for await e in SearchEngine(transport: FakeTransport([twoLegs]), sleep: FakeClock().sleep).run(nonstopOnly, combos: try nonstopOnly.plan()) {
+        for await e in SearchEngine(transport: FakeTransport([twoLegs]), maxInFlight: 1, sleep: FakeClock().sleep).run(nonstopOnly, combos: try nonstopOnly.plan()) {
             events.append(e)
         }
         XCTAssertTrue(events.allSatisfy { if case .offers = $0 { return false } else { return true } })
@@ -93,7 +93,7 @@ final class SelectionTests: XCTestCase {
 
         let upToOne = oneDay(1)
         var kept = 0
-        for await e in SearchEngine(transport: FakeTransport([twoLegs]), sleep: FakeClock().sleep).run(upToOne, combos: try upToOne.plan()) {
+        for await e in SearchEngine(transport: FakeTransport([twoLegs]), maxInFlight: 1, sleep: FakeClock().sleep).run(upToOne, combos: try upToOne.plan()) {
             if case .offers(let o) = e { kept += o.count }
         }
         XCTAssertEqual(kept, 1)

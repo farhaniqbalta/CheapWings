@@ -31,7 +31,7 @@ final class ResumeTests: XCTestCase {
     func store() throws -> SearchStore { try SearchStore(path: dir.appendingPathComponent("searches.sqlite").path) }
 
     func session(_ transport: FakeTransport, store: SearchPersistence?, now: @escaping @Sendable () -> Date = { Date() }) -> SearchSession {
-        SearchSession(engine: SearchEngine(transport: transport, sleep: FakeClock().sleep), store: store, now: now)
+        SearchSession(engine: SearchEngine(transport: transport, maxInFlight: 1, sleep: FakeClock().sleep), store: store, now: now)
     }
 
     func waitUntilStopped(_ session: SearchSession) async throws {
@@ -134,6 +134,42 @@ final class ResumeTests: XCTestCase {
         let fetched = await transport.fetched
         XCTAssertEqual(fetched.count, 2)
         XCTAssertEqual(fresh.phase, .stopped(.finished))
+    }
+
+    func testParallelStopLeavesUnreleasedPendingForResume() async throws {
+        let store = try store()
+        let five = SearchRequest(origins: ["CGK"], destinations: ["DPS"], dateFrom: "2026-12-15",
+                                 dateThrough: "2026-12-19", currency: "IDR")
+        let combos = try five.plan()
+        var outcomes: [URL: GateTransport.Outcome] = [:]
+        for (i, combo) in combos.enumerated() {
+            outcomes[five.searchURL(combo)] = i == 1
+                ? .page(FetchedPage(status: 429, body: Data(), refusedRedirect: nil))
+                : .page(page("CGK", "DPS", combo.date, prices: ["\(1_000_000 + i)"]))
+        }
+        let gate = GateTransport(outcomes)
+        let first = SearchSession(engine: SearchEngine(transport: gate, maxInFlight: 3, sleep: FakeClock().sleep), store: store)
+        first.start(five, combos: combos)
+        for _ in 0..<300 where await gate.started.count < 3 { try await Task.sleep(for: .milliseconds(5)) }
+        for i in [2, 0, 1] {  // 3 replies first (buffered), then 1, then the 429 on 2
+            await gate.release(five.searchURL(combos[i]))
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        try await waitUntilStopped(first)
+        XCTAssertEqual(first.phase, .stopped(.rateLimited))
+        XCTAssertEqual(try store.pending(searchId: try XCTUnwrap(store.latest()).id).map(\.routeDate), Array(combos[1...]))
+
+        let stoppedAt = Date()
+        let transport = FakeTransport(combos[1...].map { page("CGK", "DPS", $0.date, prices: ["900000"]) })
+        let later = SearchSession(engine: SearchEngine(transport: transport, maxInFlight: 1, sleep: FakeClock().sleep),
+                                  store: store, now: { stoppedAt.addingTimeInterval(31 * 60) })
+        later.restoreLatest()
+        XCTAssertTrue(later.canResume)
+        later.resume()
+        try await waitUntilStopped(later)
+        let fetched = await transport.fetched.count
+        XCTAssertEqual(fetched, 4)
+        XCTAssertEqual(later.phase, .stopped(.finished))
     }
 
     func testOfflineStoredTextRoundTrips() {

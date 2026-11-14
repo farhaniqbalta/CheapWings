@@ -9,7 +9,7 @@ final class SearchSessionTests: XCTestCase {
     let noPrices = FetchedPage(status: 200, body: Data("<script>AF_initDataCallback({key: 'ds:1', hash: '2', data:[null,null,[[]],null], sideChannel: {}});</script>".utf8), refusedRedirect: nil)
 
     func session(_ transport: FakeTransport) -> SearchSession {
-        SearchSession(engine: SearchEngine(transport: transport, sleep: FakeClock().sleep))
+        SearchSession(engine: SearchEngine(transport: transport, maxInFlight: 1, sleep: FakeClock().sleep))
     }
 
     func waitUntilStopped(_ session: SearchSession) async throws {

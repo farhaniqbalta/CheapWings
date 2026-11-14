@@ -13,7 +13,7 @@ final class DaySummaryTests: XCTestCase {
         // 15th: two offers; 16th: page unreadable; 17th: cheapest; 18th: never reached (hangs).
         let transport = FakeTransport([page("CGK", "DPS", "2026-12-15", prices: ["1300000", "1250000"]), brokenPage,
                                        page("CGK", "DPS", "2026-12-17", prices: ["990000"])], hangWhenEmpty: true)
-        let session = SearchSession(engine: SearchEngine(transport: transport, sleep: FakeClock().sleep), store: nil)
+        let session = SearchSession(engine: SearchEngine(transport: transport, maxInFlight: 1, sleep: FakeClock().sleep), store: nil)
         session.start(request, combos: combos)
         for _ in 0..<300 {
             if case .running(let done, _) = session.phase, done >= 3 { break }

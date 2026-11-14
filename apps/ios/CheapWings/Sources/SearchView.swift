@@ -16,8 +16,7 @@ struct SearchView: View {
         Form {
             Section("Route") {
                 if model.catalog != nil {
-                    routeButton(.origin, model.origin)
-                    routeButton(.destination, model.destination)
+                    RouteHeader(model: model, disabled: model.session.isRunning) { picking = $0 }
                 } else {
                     TextField("From (e.g. CGK, HLP)", text: $model.originsText)
                         .textInputAutocapitalization(.characters)
@@ -48,17 +47,16 @@ struct SearchView: View {
                 .pickerStyle(.segmented)
             }
             Section {
-                Text(model.planSummary)
-                    .foregroundStyle(model.canSearch || model.session.isRunning ? Color.secondary : Color.red)
-                    .font(.footnote)
                 if model.session.isRunning {
-                    Button("Cancel", role: .destructive, action: model.session.cancel)
+                    SignButton(title: "Cancel search", enabled: true, action: model.session.cancel)
                 } else {
-                    Button("Search Google Flights", action: model.start)
-                        .disabled(!model.canSearch)
+                    SignButton(title: model.searchTitle, enabled: model.canSearch, action: model.start)
                 }
+                Text(model.planSummary)
+                    .foregroundStyle(model.canSearch || model.session.isRunning ? AnyShapeStyle(.secondary) : AnyShapeStyle(Theme.hold))
+                    .font(.footnote)
             } footer: {
-                Text("Runs on this iPad only while the app is open. Prices are indicative.")
+                Text("Searches Google Flights from this iPad while the app is open. Prices are indicative.")
             }
         }
         .navigationTitle("CheapWings")
@@ -80,12 +78,64 @@ struct SearchView: View {
         }
     }
 
-    private func routeButton(_ side: Side, _ selection: AirportSelection) -> some View {
-        Button { picking = side } label: {
-            LabeledContent(side.rawValue) {
-                Text(model.label(selection)).foregroundStyle(.primary).multilineTextAlignment(.trailing)
-            }
+}
+
+/// The route as large airport codes (each side opens its picker), place names underneath.
+struct RouteHeader: View {
+    let model: SearchModel
+    let disabled: Bool
+    let pick: (SearchView.Side) -> Void
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: 14) { side(.origin); arrow; side(.destination) }
+            VStack(alignment: .leading, spacing: 10) { side(.origin); side(.destination) }
         }
-        .disabled(model.session.isRunning)
+        .padding(.vertical, 6)
+    }
+
+    private var arrow: some View {
+        Image(systemName: "arrow.right").font(.title2.weight(.semibold)).foregroundStyle(.secondary)
+            .padding(.top, 8).accessibilityHidden(true)
+    }
+
+    private func side(_ side: SearchView.Side) -> some View {
+        let selection = side == .origin ? model.origin : model.destination
+        let codes = model.codes(selection)
+        return Button { pick(side) } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(codes.isEmpty ? "Choose" : codes.joined(separator: " "))
+                    .codeStyle(.largeTitle)
+                    .lineLimit(2).minimumScaleFactor(0.5)
+                    .foregroundStyle(codes.isEmpty ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
+                Text(model.caption(selection)).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .buttonStyle(.plain)
+        .disabled(disabled)
+        .accessibilityLabel("\(side.rawValue): \(model.caption(selection))")
+        .accessibilityHint("Choose airports")
+    }
+}
+
+/// The main action in sign yellow with black text (owner-approved design).
+struct SignButton: View {
+    let title: String
+    let enabled: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.headline)
+                .frame(maxWidth: .infinity, minHeight: 50)
+                .foregroundStyle(Theme.onSign)
+                .background(Theme.sign.opacity(enabled ? 1 : 0.4), in: RoundedRectangle(cornerRadius: 14))
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+        .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
+        .listRowBackground(Color.clear)
     }
 }

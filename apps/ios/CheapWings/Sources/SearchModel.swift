@@ -97,14 +97,30 @@ final class SearchModel {
     }
 
     /// "Tokyo (Major), CGK" — or a prompt when empty.
-    func label(_ selection: AirportSelection) -> String {
+    /// The airport codes a side resolves to (shown large in the route header).
+    func codes(_ selection: AirportSelection) -> [String] {
+        guard let catalog else { return [] }
+        return (try? selection.codes(using: catalog)) ?? []
+    }
+
+    /// "Tokyo, 2 airports and Jakarta Soekarno–Hatta", or a prompt when empty.
+    func caption(_ selection: AirportSelection) -> String {
         guard !selection.tokens.isEmpty else { return "Choose airports" }
         return selection.tokens.map { token in
             switch token {
-            case .airport(let code): return code
-            case .major(_, _, let name): return "\(name) (Major)"
+            case .airport(let code): return catalog?.airport(code: code)?.name ?? code
+            case .major(_, _, let name):
+                let count = codes(AirportSelection([token])).count
+                return "\(name), \(count) major airport\(count == 1 ? "" : "s")"
             }
-        }.joined(separator: ", ")
+        }.joined(separator: " and ")
+    }
+
+    /// "Search 31 days" (departure days in the plan), or plain "Search" when the form is invalid.
+    var searchTitle: String {
+        guard let combos = try? plan.get() else { return "Search" }
+        let days = Set(combos.map(\.date)).count
+        return "Search \(days) day\(days == 1 ? "" : "s")"
     }
 
     func resume() {

@@ -48,6 +48,14 @@ public struct ItineraryInfo: Sendable, Equatable {
             airportChanges: fliAirportChanges(offer: offer))
     }
 
+    /// `435` → `"7 hours 15 minutes"` (VoiceOver).
+    public static func spokenDuration(_ minutes: Int) -> String {
+        let (h, m) = (minutes / 60, minutes % 60)
+        let hours = h == 0 ? nil : "\(h) hour\(h == 1 ? "" : "s")"
+        let mins = m == 0 ? nil : "\(m) minute\(m == 1 ? "" : "s")"
+        return [hours, mins].compactMap { $0 }.joined(separator: " ")
+    }
+
     /// `435` → `"7h 15m"`.
     public static func durationText(_ minutes: Int) -> String {
         let (h, m) = (minutes / 60, minutes % 60)

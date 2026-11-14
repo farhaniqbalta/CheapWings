@@ -89,7 +89,7 @@ struct SelectedTokenRow: View {
         switch token {
         case .airport(let code):
             HStack {
-                Text(code).font(.body.monospaced().weight(.semibold))
+                Text(code).codeStyle()
                 Text(catalog.airport(code: code)?.name ?? "").foregroundStyle(.secondary)
                 Spacer()
                 removeButton("Remove \(code)") { selection.remove(token: token) }
@@ -108,10 +108,11 @@ struct SelectedTokenRow: View {
                         ForEach(codes, id: \.self) { code in
                             Button { selection.remove(code: code, using: catalog) } label: {
                                 Label(code, systemImage: "xmark").labelStyle(ChipLabelStyle())
+                                    .padding(.horizontal, 14)
+                                    .frame(minHeight: 44)
+                                    .background(.quaternary, in: Capsule())
                             }
-                            .buttonStyle(.bordered)
-                            .buttonBorderShape(.capsule)
-                            .controlSize(.small)
+                            .buttonStyle(.plain)
                             .accessibilityLabel("Remove \(code) from \(name)")
                         }
                     }
@@ -137,8 +138,8 @@ struct SelectedTokenRow: View {
 struct ChipLabelStyle: LabelStyle {
     func makeBody(configuration: Configuration) -> some View {
         HStack(spacing: 4) {
-            configuration.title.font(.caption.monospaced().weight(.semibold))
-            configuration.icon.font(.caption2)
+            configuration.title.codeStyle(.subheadline)
+            configuration.icon.font(.caption2.weight(.bold)).foregroundStyle(.secondary)
         }
     }
 }
@@ -159,7 +160,7 @@ struct PlaceRow: View {
                 VStack(alignment: .leading) {
                     Text(place.name)
                     Text(major.map { "Major: \($0.codes.joined(separator: ", "))" }
-                         ?? "\(place.countryName) · \(place.codes.count) airports")
+                         ?? "\(place.countryName), \(place.codes.count) airports")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -167,13 +168,22 @@ struct PlaceRow: View {
                     if selection.tokens.contains(token) {
                         Label("Added", systemImage: "checkmark").font(.subheadline).foregroundStyle(.secondary)
                     } else {
-                        Button("Add \(major.codes.count) major") { selection.add(token, using: catalog) }
-                            .buttonStyle(.borderedProminent)
-                            .controlSize(.small)
-                            .accessibilityLabel("Add \(major.codes.count) major airports of \(place.name)")
+                        Button { selection.add(token, using: catalog) } label: {
+                            Text("Add \(major.codes.count) major")
+                                .font(.subheadline.weight(.bold))
+                                .padding(.horizontal, 14).frame(minHeight: 36)
+                                .foregroundStyle(Theme.onSign)
+                                .background(Theme.sign, in: Capsule())
+                        }
+                        .buttonStyle(.borderless)
+                        .accessibilityHidden(true)  // offered as the row's own action below
                     }
                 }
             }
+        }
+        // VoiceOver: the row opens the place; "Add major airports" is a separate action (P5.5 review).
+        .accessibilityAction(named: Text("Add \(major?.codes.count ?? 0) major airports")) {
+            if major != nil { selection.add(token, using: catalog) }
         }
     }
 }
@@ -194,13 +204,18 @@ struct AirportToggleRow: View {
         Button(action: toggle) {
             HStack {
                 VStack(alignment: .leading) {
-                    Text("\(location.code ?? "") · \(location.name)").foregroundStyle(.primary)
+                    HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text(location.code ?? "").codeStyle()
+                    Text(location.name)
+                }
+                .foregroundStyle(.primary)
                     Text([location.city, location.countryName].compactMap { $0 }.joined(separator: ", "))
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
-                Image(systemName: selected ? "checkmark.circle.fill" : "plus.circle")
-                    .foregroundStyle(selected ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
+                if selected { SelectedMark() } else {
+                    Image(systemName: "plus.circle").font(.title3).foregroundStyle(.secondary)
+                }
             }
         }
         .accessibilityAddTraits(selected ? .isSelected : [])
@@ -244,5 +259,16 @@ struct PlaceAirports: View {
             }
         }
         .navigationTitle(place.name)
+    }
+}
+
+/// Selected airport: black check on sign yellow (reads the same in light and dark mode).
+struct SelectedMark: View {
+    var body: some View {
+        Image(systemName: "checkmark.circle.fill")
+            .symbolRenderingMode(.palette)
+            .foregroundStyle(Theme.onSign, Theme.sign)
+            .font(.title3)
+            .accessibilityLabel("Selected")
     }
 }

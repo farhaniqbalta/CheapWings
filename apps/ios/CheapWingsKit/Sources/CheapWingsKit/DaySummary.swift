@@ -18,6 +18,16 @@ public struct DaySummary: Sendable, Identifiable {
     public let isCheapest: Bool
     public var id: String { date }
 
+    /// The day's lowest price in the display currency, for the strip's text and bar; nil when the
+    /// day only has offers that could not be converted (never mixed into the strip's scale).
+    public var lowestComparable: String? { lowest?.offer.priceComparable }
+
+    /// Set when the day's only offers are in another currency (e.g. "USD"), so the strip labels it.
+    public var unconvertedCurrency: String? {
+        guard let lowest, lowest.offer.priceComparable == nil else { return nil }
+        return lowest.offer.currencyOriginal
+    }
+
     /// `offers` must be ranked (as `SearchSession.offers` is), so each date's first is its lowest.
     public static func make(planned: [WorkItem], finished: Set<WorkItem>, offers: [FoundOffer],
                             failures: [SkippedSearch]) -> [DaySummary] {

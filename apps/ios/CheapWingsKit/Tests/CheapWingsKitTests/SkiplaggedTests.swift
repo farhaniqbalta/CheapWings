@@ -95,6 +95,72 @@ final class MCPClientTests: XCTestCase {
     }
 }
 
+/// Replies by method (order-independent, for concurrent calls); tools/call replies echo the id.
+actor RoutingMCPTransport: MCPTransport {
+    private(set) var methods: [String] = []
+    private(set) var versionHeaders: [String?] = []
+    private var toolStatuses: [Int]
+    private let serverVersion: String
+    private var session = 0
+
+    init(toolStatuses: [Int] = [], serverVersion: String = "2025-11-25") {
+        self.toolStatuses = toolStatuses
+        self.serverVersion = serverVersion
+    }
+
+    func post(_ body: Data, headers: [String: String]) async throws -> MCPReply {
+        let json = (try? JSONSerialization.jsonObject(with: body)) as? [String: Any] ?? [:]
+        let method = json["method"] as? String ?? "?"
+        methods.append(method)
+        versionHeaders.append(headers["MCP-Protocol-Version"])
+        await Task.yield()  // let another caller interleave, like a slow network
+        switch method {
+        case "initialize":
+            session += 1
+            let body = #"{"jsonrpc":"2.0","id":\#(json["id"] as? Int ?? 0),"result":{"protocolVersion":"\#(serverVersion)","capabilities":{}}}"#
+            return MCPReply(status: 200, headers: ["content-type": "application/json", "mcp-session-id": "s\(session)"], body: Data(body.utf8))
+        case "notifications/initialized":
+            return MCPReply(status: 202, headers: [:], body: Data())
+        default:
+            let status = toolStatuses.isEmpty ? 200 : toolStatuses.removeFirst()
+            guard status == 200 else { return MCPReply(status: status, headers: [:], body: Data()) }
+            return MCPReply(status: 200, headers: ["content-type": "application/json"], body: Data(toolReply(id: json["id"] as? Int ?? 0).utf8))
+        }
+    }
+}
+
+final class MCPConcurrencyTests: XCTestCase {
+    func testConcurrentCallsShareOneHandshake() async throws {
+        let transport = RoutingMCPTransport()
+        let client = MCPClient(transport: transport)
+        async let a = client.callTool(name: "sk_flights_search", arguments: [:])
+        async let b = client.callTool(name: "sk_flights_search", arguments: [:])
+        async let c = client.callTool(name: "sk_flights_search", arguments: [:])
+        _ = try await (a, b, c)
+        let methods = await transport.methods
+        XCTAssertEqual(methods.filter { $0 == "initialize" }.count, 1, "\(methods)")
+        XCTAssertEqual(methods.filter { $0 == "tools/call" }.count, 3)
+    }
+
+    func testExpiredSessionReinitializesOnceForConcurrentCalls() async throws {
+        let transport = RoutingMCPTransport(toolStatuses: [200, 404, 404])
+        let client = MCPClient(transport: transport)
+        _ = try await client.callTool(name: "sk_flights_search", arguments: [:])
+        async let b = client.callTool(name: "sk_flights_search", arguments: [:])
+        async let c = client.callTool(name: "sk_flights_search", arguments: [:])
+        _ = try await (b, c)
+        let methods = await transport.methods
+        XCTAssertEqual(methods.filter { $0 == "initialize" }.count, 2, "one first handshake, one re-handshake: \(methods)")
+    }
+
+    func testNegotiatedVersionIsSent() async throws {
+        let transport = RoutingMCPTransport(serverVersion: "2025-06-18")
+        _ = try await MCPClient(transport: transport).callTool(name: "sk_flights_search", arguments: [:])
+        let headers = await transport.versionHeaders
+        XCTAssertEqual(headers.last ?? nil, "2025-06-18", "later requests carry the version the server agreed")
+    }
+}
+
 final class SkiplaggedProviderTests: XCTestCase {
     let request = SearchRequest(origins: ["MEL"], destinations: ["DPS"], dateFrom: "2026-12-16",
                                 dateThrough: "2026-12-16", currency: "IDR")

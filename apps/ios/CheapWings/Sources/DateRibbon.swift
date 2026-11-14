@@ -9,7 +9,8 @@ struct DateRibbon: View {
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        let maxPrice = days.compactMap { $0.lowest.flatMap { Decimal(string: $0.shownPrice.amount) } }.max() ?? 1
+        // Bars share one scale in the display currency only; unconverted days get no bar.
+        let maxPrice = days.compactMap { $0.lowestComparable.flatMap { Decimal(string: $0) } }.max() ?? 1
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
                 ForEach(days) { day in
@@ -68,7 +69,7 @@ private struct DayColumn: View {
 
     @ViewBuilder private var bar: some View {
         let height: CGFloat = {
-            guard let price = day.lowest.flatMap({ Decimal(string: $0.shownPrice.amount) }), maxPrice > 0 else { return 0 }
+            guard let price = day.lowestComparable.flatMap({ Decimal(string: $0) }), maxPrice > 0 else { return 0 }
             return CGFloat(truncating: NSDecimalNumber(decimal: 30 * price / maxPrice))
         }()
         RoundedRectangle(cornerRadius: 3)
@@ -79,7 +80,8 @@ private struct DayColumn: View {
     }
 
     private var priceText: String {
-        if let lowest = day.lowest { return CompactPrice.text(lowest.shownPrice.amount) }
+        if let comparable = day.lowestComparable { return CompactPrice.text(comparable) }
+        if let lowest = day.lowest, let other = day.unconvertedCurrency { return "\(other) \(CompactPrice.text(lowest.offer.priceOriginal))" }
         switch day.state {
         case .pending: return "···"
         case .failed: return "—"

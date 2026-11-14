@@ -61,9 +61,11 @@ actor RunEmitter {
 /// `pacing.maxInFlight` are open, and results are released in the lane's order. A slot frees
 /// when its result is released; a stop on item k releases nothing for k or later in that lane
 /// (they stay pending for Resume). A retry-after reply pauses the lane and retries that item,
-/// at most 3 attempts. Offline or cancel stops every lane; a provider stop only its own.
+/// at most 3 attempts (then, or for a wait over 2 min, the source stops as rate-limited). Offline or cancel stops every lane; a provider stop only its own.
 enum PacedRunner {
     static let maxAttempts = 3
+    /// Longer Retry-After waits stop the source instead of sleeping silently.
+    static let maxRetryWait: Duration = .seconds(120)
 
     static func execute(providers: [SearchProvider], request: SearchRequest, items: [WorkItem],
                         sleep: @escaping @Sendable (Duration) async throws -> Void,
@@ -139,7 +141,12 @@ enum PacedRunner {
                             let outcome = await provider.search(combo, request: request)
                             if case .retry(let after) = outcome {
                                 attempts += 1
-                                if attempts >= maxAttempts { return (position, .failed(code: "http_rate_limited", hidden: [])) }
+                                // Still limited after 3 tries, or asked to wait long: stop this source
+                                // (its days stay pending, cooldown applies) — never burn the rest.
+                                if attempts >= maxAttempts || after > maxRetryWait {
+                                    stopSeen.set()
+                                    return (position, .stop(.rateLimited))
+                                }
                                 pause.extend(by: after)
                                 do { try await sleep(after) } catch { return (position, .stop(.cancelled)) }
                                 if Task.isCancelled { return (position, .stop(.cancelled)) }

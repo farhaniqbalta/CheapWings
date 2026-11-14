@@ -124,7 +124,9 @@ final class ProviderLanesTests: XCTestCase {
         XCTAssertEqual(stop(events), .finished)
     }
 
-    func testRetryGivesUpAfterThreeAttempts() async {
+    func testSustainedRateLimitStopsTheLaneAndKeepsItemsPending() async {
+        // Review fix: after 3 limited attempts the source stops (cooldown, Resume later) instead of
+        // failing the day for good and spending 3 requests on every remaining day.
         let c = combos
         let limited = ProviderOutcome.retry(after: .seconds(15))
         let skip = ScriptedProvider("skiplagged", pacing: slow, [c[0].date: [limited, limited, limited],
@@ -132,11 +134,37 @@ final class ProviderLanesTests: XCTestCase {
         let fli = ScriptedProvider("fli", pacing: fast, [c[0].date: [ScriptedProvider.found("fli", c[0], price: "1")],
                                                         c[1].date: [ScriptedProvider.found("fli", c[1], price: "2")]])
         let events = await collect(SearchEngine(providers: [fli, skip], sleep: FakeClock().sleep))
-        let failed = events.compactMap { if case .comboFailed(let rd, let code) = $0 { return "\(rd.date) \(code)" } else { return nil } }
-        XCTAssertEqual(failed, ["\(c[0].date) http_rate_limited"])
+        XCTAssertFalse(events.contains { if case .comboFailed = $0 { return true } else { return false } }, "not saved as failed")
+        XCTAssertTrue(events.contains { if case .providerStopped("skiplagged", .rateLimited) = $0 { return true } else { return false } })
         let calls = await skip.script.calls
         XCTAssertEqual(calls.filter { $0 == c[0].date }.count, 3)
+        XCTAssertFalse(calls.contains(c[1].date), "no new Skiplagged request after it kept saying slow down")
         XCTAssertEqual(offerProviders(events).filter { $0 == "fli" }.count, 2)
+    }
+
+    func testLongRetryAfterStopsInsteadOfSleeping() async {
+        let c = combos
+        let skip = ScriptedProvider("skiplagged", pacing: slow, [c[0].date: [.retry(after: .seconds(3600))]])
+        let fli = ScriptedProvider("fli", pacing: fast, [c[0].date: [ScriptedProvider.found("fli", c[0], price: "1")],
+                                                        c[1].date: [ScriptedProvider.found("fli", c[1], price: "2")]])
+        let clock = FakeClock()
+        let events = await collect(SearchEngine(providers: [fli, skip], sleep: clock.sleep))
+        XCTAssertFalse(clock.sleeps.contains(.seconds(3600)), "never sleeps an hour silently")
+        XCTAssertTrue(events.contains { if case .providerStopped("skiplagged", .rateLimited) = $0 { return true } else { return false } })
+    }
+
+    func testUnconvertedOnlyDayIsLabelledNotMixedIntoTheStrip() {
+        let c = combos
+        let usdOnly = FoundOffer(routeDate: c[0], index: 0, offer: sourceOffer("skiplagged", c[0].date, price: "271", unconverted: true),
+                                 searchURL: URL(string: "https://example.invalid")!)
+        let idr = FoundOffer(routeDate: c[1], index: 0, offer: sourceOffer("fli", c[1].date, price: "1500000"),
+                             searchURL: URL(string: "https://example.invalid")!)
+        let items = c.map { WorkItem(provider: "fli", routeDate: $0) }
+        let days = DaySummary.make(planned: items, finished: Set(items), offers: rankLowestAdvertised([usdOnly, idr]), failures: [])
+        XCTAssertNil(days[0].lowestComparable, "a USD-only day has no comparable price for the strip")
+        XCTAssertEqual(days[0].unconvertedCurrency, "USD")
+        XCTAssertEqual(days[1].lowestComparable, "1500000")
+        XCTAssertNil(days[1].unconvertedCurrency)
     }
 
     func testLaneStopOnlyStopsThatProvider() async {

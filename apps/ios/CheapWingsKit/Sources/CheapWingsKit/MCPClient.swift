@@ -53,14 +53,20 @@ public final class URLSessionMCPTransport: MCPTransport {
     }
 }
 
-/// Minimal MCP client for one server: `initialize` once (keeping `Mcp-Session-Id`),
-/// `notifications/initialized`, then `tools/call`. Returns the raw JSON-RPC reply text so the
-/// Rust core parses money from exact number text. Re-initializes once when the session expires.
+/// Minimal MCP client for one server: `initialize` once (keeping `Mcp-Session-Id` and the
+/// protocol version the server agreed), `notifications/initialized`, then `tools/call`. Returns
+/// the raw JSON-RPC reply text so the Rust core parses money from exact number text.
+/// Concurrent calls share one handshake; an expired session is re-initialised once (only by the
+/// first caller that sees the 404 for that session).
 public actor MCPClient {
     public static let protocolVersion = "2025-11-25"
     private let transport: MCPTransport
     private var sessionID: String?
+    private var negotiatedVersion = MCPClient.protocolVersion
     private var ready = false
+    /// Bumped by every completed handshake, so a stale 404 never resets a newer session.
+    private var generation = 0
+    private var handshake: Task<Void, Error>?
     private var nextID = 1
 
     public init(transport: MCPTransport) {
@@ -69,25 +75,45 @@ public actor MCPClient {
 
     public func callTool(name: String, arguments: [String: Any]) async throws -> String {
         let params: [String: Any] = ["name": name, "arguments": arguments]
-        try await ensureReady()
+        let session = try await ensureReady()
         do {
             return try await rpc("tools/call", params: params)
-        } catch MCPError.http(status: 404, _) where sessionID != nil {
-            ready = false
-            sessionID = nil
-            try await ensureReady()
+        } catch MCPError.http(status: 404, _) {
+            if session == generation {  // this session expired: drop it (once)
+                ready = false
+                sessionID = nil
+            }
+            _ = try await ensureReady()
             return try await rpc("tools/call", params: params)
         }
     }
 
-    private func ensureReady() async throws {
-        guard !ready else { return }
-        _ = try await rpc("initialize", params: [
+    /// Ready session generation; callers arriving during a handshake wait for that same one.
+    private func ensureReady() async throws -> Int {
+        if ready { return generation }
+        if let handshake {
+            try await handshake.value
+            return generation
+        }
+        let task = Task { try await self.performHandshake() }
+        handshake = task
+        defer { handshake = nil }
+        try await task.value
+        return generation
+    }
+
+    private func performHandshake() async throws {
+        let reply = try await rpc("initialize", params: [
             "protocolVersion": Self.protocolVersion,
             "capabilities": [String: Any](),
             "clientInfo": ["name": "CheapWings", "version": "0.2"],
         ])
+        if let object = try? JSONSerialization.jsonObject(with: Data(reply.utf8)) as? [String: Any],
+           let version = (object["result"] as? [String: Any])?["protocolVersion"] as? String, !version.isEmpty {
+            negotiatedVersion = version
+        }
         _ = try await send(["jsonrpc": "2.0", "method": "notifications/initialized"])
+        generation += 1
         ready = true
     }
 
@@ -108,7 +134,7 @@ public actor MCPClient {
         var headers: [String: String] = [:]
         if let sessionID { headers["Mcp-Session-Id"] = sessionID }
         if ready || message["method"] as? String == "notifications/initialized" {
-            headers["MCP-Protocol-Version"] = Self.protocolVersion
+            headers["MCP-Protocol-Version"] = negotiatedVersion
         }
         let body = try JSONSerialization.data(withJSONObject: message)
         let reply = try await transport.post(body, headers: headers)

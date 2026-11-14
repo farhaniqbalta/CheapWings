@@ -48,6 +48,20 @@ final class ItineraryInfoTests: XCTestCase {
         XCTAssertEqual(info.legMinutes, [nil])
     }
 
+    func testInconsistentTimesGiveNoDuration() {
+        // Arrival before departure (bad data) must read "unknown", never "-1h".
+        let offer = FliOffer(price: "1", currency: "IDR", legs: [leg("CGK", "DPS", "2026-12-15T10:00", "2026-12-15T08:00")])
+        let info = ItineraryInfo.make(offer: offer, catalog: testCatalog)
+        XCTAssertEqual(info.legMinutes, [nil])
+        XCTAssertNil(info.totalMinutes)
+    }
+
+    func testSpokenDuration() {
+        XCTAssertEqual(ItineraryInfo.spokenDuration(435), "7 hours 15 minutes")
+        XCTAssertEqual(ItineraryInfo.spokenDuration(60), "1 hour")
+        XCTAssertEqual(ItineraryInfo.spokenDuration(1), "1 minute")
+    }
+
     func testDurationText() {
         XCTAssertEqual(ItineraryInfo.durationText(435), "7h 15m")
         XCTAssertEqual(ItineraryInfo.durationText(60), "1h")

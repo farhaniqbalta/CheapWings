@@ -75,6 +75,8 @@ public enum StopReason: Sendable, Equatable {
     case backgrounded
     /// The app was killed or force-quit while searching (found on next launch).
     case interrupted
+    /// The device lost its internet connection; unfinished route/dates stay pending.
+    case offline
 }
 
 public enum SearchEvent: Sendable {
@@ -94,6 +96,11 @@ public enum SearchEvent: Sendable {
 public actor SearchEngine {
     /// Hidden-offer reason for itineraries over the user's Max stops.
     public static let stopLimitReason = "more stops than your Max stops"
+    /// Pause (Resume later) rather than fail: a wrong "failed" loses that route/date for good.
+    /// Includes DNS/host errors from Wi-Fi with no internet (captive portal, dead router).
+    static let offlineCodes: Set<URLError.Code> = [.notConnectedToInternet, .networkConnectionLost,
+                                                   .dataNotAllowed, .internationalRoamingOff,
+                                                   .cannotFindHost, .dnsLookupFailed, .cannotConnectToHost]
 
     private let transport: FliTransport
     private let interval: Duration
@@ -131,6 +138,9 @@ public actor SearchEngine {
                 page = try await transport.fetch(url)
             } catch {
                 if Task.isCancelled { return stop(.cancelled) }
+                // No connection: pause (route/date stays pending for Resume) instead of failing
+                // every remaining route/date within seconds at 0.25 s.
+                if let code = (error as? URLError)?.code, Self.offlineCodes.contains(code) { return stop(.offline) }
                 out.yield(.comboFailed(combo, code: "network"))
                 out.yield(.progress(done: index + 1, total: combos.count))
                 continue

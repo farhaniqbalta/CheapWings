@@ -22,9 +22,13 @@ final class SearchModel {
     var currency = "IDR"
 
     let session: SearchSession
+    let network = NetworkMonitor()
     /// The shared airport catalog (bundled `catalog.json`, same file as backend and web).
     let catalog: LocationCatalog?
     let catalogError: String?
+    /// Airline names for codes (bundled `airlines.json`); codes alone if missing.
+    let airlines: AirlineNames? = Bundle.main.url(forResource: "airlines", withExtension: "json")
+        .flatMap { try? Data(contentsOf: $0) }.flatMap { try? AirlineNames(json: $0) }
     /// Set when the on-device history could not be opened (search still works).
     let historyError: String?
     private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
@@ -77,6 +81,7 @@ final class SearchModel {
     var plan: Result<[RouteDate], Error> { Result { try makeRequest().plan() } }
 
     var planSummary: String {
+        if !network.isOnline && !session.isRunning { return "You're offline. Connect to the internet to search." }
         switch plan {
         case .success(let combos): return "\(combos.count) route/date searches · 0.25 s apart"
         case .failure(PlanSearchError.Rejected(_, let detail)), .failure(CatalogError.Failed(_, let detail)):
@@ -85,7 +90,8 @@ final class SearchModel {
         }
     }
 
-    var canSearch: Bool { !session.isRunning && (try? plan.get()) != nil }
+    var canSearch: Bool { network.isOnline && !session.isRunning && (try? plan.get()) != nil }
+    var canResume: Bool { network.isOnline && session.canResume }
 
     func start() {
         guard canSearch, let request = try? makeRequest(), let combos = try? request.plan() else { return }
@@ -94,18 +100,34 @@ final class SearchModel {
     }
 
     /// "Tokyo (Major), CGK" — or a prompt when empty.
-    func label(_ selection: AirportSelection) -> String {
+    /// The airport codes a side resolves to (shown large in the route header).
+    func codes(_ selection: AirportSelection) -> [String] {
+        guard let catalog else { return [] }
+        return (try? selection.codes(using: catalog)) ?? []
+    }
+
+    /// "Tokyo, 2 airports and Jakarta Soekarno–Hatta", or a prompt when empty.
+    func caption(_ selection: AirportSelection) -> String {
         guard !selection.tokens.isEmpty else { return "Choose airports" }
         return selection.tokens.map { token in
             switch token {
-            case .airport(let code): return code
-            case .major(_, _, let name): return "\(name) (Major)"
+            case .airport(let code): return catalog?.airport(code: code)?.name ?? code
+            case .major(_, _, let name):
+                let count = codes(AirportSelection([token])).count
+                return "\(name), \(count) major airport\(count == 1 ? "" : "s")"
             }
-        }.joined(separator: ", ")
+        }.joined(separator: " and ")
+    }
+
+    /// "Search 31 days" (departure days in the plan), or plain "Search" when the form is invalid.
+    var searchTitle: String {
+        guard let combos = try? plan.get() else { return "Search" }
+        let days = Set(combos.map(\.date)).count
+        return "Search \(days) day\(days == 1 ? "" : "s")"
     }
 
     func resume() {
-        guard session.canResume else { return }
+        guard canResume else { return }
         session.resume()
         if session.isRunning { requestContinuedProcessing() }
     }

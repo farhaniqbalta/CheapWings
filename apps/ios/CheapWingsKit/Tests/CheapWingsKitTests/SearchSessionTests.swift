@@ -69,6 +69,16 @@ final class SearchSessionTests: XCTestCase {
         let session = session(FakeTransport(results: [.failure(URLError(.notConnectedToInternet))]))
         session.start(request, combos: try request.plan())
         try await waitUntilStopped(session)
+        // P5.6: offline pauses the search (Resume later) instead of failing route/dates.
+        XCTAssertEqual(session.phase, .stopped(.offline))
+        XCTAssertNotEqual(session.emptyOutcome, .formatChanged)
+        XCTAssertTrue(session.failures.isEmpty)
+    }
+
+    func testTimeoutsStillReportSearchesFailed() async throws {
+        let session = session(FakeTransport(results: [.failure(URLError(.timedOut))]))
+        session.start(request, combos: try request.plan())
+        try await waitUntilStopped(session)
         XCTAssertEqual(session.emptyOutcome, .searchesFailed(1))
         XCTAssertEqual(session.failures.map(\.code), ["network"])
     }

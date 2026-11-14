@@ -47,6 +47,9 @@ public final class SearchSession {
     /// Set when on-device history failed; searching continues without it.
     public private(set) var storeError: String?
     public private(set) var resumable: ResumeInfo?
+    /// Every route/date of the search being shown, and the ones already searched (date strip).
+    public private(set) var planned: [RouteDate] = []
+    public private(set) var finished: Set<RouteDate> = []
 
     private let engine: SearchEngine
     private let store: SearchPersistence?
@@ -105,6 +108,8 @@ public final class SearchSession {
         hiddenOffers = [:]
         resumable = nil
         searchID = nil
+        planned = combos
+        finished = []
         if let store {
             do { searchID = try store.createSearch(request: request.stored, combos: combos, nowMs: now().milliseconds) }
             catch { record(error) }
@@ -126,6 +131,8 @@ public final class SearchSession {
         self.request = request
         searchID = stored.id
         total = stored.combos.count
+        planned = stored.combos.map(\.routeDate)
+        finished = Set(stored.combos.filter { $0.status != .pending }.map(\.routeDate))
         currency = request.currency
         offers = rankLowestAdvertised(stored.offers.compactMap { item in
             guard Int(item.comboIndex) < stored.combos.count else { return nil }
@@ -237,6 +244,7 @@ public final class SearchSession {
             phase = .running(done: doneBefore, total: total)
         case .progress(let done, _):
             // The engine emits exactly one progress per finished route/date: checkpoint it.
+            if run.indices.contains(done - 1) { finished.insert(run[done - 1].routeDate) }
             checkpoint(runIndex: done - 1)
             finishedInRun = done
             phase = .running(done: doneBefore + done, total: total)

@@ -29,7 +29,8 @@ public struct ItineraryInfo: Sendable, Equatable {
         }
         func minutes(_ from: Date?, _ to: Date?) -> Int? {
             guard let from, let to else { return nil }
-            return Int(to.timeIntervalSince(from) / 60)
+            let minutes = Int(to.timeIntervalSince(from) / 60)
+            return minutes >= 0 ? minutes : nil  // inconsistent times: unknown, never negative
         }
         let legs = offer.legs
         let departs = legs.map { instant($0.departLocal, at: $0.origin) }
@@ -45,6 +46,14 @@ public struct ItineraryInfo: Sendable, Equatable {
             legMinutes: legs.indices.map { minutes(departs[$0], arrives[$0]) },
             layovers: layovers,
             airportChanges: fliAirportChanges(offer: offer))
+    }
+
+    /// `435` → `"7 hours 15 minutes"` (VoiceOver).
+    public static func spokenDuration(_ minutes: Int) -> String {
+        let (h, m) = (minutes / 60, minutes % 60)
+        let hours = h == 0 ? nil : "\(h) hour\(h == 1 ? "" : "s")"
+        let mins = m == 0 ? nil : "\(m) minute\(m == 1 ? "" : "s")"
+        return [hours, mins].compactMap { $0 }.joined(separator: " ")
     }
 
     /// `435` → `"7h 15m"`.

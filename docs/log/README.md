@@ -26,6 +26,7 @@ their original sessions; they are not current instructions or deployment state.
 | [P5.2 iPad app shell](p5.2.md) | Rust search planning; CheapWingsKit transport + paced engine; SwiftUI iPad app running Fli searches on-device; owner device check. [Plan](p5.2-plan.md) |
 | [P5.3 persistence + resume](p5.3.md) | Rust SQLite store, checkpoint per route/date, restore + Resume on iPad; continued processing deferred (registration rejected on device). [Plan](p5.3-plan.md) |
 | [P5.5 iPad feature parity](p5.5.md) | Location catalog in Rust, iPad airport picker (Major airports, stacked places, removable airports), Max stops filter, itinerary details. [Plan](p5.5-plan.md) |
+| [P5.6 iPad polish](p5.6.md) | Offline pause/resume, picker search pages, airfield-signage design with date strip, airline names, ties, VoiceOver and larger text. [Plan](p5.6-plan.md) |
 
 ## Reporting convention
 

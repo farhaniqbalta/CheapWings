@@ -147,6 +147,37 @@ final class SearchEngineTests: XCTestCase {
         XCTAssertEqual(count, 2)
     }
 
+    func testOfflineErrorStopsAndLeavesComboPending() async throws {
+        let transport = FakeTransport(results: [.success(page("CGK", "DPS", "2026-12-15", prices: ["1250000"])),
+                                                .failure(URLError(.notConnectedToInternet))])
+        let events = await collect(SearchEngine(transport: transport, sleep: FakeClock().sleep), try combos())
+        XCTAssertEqual(stop(events), .offline)
+        XCTAssertEqual(offers(events).count, 1)
+        XCTAssertTrue(failures(events).isEmpty, "offline is a pause, not a failed route/date")
+        let progress = events.filter { if case .progress = $0 { return true } else { return false } }
+        XCTAssertEqual(progress.count, 1)
+    }
+
+    func testNoInternetBehindWiFiPausesToo() async throws {
+        // Wi-Fi up but no internet (captive portal, dead router): DNS / host errors, not "offline".
+        for code in [URLError.Code.cannotFindHost, .dnsLookupFailed, .cannotConnectToHost] {
+            let transport = FakeTransport(results: Array(repeating: .failure(URLError(code)), count: 3))
+            let events = await collect(SearchEngine(transport: transport, sleep: FakeClock().sleep), try combos())
+            XCTAssertEqual(stop(events), .offline, "\(code)")
+            XCTAssertTrue(failures(events).isEmpty, "\(code)")
+        }
+    }
+
+    func testTimeoutStillFailsOnlyThatCombo() async throws {
+        let transport = FakeTransport(results: [.failure(URLError(.timedOut)),
+                                                .success(page("CGK", "DPS", "2026-12-16", prices: ["1300000"])),
+                                                .success(page("CGK", "DPS", "2026-12-17", prices: ["1100000"]))])
+        let events = await collect(SearchEngine(transport: transport, sleep: FakeClock().sleep), try combos())
+        XCTAssertEqual(failures(events), ["network"])
+        XCTAssertEqual(offers(events).count, 2)
+        XCTAssertEqual(stop(events), .finished)
+    }
+
     func testSchemaChangedContinues() async throws {
         let transport = FakeTransport([brokenPage, page("CGK", "DPS", "2026-12-16", prices: ["1300000"]), brokenPage])
         let events = await collect(SearchEngine(transport: transport, sleep: FakeClock().sleep), try combos())

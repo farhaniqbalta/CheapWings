@@ -321,8 +321,9 @@ def location_search_cases():
 
     def case(text, within=None):
         try:
-            ids = [e["id"] for e in cat.search(text, within)][:15]
-            return {"text": text, "within": within, "expect": ids}
+            found = cat.search(text, within)
+            # P5.6: total = full match count (the picker shows "N more").
+            return {"text": text, "within": within, "expect": [e["id"] for e in found][:15], "total": len(found)}
         except ValueError as exc:
             code = "too_long" if "exceeds 100" in str(exc) else "unknown_location"
             return {"text": text, "within": within, "expect": {"error": code}}
@@ -332,6 +333,9 @@ def location_search_cases():
               case("", "airport:CGK"), case("x" * 101), case("tokyo", "nowhere:XX")]
     names = [e["name"] for e in cat.entities.values() if e["type"] != "country"]
     cases += [case(rng.choice(names)) for _ in range(20)]
+    # P5.6: typed combining marks. Python drops only combining class != 0 (Mn), keeps spacing
+    # marks (Mc, e.g. Devanagari "ा"), so "Tokyoा" matches nothing.
+    cases += [case(q) for q in ("Tokyoा", "दिल्ली", "jakartaँ")]
     return cases
 
 

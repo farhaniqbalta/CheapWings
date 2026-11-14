@@ -35,7 +35,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | P5.2 iPad app shell | Done; [PR #11](https://github.com/farhaniqbalta/CheapWings/pull/11) + follow-up [#12](https://github.com/farhaniqbalta/CheapWings/pull/12) merged `53c0f6c` | [P5.2](docs/log/p5.2.md), [plan](docs/log/p5.2-plan.md) |
 | P5.3 Persistence + resume | Done; [PR #13](https://github.com/farhaniqbalta/CheapWings/pull/13) merged `6c431e9` | [P5.3](docs/log/p5.3.md), [plan](docs/log/p5.3-plan.md) |
 | P5.5 iPad feature parity | Done; [PR #14](https://github.com/farhaniqbalta/CheapWings/pull/14) merged `3c38427`; Fli 0.25 s + P7 docs via [PR #15](https://github.com/farhaniqbalta/CheapWings/pull/15) | [P5.5](docs/log/p5.5.md), [plan](docs/log/p5.5-plan.md), [Fli 0.25 s test](docs/log/p5.5-fli-interval.md) |
-| P5.6 iPad polish | Not started | |
+| P5.6 iPad polish | Implemented on branch `p5.6-ipad-polish`; owner device checks passed; awaiting owner review | [P5.6](docs/log/p5.6.md), [plan](docs/log/p5.6-plan.md) |
 | P5.4 More providers on iPad | Moved to the bottom by owner (2026-11-14): iPad is Fli-only for now; runs just before the web migration | |
 | P5.7 Web backend onto the Rust core | Not started (web keeps all four providers in Python until then) | |
 | P6 Release acceptance | Not started | |
@@ -50,15 +50,13 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | Fli | Owner-requested personal-use integration (2026-11-12) | Google Flights public page; indicative quotes/search links; basic-economy exclusion unsupported; same inventory as swoop. |
 
 ## Latest checkpoint
-- P5.5 (branch `p5.5-ipad-parity`): iPad airport picker over the shared location catalog (Rust port of `catalog.py`, same `catalog.json`): one-tap Major airports for cities/countries, several places per side, remove single airports after choosing; Max stops filter (Rust, per offer); itinerary details (flight numbers, local times, durations from airport time zones, layovers, airport-change warning).
-- Owner device checks passed (picker, stops, details, resume); missing Back button on details fixed.
-- Gates: Rust 28, backend 252, Swift Core 12 + Kit 43, iOS Release build.
-- Fli 0.25 s test (owner request): 270 live requests (1 s × 30, then 0.25 s × 120 twice), 0 errors, 0 blocks; a 120-search job takes ~32 s instead of ~2 min. Owner applied 0.25 s to web and iPad (iPad still sequential) ([log](docs/log/p5.5-fli-interval.md)).
-- Order (owner 2026-11-14): P5.6 polish → iPad parallel Fli pacing (web start-to-start logic) → P5.4 more iPad providers → P5.7 web migration → P6.
-- Details and rulings: [P5.5](docs/log/p5.5.md). Open: iOS 26 continued processing; web `providers/fli.py` whole-page currency rule (p5.2.md); web picker parity with the iPad token picker.
+- P5.6 (branch `p5.6-ipad-polish`): offline pauses and resumes instead of failing route/dates; picker shows "N more" and folds text exactly like Python; new airfield-signage design (owner-approved mockup) with a lowest-fare-per-day date strip, airline names (fli table, same as web), tie highlighting, details timeline; VoiceOver, larger text, dark mode, narrow windows.
+- Owner device checks passed ("nice, i approve it").
+- Gates: Rust 28, backend 252, Swift Core 12 + Kit 57, iOS Release build.
+- Details and rulings: [P5.6](docs/log/p5.6.md). Open: iOS 26 continued processing; web `providers/fli.py` whole-page currency rule.
 
 ## Next task
-P5.6 — iPhone layout polish, Dynamic Type / VoiceOver audit, dark mode, offline states. Plan first; owner reviews and merges every checkpoint PR.
+Owner review of the P5.6 PR. Then iPad parallel Fli pacing (web start-to-start logic), then P5.4. Plan first; owner reviews and merges every checkpoint PR.
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

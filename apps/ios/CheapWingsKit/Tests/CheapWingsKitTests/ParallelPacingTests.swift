@@ -66,6 +66,21 @@ struct SlowFakeProvider: SearchProvider {
     }
 }
 
+/// A pacing sleep the test holds open, then releases (every later sleep returns at once).
+actor SleepGate {
+    private var isOpen = false
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+    func wait() async {
+        if isOpen { return }
+        await withCheckedContinuation { waiters.append($0) }
+    }
+    func open() {
+        isOpen = true
+        waiters.forEach { $0.resume() }
+        waiters = []
+    }
+}
+
 actor InFlightCounter {
     private(set) var now = 0
     private(set) var peak = 0
@@ -179,6 +194,24 @@ final class ParallelPacingTests: XCTestCase {
         XCTAssertEqual(stopReason(events), .rateLimited)
         let started = await transport.started.count
         XCTAssertEqual(started, 4, "no new request after the 429")
+    }
+
+    func testNoNewStartAfterAStopArrivesDuringThePacingWait() async throws {
+        // Review finding: a 429 that lands while the launcher sleeps must stop further starts.
+        let request = request(days: 6), combos = try request.plan()
+        let limited = FetchedPage(status: 429, body: Data(), refusedRedirect: nil)
+        let transport = GateTransport(outcomes(request, combos, special: [0: .page(limited)]))
+        let pause = SleepGate()
+        let engine = SearchEngine(transport: transport, maxInFlight: 6, sleep: { _ in await pause.wait() })
+        let consumer = consume(engine, request, combos)
+        try await waitStarted(transport, 1)
+        await transport.release(request.searchURL(combos[0]))  // 429 arrives while the launcher sleeps
+        try await Task.sleep(for: .milliseconds(50))
+        await pause.open()
+        let events = await consumer.value
+        let started = await transport.started.count
+        XCTAssertEqual(started, 1, "no request may start after Google said slow down")
+        XCTAssertEqual(stopReason(events), .rateLimited)
     }
 
     func testOfflineMidFlightOneStopNoFailures() async throws {

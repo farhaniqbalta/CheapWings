@@ -47,6 +47,25 @@ final class SearchSessionTests: XCTestCase {
         session.cancel()
     }
 
+    func testStartingAgainCancelsEveryParallelRequest() async throws {
+        // P5.8: with several requests open, a restart must cancel all of them (never two engines).
+        let four = SearchRequest(origins: ["CGK"], destinations: ["DPS"], dateFrom: "2026-12-15",
+                                 dateThrough: "2026-12-18", currency: "IDR")
+        let combos = try four.plan()
+        var outcomes: [URL: GateTransport.Outcome] = [:]
+        for combo in combos { outcomes[four.searchURL(combo)] = .page(page("CGK", "DPS", combo.date, prices: ["1"])) }
+        let gate = GateTransport(outcomes)
+        let session = SearchSession(engine: SearchEngine(transport: gate, maxInFlight: 3, sleep: FakeClock().sleep))
+        session.start(four, combos: combos)
+        for _ in 0..<200 where await gate.started.count < 3 { try await Task.sleep(for: .milliseconds(5)) }
+        session.start(four, combos: combos)
+        for _ in 0..<200 where await gate.cancelledWaits < 3 { try await Task.sleep(for: .milliseconds(5)) }
+        let cancelled = await gate.cancelledWaits
+        XCTAssertEqual(cancelled, 3, "all of the first search's open requests are cancelled")
+        XCTAssertTrue(session.isRunning)
+        session.cancel()
+    }
+
     func testNoOffersArriveAfterCancel() async throws {
         let transport = FakeTransport([page("CGK", "DPS", "2026-12-15", prices: ["1"])], hangOnFetch: true)
         let session = session(transport)

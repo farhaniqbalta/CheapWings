@@ -48,7 +48,7 @@ final class SearchModel {
         }
         catalog = loadedCatalog
         catalogError = catalogProblem
-        let engine = SearchEngine(transport: URLSessionFliTransport())
+        let engine = SearchEngine(provider: FliSearchProvider(transport: URLSessionFliTransport()))
         let store: SearchStore?
         let openError: String?
         do {
@@ -83,7 +83,7 @@ final class SearchModel {
     var planSummary: String {
         if !network.isOnline && !session.isRunning { return "You're offline. Connect to the internet to search." }
         switch plan {
-        case .success(let combos): return "\(combos.count) route/date searches · 0.25 s apart"
+        case .success(let combos): return "\(combos.count) route/date searches, up to \(ProviderPacing.fli.maxInFlight) at a time"
         case .failure(PlanSearchError.Rejected(_, let detail)), .failure(CatalogError.Failed(_, let detail)):
             return detail.prefix(1).uppercased() + detail.dropFirst()
         case .failure(let error): return "\(error)"

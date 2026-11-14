@@ -34,7 +34,12 @@ public func isAllowedFliRedirect(_ url: URL) -> Bool {
 public final class URLSessionFliTransport: FliTransport {
     public static let userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15"
     public static let maxBodyBytes = 8_000_000
-    private let session = URLSession(configuration: .ephemeral)
+    private let session: URLSession = {
+        let configuration = URLSessionConfiguration.ephemeral
+        // iOS allows 4 per host by default; Fli pacing keeps up to 6 open (P5.8).
+        configuration.httpMaximumConnectionsPerHost = ProviderPacing.fli.maxInFlight
+        return URLSession(configuration: configuration)
+    }()
 
     public init() {}
 

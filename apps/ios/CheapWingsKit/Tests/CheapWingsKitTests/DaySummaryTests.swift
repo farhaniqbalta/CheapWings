@@ -27,6 +27,19 @@ final class DaySummaryTests: XCTestCase {
         session.cancel()
     }
 
+    func testTiedLowestFaresAreAllCheapest() {
+        let combos = ["2026-12-15", "2026-12-16", "2026-12-17"].map { RouteDate(origin: "CGK", destination: "DPS", date: $0) }
+        func offer(_ date: String, _ price: String, _ i: Int = 0) -> FoundOffer {
+            FoundOffer(routeDate: combos.first { $0.date == date }!, index: i,
+                       offer: FliOffer(price: price, currency: "IDR", legs: []), searchURL: URL(string: "https://example.invalid")!)
+        }
+        // Ranked: two days tie at 990000 (written differently), one costs more.
+        let offers = [offer("2026-12-15", "990000"), offer("2026-12-17", "990000.00"), offer("2026-12-16", "1200000")]
+        let days = DaySummary.make(planned: combos, finished: Set(combos), offers: offers, failures: [])
+        XCTAssertEqual(days.map(\.isCheapest), [true, false, true])
+        XCTAssertEqual(offers.map { DaySummary.isLowest($0, among: offers) }, [true, true, false])
+    }
+
     func testNoFlightsDayIsSearchedNotFailed() {
         let combo = RouteDate(origin: "CGK", destination: "DPS", date: "2026-12-15")
         let days = DaySummary.make(planned: [combo], finished: [combo], offers: [], failures: [])

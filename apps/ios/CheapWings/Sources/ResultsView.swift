@@ -58,7 +58,7 @@ struct ResultsView: View {
                             OfferDetailView(found: found, currency: session.currency, info: info, catalog: model.catalog, airlines: model.airlines)
                         } label: {
                             OfferRow(found: found, currency: session.currency, info: info,
-                                     isCheapest: found.id == session.offers.first?.id, airlines: model.airlines)
+                                     isCheapest: DaySummary.isLowest(found, among: session.offers), airlines: model.airlines)
                         }
                     }
                 } header: {

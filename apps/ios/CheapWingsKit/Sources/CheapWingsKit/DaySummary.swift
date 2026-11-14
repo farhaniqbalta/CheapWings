@@ -23,7 +23,6 @@ public struct DaySummary: Sendable, Identifiable {
                             failures: [SkippedSearch]) -> [DaySummary] {
         var dates: [String] = []
         for combo in planned where !dates.contains(combo.date) { dates.append(combo.date) }
-        let cheapestDate = offers.first?.routeDate.date
         return dates.map { date in
             let combos = planned.filter { $0.date == date }
             let lowest = offers.first { $0.routeDate.date == date }
@@ -36,8 +35,16 @@ public struct DaySummary: Sendable, Identifiable {
             } else {
                 state = .searched
             }
-            return DaySummary(date: date, lowest: lowest, state: state, isCheapest: date == cheapestDate)
+            return DaySummary(date: date, lowest: lowest, state: state, isCheapest: lowest.map { isLowest($0, among: offers) } ?? false)
         }
+    }
+
+    /// True for every offer tied at the lowest price (exact decimal amount, same currency), so all
+    /// equally cheap days and flights are highlighted, not just the first. `offers` must be ranked.
+    public static func isLowest(_ offer: FoundOffer, among offers: [FoundOffer]) -> Bool {
+        guard let best = offers.first, offer.offer.currency == best.offer.currency,
+              let a = Decimal(string: offer.offer.price), let b = Decimal(string: best.offer.price) else { return false }
+        return a == b
     }
 
     @MainActor

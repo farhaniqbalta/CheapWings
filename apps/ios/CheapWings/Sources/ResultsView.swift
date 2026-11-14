@@ -55,10 +55,10 @@ struct ResultsView: View {
                     ForEach(shown) { found in
                         let info = model.catalog.map { ItineraryInfo.make(offer: found.offer, catalog: $0) }
                         NavigationLink {
-                            OfferDetailView(found: found, currency: session.currency, info: info, catalog: model.catalog)
+                            OfferDetailView(found: found, currency: session.currency, info: info, catalog: model.catalog, airlines: model.airlines)
                         } label: {
                             OfferRow(found: found, currency: session.currency, info: info,
-                                     isCheapest: found.id == session.offers.first?.id)
+                                     isCheapest: found.id == session.offers.first?.id, airlines: model.airlines)
                         }
                     }
                 } header: {
@@ -153,6 +153,7 @@ struct OfferRow: View {
     let currency: String
     let info: ItineraryInfo?
     let isCheapest: Bool
+    let airlines: AirlineNames?
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
@@ -214,6 +215,11 @@ struct OfferRow: View {
         }
     }
 
+    private var flights: String {
+        airlines?.flightsText(found.offer.legs)
+            ?? found.offer.legs.map { "\($0.airline) \($0.flightNumber)" }.joined(separator: " and ")
+    }
+
     private var price: String { PriceText.display(found.offer.price, currency: found.offer.currency ?? currency) }
 
     private var stopsText: String {
@@ -221,9 +227,9 @@ struct OfferRow: View {
         return n == 0 ? "Nonstop" : "\(n) stop\(n == 1 ? "" : "s")"
     }
 
-    /// "NH 856, Thu 17 Dec" or "SQ 951 and SQ 632, via SIN, 1h 55m layover, Wed 16 Dec".
+    /// "All Nippon Airways NH 856, Thu 17 Dec" or "Singapore Airlines SQ 951 and SQ 632, via SIN, 1h 55m layover, Wed 16 Dec".
     private var detailLine: String {
-        var parts = [found.offer.legs.map { "\($0.airline) \($0.flightNumber)" }.joined(separator: " and ")]
+        var parts = [flights]
         if let layovers = info?.layovers, !layovers.isEmpty {
             parts.append("via " + layovers.map { layover in
                 layover.airport + (layover.minutes.map { ", \(ItineraryInfo.durationText($0)) layover" } ?? "")
@@ -245,7 +251,7 @@ struct OfferRow: View {
             + (dayShift > 0 ? ", next day" : "")
         var parts = [price, isCheapest ? "cheapest" : nil, stopsText,
                      info?.totalMinutes.map { ItineraryInfo.spokenDuration($0) },
-                     route, ResultsView.day(found.routeDate.date)].compactMap { $0 }
+                     route, flights, ResultsView.day(found.routeDate.date)].compactMap { $0 }
         if let change = info?.airportChanges.first { parts.append("change airports from \(change.from) to \(change.to)") }
         if found.isStale { parts.append("found over an hour ago") }
         parts.append("indicative price")

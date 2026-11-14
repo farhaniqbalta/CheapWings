@@ -26,6 +26,9 @@ final class SearchModel {
     /// The shared airport catalog (bundled `catalog.json`, same file as backend and web).
     let catalog: LocationCatalog?
     let catalogError: String?
+    /// Airline names for codes (bundled `airlines.json`); codes alone if missing.
+    let airlines: AirlineNames? = Bundle.main.url(forResource: "airlines", withExtension: "json")
+        .flatMap { try? Data(contentsOf: $0) }.flatMap { try? AirlineNames(json: $0) }
     /// Set when the on-device history could not be opened (search still works).
     let historyError: String?
     private var backgroundTask: UIBackgroundTaskIdentifier = .invalid

@@ -9,6 +9,7 @@ struct OfferDetailView: View {
     let currency: String
     let info: ItineraryInfo?
     let catalog: LocationCatalog?
+    let airlines: AirlineNames?
 
     var body: some View {
         List {
@@ -52,7 +53,7 @@ struct OfferDetailView: View {
         var out: [Step] = []
         for (i, leg) in found.offer.legs.enumerated() {
             if i == 0 { out.append(.airport(code: leg.origin, time: leg.departLocal, place: place(leg.origin), endpoint: true)) }
-            out.append(.flight("\(leg.airline) \(leg.flightNumber)", info?.legMinutes[safe: i] ?? nil))
+            out.append(.flight(airlines?.flightsText([leg]) ?? "\(leg.airline) \(leg.flightNumber)", info?.legMinutes[safe: i] ?? nil))
             let last = i == found.offer.legs.count - 1
             out.append(.airport(code: leg.destination, time: leg.arriveLocal, place: place(leg.destination), endpoint: last))
             if !last, let layover = info?.layovers[safe: i] {

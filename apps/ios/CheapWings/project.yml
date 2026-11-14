@@ -18,6 +18,9 @@ targets:
       # Same location catalog as the backend and web app (one file, no copy to drift).
       - path: ../../../backend/src/cheapwings/locations/catalog.json
         buildPhase: resources
+      # Airline code → name (generated from the fli table the web uses).
+      - path: ../../../contracts/airlines.json
+        buildPhase: resources
     info:
       path: Generated/Info.plist
       properties:

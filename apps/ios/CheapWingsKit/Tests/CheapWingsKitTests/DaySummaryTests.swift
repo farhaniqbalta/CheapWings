@@ -21,7 +21,7 @@ final class DaySummaryTests: XCTestCase {
         }
         let days = DaySummary.make(session)
         XCTAssertEqual(days.map(\.date), ["2026-12-15", "2026-12-16", "2026-12-17", "2026-12-18"])
-        XCTAssertEqual(days.map { $0.lowest?.offer.price }, ["1250000", nil, "990000", nil])
+        XCTAssertEqual(days.map { $0.lowest?.offer.priceOriginal }, ["1250000", nil, "990000", nil])
         XCTAssertEqual(days.map(\.state), [.searched, .failed("schema_changed"), .searched, .pending])
         XCTAssertEqual(days.map(\.isCheapest), [false, false, true, false])
         session.cancel()
@@ -31,7 +31,7 @@ final class DaySummaryTests: XCTestCase {
         let combos = ["2026-12-15", "2026-12-16", "2026-12-17"].map { RouteDate(origin: "CGK", destination: "DPS", date: $0) }
         func offer(_ date: String, _ price: String, _ i: Int = 0) -> FoundOffer {
             FoundOffer(routeDate: combos.first { $0.date == date }!, index: i,
-                       offer: FliOffer(price: price, currency: "IDR", legs: []), searchURL: URL(string: "https://example.invalid")!)
+                       offer: sourceOffer("fli", date, price: price), searchURL: URL(string: "https://example.invalid")!)
         }
         // Ranked: two days tie at 990000 (written differently), one costs more.
         let offers = [offer("2026-12-15", "990000"), offer("2026-12-17", "990000.00"), offer("2026-12-16", "1200000")]

@@ -234,7 +234,7 @@ final class SearchEngineTests: XCTestCase {
         let oneDay = try SearchRequest(origins: ["CGK"], destinations: ["DPS"], dateFrom: "2026-12-15",
                                        dateThrough: "2026-12-15", currency: "IDR").plan()
         let events = await collect(SearchEngine(transport: transport, maxInFlight: 1, sleep: FakeClock().sleep), oneDay)
-        XCTAssertEqual(offers(events).map(\.offer.price), ["1250000"])
+        XCTAssertEqual(offers(events).map(\.offer.priceOriginal), ["1250000"])
         XCTAssertTrue(failures(events).isEmpty)
         let hidden = events.compactMap { if case .offersHidden(_, let reasons) = $0 { return reasons } else { return nil } }
         XCTAssertEqual(hidden, [["currency None"]])
@@ -247,8 +247,9 @@ final class SearchEngineTests: XCTestCase {
         let combo = try request.plan()[0]
         let decoded = try fliDecodePage(html: String(decoding: page("CGK", "DPS", "2026-12-15", prices: ["980.5", "75", "1234.50"], currencyToken: usd).body, as: UTF8.self))
         let found = decoded.offers.enumerated().map { i, offer in
-            FoundOffer(routeDate: combo, index: i, offer: offer, searchURL: URL(string: "https://example.invalid")!)
+            FoundOffer(routeDate: combo, index: i, offer: fliSourceOffer(offer: offer, id: "", displayCurrency: "USD"),
+                       searchURL: URL(string: "https://example.invalid")!)
         }
-        XCTAssertEqual(rankLowestAdvertised(found).map(\.offer.price), ["75", "980.5", "1234.50"])
+        XCTAssertEqual(rankLowestAdvertised(found).map(\.offer.priceOriginal), ["75", "980.5", "1234.50"])
     }
 }

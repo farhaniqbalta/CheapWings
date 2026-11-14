@@ -41,7 +41,8 @@ public struct FliSearchProvider: SearchProvider {
                 return .failed(code: "cross_check: \(reason)", hidden: [])
             }
             let offers = checked.offers.enumerated().map {
-                FoundOffer(routeDate: combo, index: $0.offset, offer: $0.element, searchURL: url)
+                FoundOffer(routeDate: combo, index: $0.offset,
+                           offer: fliSourceOffer(offer: $0.element, id: "", displayCurrency: request.currency), searchURL: url)
             }
             let hidden = checked.rejected + Array(repeating: SearchEngine.stopLimitReason, count: Int(checked.excludedByStops))
             return .found(offers: offers, hidden: hidden)

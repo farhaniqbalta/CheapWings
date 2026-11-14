@@ -221,7 +221,7 @@ struct OfferRow: View {
         airlines?.flightsText(found.offer.legs) ?? AirlineNames.numbersText(found.offer.legs)
     }
 
-    private var price: String { PriceText.display(found.offer.price, currency: found.offer.currency ?? currency) }
+    private var price: String { PriceText.display(found.shownPrice.amount, currency: found.shownPrice.currency) }
 
     private var stopsText: String {
         let n = max(found.offer.legs.count - 1, 0)

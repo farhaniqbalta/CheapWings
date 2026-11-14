@@ -5,8 +5,9 @@ import XCTest
 /// Persistence whose every call fails (full disk, corrupt file after open, …).
 final class ThrowingStore: SearchPersistence, @unchecked Sendable {
     struct Broken: Error {}
-    func createSearch(request: StoredRequest, combos: [RouteDate], nowMs: Int64) throws -> Int64 { throw Broken() }
-    func finishCombo(searchId: Int64, index: UInt32, offers: [FliOffer], hidden: [String], failure: String?, nowMs: Int64) throws { throw Broken() }
+    func createSearch(request: StoredRequest, items: [WorkItem], nowMs: Int64) throws -> Int64 { throw Broken() }
+    func setProviderStopped(searchId: Int64, provider: String, reason: String, nowMs: Int64) throws { throw Broken() }
+    func finishCombo(searchId: Int64, index: UInt32, offers: [SourceOffer], hidden: [String], failure: String?, nowMs: Int64) throws { throw Broken() }
     func setStopped(searchId: Int64, reason: String, nowMs: Int64) throws { throw Broken() }
     func clearStopped(searchId: Int64) throws { throw Broken() }
     func latest() throws -> StoredSearch? { throw Broken() }
@@ -80,7 +81,7 @@ final class ResumeTests: XCTestCase {
         XCTAssertEqual(fetched.count, 1)
         XCTAssertTrue(fetched[0].absoluteString.contains(Tfs.forTesting("CGK", "DPS", "2026-12-17")))
         XCTAssertEqual(fresh.phase, .stopped(.finished))
-        XCTAssertEqual(fresh.offers.map(\.offer.price), ["1100000", "1250000", "1300000"])
+        XCTAssertEqual(fresh.offers.map(\.offer.priceOriginal), ["1100000", "1250000", "1300000"])
         XCTAssertNil(fresh.resumable, "nothing left to resume")
     }
 
@@ -234,7 +235,7 @@ final class ResumeTests: XCTestCase {
 
     func testStaleOffersAreFlagged() throws {
         let combo = try request.plan()[0]
-        let offer = FliOffer(price: "1", currency: "IDR", legs: [])
+        let offer = sourceOffer("fli", combo.date, price: "1")
         let old = FoundOffer(routeDate: combo, index: 0, offer: offer, searchURL: URL(string: "https://example.invalid")!,
                              fetchedAt: Date().addingTimeInterval(-61 * 60))
         let fresh = FoundOffer(routeDate: combo, index: 0, offer: offer, searchURL: URL(string: "https://example.invalid")!)

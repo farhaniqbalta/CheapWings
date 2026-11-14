@@ -15,7 +15,7 @@ struct OfferDetailView: View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(PriceText.display(found.offer.price, currency: found.offer.currency ?? currency))
+                    Text(PriceText.display(found.shownPrice.amount, currency: found.shownPrice.currency))
                         .font(.largeTitle.weight(.bold).monospacedDigit())
                     Text(summary).font(.subheadline).foregroundStyle(.secondary)
                 }

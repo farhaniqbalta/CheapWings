@@ -3,12 +3,13 @@ import CheapWingsCore
 import XCTest
 
 /// A neutral offer for tests (synthetic fares).
-func sourceOffer(_ provider: String, _ date: String, price: String, comparable: String? = nil, legs: [FliLeg] = []) -> SourceOffer {
+func sourceOffer(_ provider: String, _ date: String, price: String, comparable: String? = nil, unconverted: Bool = false,
+                 legs: [FliLeg] = []) -> SourceOffer {
     SourceOffer(provider: provider, id: "\(provider)-\(date)-\(price)", origin: "CGK", destination: "DPS",
                 departLocal: "\(date)T07:00", arriveLocal: "\(date)T09:55", minutes: 115, stops: 0,
                 carriers: provider == "fli" ? ["GA"] : ["Garuda Indonesia"], legs: legs,
                 priceOriginal: price, currencyOriginal: provider == "fli" ? "IDR" : "USD",
-                priceComparable: comparable ?? price, fx: nil, link: nil, hiddenCity: provider == "fli" ? "unknown" : "no")
+                priceComparable: unconverted ? nil : (comparable ?? price), fx: nil, link: nil, hiddenCity: provider == "fli" ? "unknown" : "no")
 }
 
 /// Provider whose outcomes are scripted per date (consumed in order, for retries); `nil` script
@@ -163,7 +164,7 @@ final class ProviderLanesTests: XCTestCase {
 
     func testUnconvertedPriceIsNeverCheapest() {
         let c = combos
-        let usdOnly = FoundOffer(routeDate: c[0], index: 0, offer: sourceOffer("skiplagged", c[0].date, price: "10", comparable: nil),
+        let usdOnly = FoundOffer(routeDate: c[0], index: 0, offer: sourceOffer("skiplagged", c[0].date, price: "10", unconverted: true),
                                  searchURL: URL(string: "https://example.invalid")!)
         let idr = FoundOffer(routeDate: c[0], index: 0, offer: sourceOffer("fli", c[0].date, price: "1500000"),
                              searchURL: URL(string: "https://example.invalid")!)

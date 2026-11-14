@@ -10,7 +10,7 @@ public enum SkiplaggedFetch: Sendable {
 /// Skiplagged via its public MCP server — the same request as `providers/skiplagged.py`
 /// (personal use; hidden-city and virtual interlining excluded). Parsing and FX are the Rust
 /// core's; this type owns the request, pacing and Skiplagged's stop/retry rules.
-public struct SkiplaggedSearchProvider: Sendable {
+public struct SkiplaggedSearchProvider: SearchProvider {
     public let id = "skiplagged"
     /// The web's interval (3 s) and concurrency (C3).
     public let pacing = ProviderPacing(interval: .seconds(3), maxInFlight: 3)
@@ -48,6 +48,18 @@ public struct SkiplaggedSearchProvider: Sendable {
             return .outcome(.failed(code: code, hidden: []))
         } catch {
             return .outcome(.failed(code: "schema_changed", hidden: []))
+        }
+    }
+
+    public func search(_ combo: RouteDate, request: SearchRequest) async -> ProviderOutcome {
+        switch await fetch(combo, request: request) {
+        case .outcome(let outcome):
+            return outcome
+        case .page(let page):
+            let offers = page.offers.enumerated().map { index, offer in
+                FoundOffer(routeDate: combo, index: index, offer: offer, searchURL: request.sourceURL(combo, offer: offer))
+            }
+            return .found(offers: offers, hidden: [])
         }
     }
 

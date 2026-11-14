@@ -4,9 +4,10 @@ import Foundation
 /// What the session needs from on-device storage. `SearchStore` (Rust, SQLite) is the real one;
 /// tests inject failing stores to prove a broken store never stops a search.
 public protocol SearchPersistence: AnyObject {
-    func createSearch(request: StoredRequest, combos: [RouteDate], nowMs: Int64) throws -> Int64
-    func finishCombo(searchId: Int64, index: UInt32, offers: [FliOffer], hidden: [String], failure: String?, nowMs: Int64) throws
+    func createSearch(request: StoredRequest, items: [WorkItem], nowMs: Int64) throws -> Int64
+    func finishCombo(searchId: Int64, index: UInt32, offers: [SourceOffer], hidden: [String], failure: String?, nowMs: Int64) throws
     func setStopped(searchId: Int64, reason: String, nowMs: Int64) throws
+    func setProviderStopped(searchId: Int64, provider: String, reason: String, nowMs: Int64) throws
     func clearStopped(searchId: Int64) throws
     func latest() throws -> StoredSearch?
     func pending(searchId: Int64) throws -> [StoredCombo]
@@ -54,13 +55,15 @@ extension StopReason {
 extension SearchRequest {
     var stored: StoredRequest {
         StoredRequest(origins: origins, destinations: destinations, dateFrom: dateFrom, dateThrough: dateThrough,
-                      currency: currency, maxStops: maxStops, originMajors: originMajorIDs, destinationMajors: destinationMajorIDs)
+                      currency: currency, maxStops: maxStops, originMajors: originMajorIDs, destinationMajors: destinationMajorIDs,
+                      providers: providers)
     }
 
     init(stored: StoredRequest) {
         self.init(origins: stored.origins, destinations: stored.destinations, dateFrom: stored.dateFrom,
                   dateThrough: stored.dateThrough, currency: stored.currency, maxStops: stored.maxStops,
-                  originMajorIDs: stored.originMajors, destinationMajorIDs: stored.destinationMajors)
+                  originMajorIDs: stored.originMajors, destinationMajorIDs: stored.destinationMajors,
+                  providers: stored.providers)
     }
 }
 

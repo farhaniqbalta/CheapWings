@@ -9,23 +9,25 @@ final class StoreTests: XCTestCase {
         let path = dir.appendingPathComponent("searches.sqlite").path
 
         let request = StoredRequest(origins: ["CGK"], destinations: ["DPS"], dateFrom: "2026-12-15",
-                                    dateThrough: "2026-12-16", currency: "IDR")
+                                    dateThrough: "2026-12-16", currency: "IDR", providers: ["fli"])
         let combos = try planSearch(origins: ["CGK"], destinations: ["DPS"], dateFrom: "2026-12-15",
                                     dateThrough: "2026-12-16", maxCombinations: 120)
         let leg = FliLeg(origin: "CGK", destination: "DPS", airline: "GA", flightNumber: "402",
                          departLocal: "2026-12-15T06:05", arriveLocal: "2026-12-15T09:00")
+        let offer = fliSourceOffer(offer: FliOffer(price: "1234.50", currency: "IDR", legs: [leg]), id: "", displayCurrency: "IDR")
         let id: Int64
         do {
             let store = try SearchStore(path: path)
-            id = try store.createSearch(request: request, combos: combos, nowMs: 1_000)
-            try store.finishCombo(searchId: id, index: 0, offers: [FliOffer(price: "1234.50", currency: "IDR", legs: [leg])],
-                                  hidden: ["currency None"], failure: nil, nowMs: 2_000)
+            id = try store.createSearch(request: request, items: combos.map { WorkItem(provider: "fli", routeDate: $0) }, nowMs: 1_000)
+            try store.finishCombo(searchId: id, index: 0, offers: [offer], hidden: ["currency None"], failure: nil, nowMs: 2_000)
         }
         let reopened = try SearchStore(path: path)
         let latest = try XCTUnwrap(reopened.latest())
         XCTAssertEqual(latest.id, id)
         XCTAssertEqual(latest.request, request)
-        XCTAssertEqual(latest.offers.map(\.offer.price), ["1234.50"])
+        XCTAssertEqual(latest.offers.map(\.offer.priceOriginal), ["1234.50"])
+        XCTAssertEqual(latest.offers.map(\.offer.legs), [[leg]])
+        XCTAssertEqual(latest.combos.map(\.provider), ["fli", "fli"])
         XCTAssertEqual(latest.hidden, [HiddenCount(reason: "currency None", count: 1)])
         XCTAssertEqual(try reopened.pending(searchId: id).map(\.routeDate.date), ["2026-12-16"])
     }

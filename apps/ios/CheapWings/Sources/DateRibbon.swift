@@ -9,7 +9,7 @@ struct DateRibbon: View {
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        let maxPrice = days.compactMap { $0.lowest.flatMap { Decimal(string: $0.offer.price) } }.max() ?? 1
+        let maxPrice = days.compactMap { $0.lowest.flatMap { Decimal(string: $0.shownPrice.amount) } }.max() ?? 1
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
                 ForEach(days) { day in
@@ -68,7 +68,7 @@ private struct DayColumn: View {
 
     @ViewBuilder private var bar: some View {
         let height: CGFloat = {
-            guard let price = day.lowest.flatMap({ Decimal(string: $0.offer.price) }), maxPrice > 0 else { return 0 }
+            guard let price = day.lowest.flatMap({ Decimal(string: $0.shownPrice.amount) }), maxPrice > 0 else { return 0 }
             return CGFloat(truncating: NSDecimalNumber(decimal: 30 * price / maxPrice))
         }()
         RoundedRectangle(cornerRadius: 3)
@@ -79,7 +79,7 @@ private struct DayColumn: View {
     }
 
     private var priceText: String {
-        if let lowest = day.lowest { return CompactPrice.text(lowest.offer.price) }
+        if let lowest = day.lowest { return CompactPrice.text(lowest.shownPrice.amount) }
         switch day.state {
         case .pending: return "···"
         case .failed: return "—"
@@ -100,7 +100,7 @@ private struct DayColumn: View {
     private var accessibilityText: String {
         let when = date?.formatted(.dateTime.weekday(.wide).day().month(.wide)) ?? day.date
         if let lowest = day.lowest {
-            let price = PriceText.display(lowest.offer.price, currency: lowest.offer.currency ?? "")
+            let price = PriceText.display(lowest.shownPrice.amount, currency: lowest.shownPrice.currency)
             return "\(when), from \(price)" + (day.isCheapest ? ", cheapest day" : "") + (day.state == .pending ? ", still searching" : "")
         }
         switch day.state {

@@ -60,7 +60,7 @@ struct SlowFakeProvider: SearchProvider {
     func search(_ combo: RouteDate, request: SearchRequest) async -> ProviderOutcome {
         await counter.enter()
         await counter.leave()
-        let offer = FliOffer(price: "100", currency: "IDR", legs: [])
+        let offer = sourceOffer("fake", combo.date, price: "100")
         return .found(offers: [FoundOffer(routeDate: combo, index: 0, offer: offer, searchURL: URL(string: "https://example.invalid")!)],
                       hidden: [])
     }
@@ -282,7 +282,7 @@ final class ParallelPacingTests: XCTestCase {
             await FliSearchProvider(transport: FakeTransport(results: [result])).search(combo, request: request)
         }
         if case .found(let offers, _) = await outcome(.success(page("CGK", "DPS", combo.date, prices: ["1250000"]))) {
-            XCTAssertEqual(offers.map(\.offer.price), ["1250000"])
+            XCTAssertEqual(offers.map(\.offer.priceOriginal), ["1250000"])
         } else { XCTFail("200 page") }
         guard case .stop(.rateLimited) = await outcome(.success(FetchedPage(status: 429, body: Data(), refusedRedirect: nil))) else { return XCTFail("429") }
         guard case .stop(.blocked("http_403")) = await outcome(.success(FetchedPage(status: 403, body: Data(), refusedRedirect: nil))) else { return XCTFail("403") }

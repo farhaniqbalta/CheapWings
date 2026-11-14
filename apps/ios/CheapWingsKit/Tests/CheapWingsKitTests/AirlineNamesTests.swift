@@ -41,6 +41,12 @@ final class AirlineNamesTests: XCTestCase {
         XCTAssertEqual(testAirlines.carriersText([leg("Q9X", "1")]), "Q9X")
     }
 
+    func testCarrierListedOnceWhenItReturns() {
+        let legs = [leg("GA", "1"), leg("KE", "2"), leg("GA", "3")]
+        XCTAssertEqual(testAirlines.carriers(legs).map(\.code), ["GA", "KE"])
+        XCTAssertEqual(testAirlines.carriersText(legs), "Garuda Indonesia and Korean Air")
+    }
+
     func testBadFileThrows() {
         XCTAssertThrowsError(try AirlineNames(json: Data("{}".utf8)))
     }

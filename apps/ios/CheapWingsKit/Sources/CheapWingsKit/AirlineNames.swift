@@ -22,10 +22,12 @@ public struct AirlineNames: Sendable {
         }
     }
 
-    /// Distinct carriers in flight order (consecutive repeats collapsed).
+    /// Distinct carriers in first-seen order (each once, also when it flies a later leg again).
     public func carriers(_ legs: [FliLeg]) -> [Carrier] {
         var out: [Carrier] = []
-        for leg in legs where out.last?.code != leg.airline { out.append(Carrier(code: leg.airline, name: name(leg.airline))) }
+        for leg in legs where !out.contains(where: { $0.code == leg.airline }) {
+            out.append(Carrier(code: leg.airline, name: name(leg.airline)))
+        }
         return out
     }
 

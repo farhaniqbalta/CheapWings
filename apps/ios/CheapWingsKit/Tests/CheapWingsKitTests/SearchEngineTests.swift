@@ -158,6 +158,16 @@ final class SearchEngineTests: XCTestCase {
         XCTAssertEqual(progress.count, 1)
     }
 
+    func testNoInternetBehindWiFiPausesToo() async throws {
+        // Wi-Fi up but no internet (captive portal, dead router): DNS / host errors, not "offline".
+        for code in [URLError.Code.cannotFindHost, .dnsLookupFailed, .cannotConnectToHost] {
+            let transport = FakeTransport(results: Array(repeating: .failure(URLError(code)), count: 3))
+            let events = await collect(SearchEngine(transport: transport, sleep: FakeClock().sleep), try combos())
+            XCTAssertEqual(stop(events), .offline, "\(code)")
+            XCTAssertTrue(failures(events).isEmpty, "\(code)")
+        }
+    }
+
     func testTimeoutStillFailsOnlyThatCombo() async throws {
         let transport = FakeTransport(results: [.failure(URLError(.timedOut)),
                                                 .success(page("CGK", "DPS", "2026-12-16", prices: ["1300000"])),

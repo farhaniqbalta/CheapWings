@@ -96,8 +96,11 @@ public enum SearchEvent: Sendable {
 public actor SearchEngine {
     /// Hidden-offer reason for itineraries over the user's Max stops.
     public static let stopLimitReason = "more stops than your Max stops"
+    /// Pause (Resume later) rather than fail: a wrong "failed" loses that route/date for good.
+    /// Includes DNS/host errors from Wi-Fi with no internet (captive portal, dead router).
     static let offlineCodes: Set<URLError.Code> = [.notConnectedToInternet, .networkConnectionLost,
-                                                   .dataNotAllowed, .internationalRoamingOff]
+                                                   .dataNotAllowed, .internationalRoamingOff,
+                                                   .cannotFindHost, .dnsLookupFailed, .cannotConnectToHost]
 
     private let transport: FliTransport
     private let interval: Duration

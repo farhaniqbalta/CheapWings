@@ -2,6 +2,8 @@
 
 ## Shared contract, separate UI
 
+> **Current state (owner decisions P5.05/P5.06, built P5.1–P5.8):** the web is a client of `/api/v1` as described below; the **iPad app is standalone** — it searches Fli on the device (start-to-start pacing, 0.25 s, up to 6 open) through the shared Rust core, keeps its own SQLite history and needs no server. Shared logic (money, ranking, Fli decoder, location catalog, planning) is one Rust core used by both. See the "Current iPad app" section below; the thin-client text is the original design, kept for the web.
+
 The product has **one remote search engine**. Web and SwiftUI are thin clients against `/api/v1`. They never connect to MCP, Google Flights, scrape pages or recalculate fare ranking. The backend owns search results, currency/fee policy and provider pacing. The mobile app is native, not React Native, a Rust UI framework or a wrapped website.
 
 ### Shared state machine
@@ -58,7 +60,17 @@ All values and provider statuses in mockups are **illustrative, not actual searc
 - Desktop: compact list/table with expandable rows; mobile web: card layout. Test responsive widths ~375 px, 768 px and 1440 px.
 - Accessibility: semantic labels, input feedback, tab order, keyboard focus, button `aria` labels, loading announcements without noisy repeats, contrast, reduced motion.
 
-## Native iOS SwiftUI app
+## Current iPad app (P5.2–P5.8)
+
+| Area | What exists ([logs](log/README.md)) |
+|---|---|
+| Engine | `apps/ios/CheapWingsKit`: `SearchEngine` = provider-neutral `PacedRunner` + `SearchProvider` (today `FliSearchProvider`, pacing 0.25 s × 6, replies released in date order); stops on 429/block/offline with no new request after a stop reply. `SearchSession` checkpoints every route/date to SQLite (`cheapwings-store`), Resume, 30-min wait after a Google stop, offline pause. |
+| Shared core | Rust via UniFFI XCFramework (`core/build-ios.sh`): money, ranking, Fli `ds:1` decoder and per-offer checks, planning (120 cap), location catalog with Major airports, airport changes. |
+| UI | SwiftUI split view: search (large route codes, Major-airport picker with stacked places, Max stops, dates, currency), results (lowest-fare-per-day date strip, flight rows with airline names, Cheapest tags incl. ties), details timeline, offline/blocked states, VoiceOver, Dynamic Type, dark mode. Airfield-signage design ([P5.6](log/p5.6.md)), app icon ([P5.8](log/p5.8.md)). |
+| Data | Bundled `catalog.json` (same as backend/web) and `contracts/airlines.json` (fli airline table, same names as web). |
+| Not yet | Skiplagged / OctoTrip on iPad (P5.4); background continued processing (iOS 26 registration rejected on the test device). |
+
+## Native iOS SwiftUI app (original thin-client design — superseded for the iPad, see above)
 
 **Create a real Xcode project** targeting a supported iOS version chosen at implementation time (document minimum deployment target and rationale). Use SwiftUI with:
 

@@ -36,7 +36,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | P5.3 Persistence + resume | Done; [PR #13](https://github.com/farhaniqbalta/CheapWings/pull/13) merged `6c431e9` | [P5.3](docs/log/p5.3.md), [plan](docs/log/p5.3-plan.md) |
 | P5.5 iPad feature parity | Done; [PR #14](https://github.com/farhaniqbalta/CheapWings/pull/14) merged `3c38427`; Fli 0.25 s + P7 docs via [PR #15](https://github.com/farhaniqbalta/CheapWings/pull/15) | [P5.5](docs/log/p5.5.md), [plan](docs/log/p5.5-plan.md), [Fli 0.25 s test](docs/log/p5.5-fli-interval.md) |
 | P5.6 iPad polish | Done; [PR #16](https://github.com/farhaniqbalta/CheapWings/pull/16) merged `addc272` | [P5.6](docs/log/p5.6.md), [plan](docs/log/p5.6-plan.md) |
-| P5.8 iPad parallel Fli pacing | Implemented on branch `p5.8-ipad-parallel-pacing`; owner device checks passed; awaiting owner review | [P5.8](docs/log/p5.8.md), [plan](docs/log/p5.8-plan.md) |
+| P5.8 iPad parallel Fli pacing | Done; [PR #17](https://github.com/farhaniqbalta/CheapWings/pull/17) merged `69f6417` | [P5.8](docs/log/p5.8.md), [plan](docs/log/p5.8-plan.md) |
 | P5.4 More providers on iPad | Moved to the bottom by owner (2026-11-14): iPad is Fli-only for now; runs just before the web migration | |
 | P5.7 Web backend onto the Rust core | Not started (web keeps all four providers in Python until then) | |
 | P6 Release acceptance | Not started | |
@@ -57,7 +57,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 - Details and rulings: [P5.8](docs/log/p5.8.md). Open: iOS 26 continued processing; web `providers/fli.py` whole-page currency rule; P5.6 deferred minors.
 
 ## Next task
-Owner review of the P5.8 PR. Then P5.4 — more providers on the iPad (Skiplagged / OctoTrip adapters). Plan first; owner reviews and merges every checkpoint PR.
+P5.4 — more providers on the iPad (Skiplagged / OctoTrip adapters on the P5.8 `SearchProvider` seam; retry-after outcome, provider per work item). Plan first; owner reviews and merges every checkpoint PR. Docs refreshed after P5.8 (README, docs/README, 02, 05, 06, 08 now describe the standalone iPad app and the Rust core).
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

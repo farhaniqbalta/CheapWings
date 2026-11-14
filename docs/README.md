@@ -1,6 +1,6 @@
 # CheapWings — Worker Implementation Handoff
 
-**Original handoff:** 2026-11-09 · **Current status:** P4.9 merged; P4.10 implemented for owner review. Read [WORK_LOG.md](../WORK_LOG.md) for current decisions and the next task.
+**Original handoff:** 2026-11-09 · **Current status:** P5.8 merged (standalone iPad app with parallel Fli pacing); next P5.4, plan first. Read [WORK_LOG.md](../WORK_LOG.md) for current decisions and the next task.
 
 > Read the short current work log first, then only the specifications and evidence relevant to the authorized task. These numbered documents describe the approved design and original phase gates; their unchecked tasks are not a current progress tracker. The generated [OpenAPI contract](../contracts/openapi.yaml) and [runbook](../README.md) describe implemented interfaces. `reference/` is historical context and does not override current owner decisions.
 
@@ -12,8 +12,8 @@ Build a small, trustworthy service that finds the **cheapest eligible one-way fl
 
 ## Approved non-negotiables
 
-1. **Python backend:** Python 3.12+, FastAPI, Pydantic v2, `httpx`, SQLite, SQLAlchemy/Alembic, `asyncio` and bounded long-running job worker. **No Rust.**
-2. **Web:** React + TypeScript + Vite. **iOS:** SwiftUI + `URLSession`, native UI; both consume the same versioned REST/OpenAPI contract. Do not embed provider clients or Python scrapers in mobile/web frontends.
+1. **Python backend:** Python 3.12+, FastAPI, Pydantic v2, `httpx`, SQLite, SQLAlchemy/Alembic, `asyncio` and bounded long-running job worker. ~~No Rust.~~ *Superseded by owner decision 2026-11-13 ([P5.06](log/p5.06.md)): a shared Rust core (`core/`) holds portable logic — PyO3 for the web backend, UniFFI for the iPad; networking and UI stay native.*
+2. **Web:** React + TypeScript + Vite, a client of the versioned REST/OpenAPI contract. **iOS:** SwiftUI, native UI. *Superseded for iOS by owner decision ([P5.05](log/p5.05.md), [P5.06](log/p5.06.md)): the iPad app is standalone — it searches providers on the device through the shared Rust core, with no hosted server (Fli only for now; more providers in P5.4).* Python scrapers are never embedded in a frontend.
 3. **Modular provider adapters:** Skiplagged MCP, `swoop` and OctoTrip are integrated for the owner-approved personal scope. Future sources need feasibility and permission checks before enablement; source parsing stays outside core orchestration, ranking and clients.
 4. **Exhaustive *combination* coverage:** schedule every eligible origin × destination × departure-date for the enabled detailed-search providers. Calendar prices **only prioritize**, never prune the matrix. Do not claim exhaustive airline inventory. (Applies to **Search**; the separate proposed Discover feature has its own bounded-shortlist rules — [01](01_PRODUCT_REQUIREMENTS_UX.md#relationship-to-search-owner-decision-2026-11-14).)
 5. **Preserve itinerary and offers separately:** one itinerary can have many seller/provider/fare offers. Deduplicate cautiously; retain provenance and fare restrictions.

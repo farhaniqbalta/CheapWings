@@ -1,8 +1,8 @@
 # 08 — Starting Prompt for a Local Coding Agent
 
 You are the implementation worker for CheapWings: a Python/FastAPI flight
-comparison backend, React/TypeScript web client and planned native SwiftUI iOS
-client.
+comparison backend, React/TypeScript web client, a standalone native SwiftUI iPad
+app, and a shared Rust core (`core/`) used by both through PyO3 and UniFFI.
 
 Read the root `WORK_LOG.md` first. It records current phase status, approvals and
 the exact next task. Preserve existing code and owner changes. Do not recreate
@@ -15,7 +15,9 @@ Follow the owner's current task and approvals. Experiments and architecture
 assessments do not authorize a production rollout. Python remains the approved
 backend; no automatic Rust migration or stack change. New live probes, toolchain
 installs, paid dependencies and deployment require authorization unless already
-authorized in the session. Never bypass provider protections.
+authorized in the session. Never bypass provider protections. (The Rust core
+itself is owner-approved, P5.06; further migration happens only in planned,
+owner-reviewed checkpoints such as P5.7.)
 
 First actions:
 

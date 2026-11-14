@@ -73,10 +73,17 @@ URL or browser storage, and must be re-entered after refresh. Do not put tokens
 or upstream credentials in `VITE_*` variables: these become public build assets.
 Use HTTPS for remote private access; no public deployment is configured.
 
-## Run the iPad app (P5.2)
+## Run the iPad app (P5.2–P5.8)
 
-Standalone: the iPad searches Google Flights itself (one request per second, foreground
-only); no backend is needed. Requires Xcode, Rust with the iOS targets
+Standalone: the iPad searches Google Flights (Fli) itself — a request every 0.25 s with up to
+6 open, foreground only; no backend is needed. Shared logic (money, ranking, the Fli decoder,
+the location catalog, storage) is the Rust core in `core/`; networking and UI are Swift.
+Features: airport picker with Major airports (stack several places, remove single airports),
+Max stops, a lowest-fare-per-day date strip, flight details timeline with airline names and
+airport-change warnings, offline pause and Resume, VoiceOver and larger text, dark mode.
+The engine is provider-neutral (`SearchProvider` + `PacedRunner`), ready for Skiplagged /
+OctoTrip in P5.4. The same app runs on Apple-silicon Macs (Designed for iPad).
+Requires Xcode, Rust with the iOS targets
 (`rustup target add aarch64-apple-ios aarch64-apple-ios-sim`) and `brew install xcodegen`.
 
 ```sh
@@ -92,7 +99,11 @@ xcrun devicectl device install app --device <DEVICE_UDID> build/Build/Products/R
 
 Free Apple accounts allow three self-signed apps per device and need the developer
 profile trusted once (Settings › General › VPN & Device Management). Prices shown are
-indicative; a search stops on any Google rate-limit or block and never retries.
+indicative; a search stops on any Google rate-limit or block (no new request starts after
+the stop reply) and never retries. Losing the connection pauses instead; Resume continues.
+Data files the app bundles: `backend/src/cheapwings/locations/catalog.json` (same as backend
+and web) and `contracts/airlines.json` (from `scripts/gen_airlines.py`). App icon sources:
+`docs/design/app-icon/`.
 
 Searches are saved on the device (`Application Support/CheapWings/searches.sqlite`, newest
 10 kept) after every route/date. Relaunching shows the last results with their age and, if a
@@ -249,7 +260,8 @@ persisted by an additive migration; stop old API/worker processes, run
 Migration downgrades preserve the earlier schema. The owner approved C3 settings;
 P4.8 confirmed C3 overlap for Skiplagged and OctoTrip, but did not show a consistent
 C3 speed advantage; swoop C3 still lacks live validation. See [WORK_LOG.md](WORK_LOG.md)
-for measurements and limitations. No Rust or separate worker service is required.
+for measurements and limitations. No separate worker service is required (money logic
+runs in the shared Rust core through PyO3 since P5.1; see `core/`).
 
 ## Access and budgets
 

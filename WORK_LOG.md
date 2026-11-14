@@ -37,7 +37,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | P5.5 iPad feature parity | Done; [PR #14](https://github.com/farhaniqbalta/CheapWings/pull/14) merged `3c38427`; Fli 0.25 s + P7 docs via [PR #15](https://github.com/farhaniqbalta/CheapWings/pull/15) | [P5.5](docs/log/p5.5.md), [plan](docs/log/p5.5-plan.md), [Fli 0.25 s test](docs/log/p5.5-fli-interval.md) |
 | P5.6 iPad polish | Done; [PR #16](https://github.com/farhaniqbalta/CheapWings/pull/16) merged `addc272` | [P5.6](docs/log/p5.6.md), [plan](docs/log/p5.6-plan.md) |
 | P5.8 iPad parallel Fli pacing | Done; [PR #17](https://github.com/farhaniqbalta/CheapWings/pull/17) merged `69f6417` | [P5.8](docs/log/p5.8.md), [plan](docs/log/p5.8-plan.md) |
-| P5.4 More providers on iPad | Moved to the bottom by owner (2026-11-14): iPad is Fli-only for now; runs just before the web migration | |
+| P5.4 Skiplagged on iPad | Implemented on branch `p5.4-ipad-skiplagged`; owner device checks passed; awaiting owner review. OctoTrip on iPad deferred until further notice (owner 2026-11-14) | [P5.4](docs/log/p5.4.md), [plan](docs/log/p5.4-plan.md) |
 | P5.7 Web backend onto the Rust core | Not started (web keeps all four providers in Python until then) | |
 | P6 Release acceptance | Not started | |
 | P7 Discover (Explore Anywhere / Surprise Me) | **Proposed / Not started** — separate feature beside Search (user chooses); awaits owner approval to start | [P7 plan](docs/06_IMPLEMENTATION_CHECKPOINTS.md#p7--explore-anywhere-proposed--not-started), [spec](docs/01_PRODUCT_REQUIREMENTS_UX.md#proposed-feature-explore-anywhere-and-surprise-me-p7--proposed--not-started) |
@@ -45,19 +45,19 @@ Source of truth for **current** phase status, approvals, and the exact next task
 ## Provider decision ledger
 | Provider | Decision | Key limits (details in provider-feasibility-evidence / research logs) |
 |---|---|---|
-| Skiplagged MCP | GO, personal use only (owner 2026-11-09) | Terms ban commercial/redistribution; revisit before any public launch. No exact reprice; no per-segment identity for connections; hidden-city tag unconfirmed. |
+| Skiplagged MCP | GO, personal use only (owner 2026-11-09); also on the iPad since P5.4 | Terms ban commercial/redistribution; revisit before any public launch. No exact reprice; no per-segment identity for connections; hidden-city tag unconfirmed. |
 | swoop | GO, personal/low-volume (owner 2026-11-09) | Undocumented Google RPC, ToS risk accepted; no hidden-city signal; price often an estimate; key offers off `booking_options`. |
 | OctoTrip | GO, opt-in personal use (owner 2026-11-10) | Indicative only, no exact reprice, cache disabled; fare/fees/risk/source-age unknown; 900s lifecycle; nearby airports filtered. |
 | Fli | Owner-requested personal-use integration (2026-11-12) | Google Flights public page; indicative quotes/search links; basic-economy exclusion unsupported; same inventory as swoop. |
 
 ## Latest checkpoint
-- P5.8 (branch `p5.8-ipad-parallel-pacing`): iPad Fli requests start every 0.25 s with up to 6 open (web start-to-start logic), replies released in date order so saving and Resume are unchanged; stops cancel open requests and leave later days pending. Provider-neutral runner + `SearchProvider` protocol ready for P5.4. New app icon (taxiway direction sign, light/dark/tinted).
-- Owner device checks passed ("it's way faster"; offline and cancel fine).
-- Gates: Rust 28, backend 252, Swift Core 12 + Kit 71, iOS Release build.
-- Details and rulings: [P5.8](docs/log/p5.8.md). Open: iOS 26 continued processing; web `providers/fli.py` whole-page currency rule; P5.6 deferred minors.
+- P5.4 (branch `p5.4-ipad-skiplagged`): Skiplagged on the iPad next to Fli — Rust parser (exact USD, display-only FX, matches Python), Swift MCP client, one paced lane per source with retry-after, provider-neutral offers, store schema v2 (per-provider work items, migration from v1), Resume per source, Sources switches and source labels. OctoTrip deferred.
+- Owner device checks passed ("yes, it works").
+- Gates: Rust 34, backend 252, Swift Core 13 + Kit 93, iOS Release build.
+- Details and rulings: [P5.4](docs/log/p5.4.md). Open: iOS 26 continued processing; web `providers/fli.py` whole-page currency rule; deferred minors (P6).
 
 ## Next task
-P5.4 — more providers on the iPad (Skiplagged / OctoTrip adapters on the P5.8 `SearchProvider` seam; retry-after outcome, provider per work item). Plan first; owner reviews and merges every checkpoint PR. Docs refreshed after P5.8 (README, docs/README, 02, 05, 06, 08 now describe the standalone iPad app and the Rust core).
+Owner review of the P5.4 PR. Then P5.7 — the web backend onto the Rust core (plan first). Deferred minors and readable failure wording go to P6. Owner reviews and merges every checkpoint PR.
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

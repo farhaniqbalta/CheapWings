@@ -17,7 +17,7 @@ struct ResultsView: View {
                             Text("Google asked us to slow down — try again after \(after.formatted(date: .omitted, time: .shortened)).")
                                 .font(.caption).foregroundStyle(.secondary)
                         }
-                        Button("Resume", action: model.resume).disabled(!session.canResume)
+                        Button("Resume", action: model.resume).disabled(!model.canResume)
                     }
                 }
             }
@@ -105,6 +105,7 @@ struct ResultsView: View {
         case .blocked(let detail): return "Stopped: Google blocked automated access (\(detail)). Try again later."
         case .backgrounded: return "Paused when the app went to the background."
         case .interrupted: return "Interrupted — the app was closed while searching."
+        case .offline: return "Paused: no internet connection. Resume when you are back online."
         }
     }
 }

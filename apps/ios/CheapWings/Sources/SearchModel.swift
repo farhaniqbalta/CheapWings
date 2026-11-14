@@ -22,6 +22,7 @@ final class SearchModel {
     var currency = "IDR"
 
     let session: SearchSession
+    let network = NetworkMonitor()
     /// The shared airport catalog (bundled `catalog.json`, same file as backend and web).
     let catalog: LocationCatalog?
     let catalogError: String?
@@ -77,6 +78,7 @@ final class SearchModel {
     var plan: Result<[RouteDate], Error> { Result { try makeRequest().plan() } }
 
     var planSummary: String {
+        if !network.isOnline && !session.isRunning { return "You're offline. Connect to the internet to search." }
         switch plan {
         case .success(let combos): return "\(combos.count) route/date searches · 0.25 s apart"
         case .failure(PlanSearchError.Rejected(_, let detail)), .failure(CatalogError.Failed(_, let detail)):
@@ -85,7 +87,8 @@ final class SearchModel {
         }
     }
 
-    var canSearch: Bool { !session.isRunning && (try? plan.get()) != nil }
+    var canSearch: Bool { network.isOnline && !session.isRunning && (try? plan.get()) != nil }
+    var canResume: Bool { network.isOnline && session.canResume }
 
     func start() {
         guard canSearch, let request = try? makeRequest(), let combos = try? request.plan() else { return }
@@ -105,7 +108,7 @@ final class SearchModel {
     }
 
     func resume() {
-        guard session.canResume else { return }
+        guard canResume else { return }
         session.resume()
         if session.isRunning { requestContinuedProcessing() }
     }

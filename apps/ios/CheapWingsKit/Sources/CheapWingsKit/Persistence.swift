@@ -24,6 +24,7 @@ extension StopReason {
         case .blocked(let detail): return "blocked:\(detail)"
         case .backgrounded: return "backgrounded"
         case .interrupted: return "interrupted"
+        case .offline: return "offline"
         }
     }
 
@@ -34,6 +35,7 @@ extension StopReason {
         case "rate_limited": self = .rateLimited
         case "backgrounded": self = .backgrounded
         case "interrupted": self = .interrupted
+        case "offline": self = .offline
         default:
             guard text.hasPrefix("blocked:") else { return nil }
             self = .blocked(String(text.dropFirst("blocked:".count)))

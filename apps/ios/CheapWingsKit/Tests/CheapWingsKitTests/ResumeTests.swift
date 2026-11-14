@@ -114,6 +114,34 @@ final class ResumeTests: XCTestCase {
         XCTAssertTrue(later.canResume)
     }
 
+    func testOfflineStopResumesPendingWithoutCooldown() async throws {
+        let store = try store()
+        let first = session(FakeTransport(results: [.success(page("CGK", "DPS", "2026-12-15", prices: ["1250000"])),
+                                                    .failure(URLError(.networkConnectionLost))]), store: store)
+        first.start(request, combos: try request.plan())
+        try await waitUntilStopped(first)
+        XCTAssertEqual(first.phase, .stopped(.offline))
+        XCTAssertTrue(first.failures.isEmpty)
+
+        let transport = FakeTransport([page("CGK", "DPS", "2026-12-16", prices: ["1300000"]),
+                                       page("CGK", "DPS", "2026-12-17", prices: ["1100000"])])
+        let fresh = session(transport, store: store)
+        fresh.restoreLatest()
+        XCTAssertEqual(fresh.resumable?.done, 1)
+        XCTAssertTrue(fresh.canResume, "no Google cooldown after a lost connection")
+        fresh.resume()
+        try await waitUntilStopped(fresh)
+        let fetched = await transport.fetched
+        XCTAssertEqual(fetched.count, 2)
+        XCTAssertEqual(fresh.phase, .stopped(.finished))
+    }
+
+    func testOfflineStoredTextRoundTrips() {
+        XCTAssertEqual(StopReason.offline.storedText, "offline")
+        XCTAssertEqual(StopReason(storedText: "offline"), .offline)
+        XCTAssertFalse(StopReason.offline.isProviderStop)
+    }
+
     func testDoubleResumeNeverRunsTwoEngines() async throws {
         let store = try await interruptedAfterTwo()
         let transport = FakeTransport([], hangOnFetch: true)

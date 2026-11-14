@@ -100,7 +100,7 @@ final class SearchEngineTests: XCTestCase {
                                        page("CGK", "DPS", "2026-12-16", prices: ["1300000"]),
                                        page("CGK", "DPS", "2026-12-17", prices: ["1100000"])])
         let clock = FakeClock()
-        let events = await collect(SearchEngine(transport: transport, sleep: clock.sleep), try combos())
+        let events = await collect(SearchEngine(transport: transport, maxInFlight: 1, sleep: clock.sleep), try combos())
         // 0.25 s owner-approved after the 270-request live test (docs/log/p5.5-fli-interval.md).
         XCTAssertEqual(clock.sleeps, [.milliseconds(250), .milliseconds(250)])
         let fetched = await transport.fetched
@@ -113,7 +113,7 @@ final class SearchEngineTests: XCTestCase {
 
     func testStopsOn429AndKeepsEarlierOffers() async throws {
         let transport = FakeTransport([page("CGK", "DPS", "2026-12-15", prices: ["1250000"]), rateLimited])
-        let events = await collect(SearchEngine(transport: transport, sleep: FakeClock().sleep), try combos())
+        let events = await collect(SearchEngine(transport: transport, maxInFlight: 1, sleep: FakeClock().sleep), try combos())
         XCTAssertEqual(offers(events).count, 1)
         XCTAssertEqual(stop(events), .rateLimited)
         let count = await transport.fetched.count
@@ -123,7 +123,7 @@ final class SearchEngineTests: XCTestCase {
     func testStopsOnRefusedRedirect() async throws {
         let sorry = FetchedPage(status: 302, body: Data(), refusedRedirect: URL(string: "https://www.google.com/sorry/index?continue=x")!)
         let transport = FakeTransport([sorry])
-        let events = await collect(SearchEngine(transport: transport, sleep: FakeClock().sleep), try combos())
+        let events = await collect(SearchEngine(transport: transport, maxInFlight: 1, sleep: FakeClock().sleep), try combos())
         XCTAssertEqual(stop(events), .blocked("www.google.com/sorry/index"))
         let count = await transport.fetched.count
         XCTAssertEqual(count, 1)
@@ -131,7 +131,7 @@ final class SearchEngineTests: XCTestCase {
 
     func testStopsOnAuthDenied() async throws {
         let transport = FakeTransport([trafficPage])
-        let events = await collect(SearchEngine(transport: transport, sleep: FakeClock().sleep), try combos())
+        let events = await collect(SearchEngine(transport: transport, maxInFlight: 1, sleep: FakeClock().sleep), try combos())
         XCTAssertEqual(stop(events), .blocked("auth_denied"))
         let count = await transport.fetched.count
         XCTAssertEqual(count, 1)
@@ -140,7 +140,7 @@ final class SearchEngineTests: XCTestCase {
     func testStopsOn403LikeProvidersFliDeny() async throws {
         let forbidden = FetchedPage(status: 403, body: Data(), refusedRedirect: nil)
         let transport = FakeTransport([page("CGK", "DPS", "2026-12-15", prices: ["1250000"]), forbidden])
-        let events = await collect(SearchEngine(transport: transport, sleep: FakeClock().sleep), try combos())
+        let events = await collect(SearchEngine(transport: transport, maxInFlight: 1, sleep: FakeClock().sleep), try combos())
         XCTAssertEqual(offers(events).count, 1)
         XCTAssertEqual(stop(events), .blocked("http_403"))
         let count = await transport.fetched.count
@@ -150,7 +150,7 @@ final class SearchEngineTests: XCTestCase {
     func testOfflineErrorStopsAndLeavesComboPending() async throws {
         let transport = FakeTransport(results: [.success(page("CGK", "DPS", "2026-12-15", prices: ["1250000"])),
                                                 .failure(URLError(.notConnectedToInternet))])
-        let events = await collect(SearchEngine(transport: transport, sleep: FakeClock().sleep), try combos())
+        let events = await collect(SearchEngine(transport: transport, maxInFlight: 1, sleep: FakeClock().sleep), try combos())
         XCTAssertEqual(stop(events), .offline)
         XCTAssertEqual(offers(events).count, 1)
         XCTAssertTrue(failures(events).isEmpty, "offline is a pause, not a failed route/date")
@@ -162,7 +162,7 @@ final class SearchEngineTests: XCTestCase {
         // Wi-Fi up but no internet (captive portal, dead router): DNS / host errors, not "offline".
         for code in [URLError.Code.cannotFindHost, .dnsLookupFailed, .cannotConnectToHost] {
             let transport = FakeTransport(results: Array(repeating: .failure(URLError(code)), count: 3))
-            let events = await collect(SearchEngine(transport: transport, sleep: FakeClock().sleep), try combos())
+            let events = await collect(SearchEngine(transport: transport, maxInFlight: 1, sleep: FakeClock().sleep), try combos())
             XCTAssertEqual(stop(events), .offline, "\(code)")
             XCTAssertTrue(failures(events).isEmpty, "\(code)")
         }
@@ -172,7 +172,7 @@ final class SearchEngineTests: XCTestCase {
         let transport = FakeTransport(results: [.failure(URLError(.timedOut)),
                                                 .success(page("CGK", "DPS", "2026-12-16", prices: ["1300000"])),
                                                 .success(page("CGK", "DPS", "2026-12-17", prices: ["1100000"]))])
-        let events = await collect(SearchEngine(transport: transport, sleep: FakeClock().sleep), try combos())
+        let events = await collect(SearchEngine(transport: transport, maxInFlight: 1, sleep: FakeClock().sleep), try combos())
         XCTAssertEqual(failures(events), ["network"])
         XCTAssertEqual(offers(events).count, 2)
         XCTAssertEqual(stop(events), .finished)
@@ -180,7 +180,7 @@ final class SearchEngineTests: XCTestCase {
 
     func testSchemaChangedContinues() async throws {
         let transport = FakeTransport([brokenPage, page("CGK", "DPS", "2026-12-16", prices: ["1300000"]), brokenPage])
-        let events = await collect(SearchEngine(transport: transport, sleep: FakeClock().sleep), try combos())
+        let events = await collect(SearchEngine(transport: transport, maxInFlight: 1, sleep: FakeClock().sleep), try combos())
         XCTAssertEqual(failures(events), ["schema_changed", "schema_changed"])
         XCTAssertEqual(offers(events).count, 1)
         XCTAssertEqual(stop(events), .finished)
@@ -188,7 +188,7 @@ final class SearchEngineTests: XCTestCase {
 
     func testAllFailedIsDistinguishable() async throws {
         let transport = FakeTransport([brokenPage, brokenPage, brokenPage])
-        let events = await collect(SearchEngine(transport: transport, sleep: FakeClock().sleep), try combos())
+        let events = await collect(SearchEngine(transport: transport, maxInFlight: 1, sleep: FakeClock().sleep), try combos())
         XCTAssertTrue(offers(events).isEmpty)
         XCTAssertEqual(failures(events).count, 3)
         XCTAssertEqual(stop(events), .finished)
@@ -196,7 +196,7 @@ final class SearchEngineTests: XCTestCase {
 
     func testCancellationStopsFurtherRequests() async throws {
         let transport = FakeTransport([page("CGK", "DPS", "2026-12-15", prices: ["1"])], hangOnFetch: true)
-        let engine = SearchEngine(transport: transport, sleep: FakeClock().sleep)
+        let engine = SearchEngine(transport: transport, maxInFlight: 1, sleep: FakeClock().sleep)
         let combos = try combos()
         let consumer = Task { () -> [SearchEvent] in
             var events: [SearchEvent] = []
@@ -218,7 +218,7 @@ final class SearchEngineTests: XCTestCase {
         let transport = FakeTransport([page("CGK", "SUB", "2026-12-15", prices: ["1250000"]),
                                        page("CGK", "DPS", "2026-12-16", prices: ["1300000"]),
                                        page("CGK", "DPS", "2026-12-17", prices: ["1100000"])])
-        let events = await collect(SearchEngine(transport: transport, sleep: FakeClock().sleep), try combos())
+        let events = await collect(SearchEngine(transport: transport, maxInFlight: 1, sleep: FakeClock().sleep), try combos())
         XCTAssertEqual(failures(events), ["cross_check: airports CGK-SUB"])
         XCTAssertEqual(offers(events).count, 2)
     }
@@ -233,7 +233,7 @@ final class SearchEngineTests: XCTestCase {
         let transport = FakeTransport([FetchedPage(status: 200, body: Data(patched.utf8), refusedRedirect: nil)])
         let oneDay = try SearchRequest(origins: ["CGK"], destinations: ["DPS"], dateFrom: "2026-12-15",
                                        dateThrough: "2026-12-15", currency: "IDR").plan()
-        let events = await collect(SearchEngine(transport: transport, sleep: FakeClock().sleep), oneDay)
+        let events = await collect(SearchEngine(transport: transport, maxInFlight: 1, sleep: FakeClock().sleep), oneDay)
         XCTAssertEqual(offers(events).map(\.offer.price), ["1250000"])
         XCTAssertTrue(failures(events).isEmpty)
         let hidden = events.compactMap { if case .offersHidden(_, let reasons) = $0 { return reasons } else { return nil } }

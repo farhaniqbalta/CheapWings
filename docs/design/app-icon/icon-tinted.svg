@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Tinted appearance: greyscale; iOS recolours the light arrow with the user's tint. -->
+  <rect width="1024" height="1024" fill="#000000"/>
+  <path d="M196 452 H592 L500 288 H648 L840 512 L648 736 H500 L592 572 H196 Z" fill="#FFFFFF"/>
+</svg>

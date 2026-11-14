@@ -90,98 +90,39 @@ public enum SearchEvent: Sendable {
     case stopped(StopReason)
 }
 
-/// Runs one Fli search: strictly sequential requests, `interval` (0.25 s) between them, stop on any
-/// sign of blocking (429, refused redirect, traffic page). Offers are only delivered while
-/// the search is still running.
+/// Runs one search over a list of route/dates with one provider (Fli today), paced by the
+/// provider's own `ProviderPacing` (start-to-start, several in flight, results in plan order),
+/// stopping on any sign of blocking or a lost connection. Offers are only delivered while the
+/// search is still running.
 public actor SearchEngine {
     /// Hidden-offer reason for itineraries over the user's Max stops.
     public static let stopLimitReason = "more stops than your Max stops"
-    /// Pause (Resume later) rather than fail: a wrong "failed" loses that route/date for good.
-    /// Includes DNS/host errors from Wi-Fi with no internet (captive portal, dead router).
-    static let offlineCodes: Set<URLError.Code> = [.notConnectedToInternet, .networkConnectionLost,
-                                                   .dataNotAllowed, .internationalRoamingOff,
-                                                   .cannotFindHost, .dnsLookupFailed, .cannotConnectToHost]
 
-    private let transport: FliTransport
-    private let interval: Duration
+    private let provider: SearchProvider
     private let sleep: @Sendable (Duration) async throws -> Void
 
-    public init(transport: FliTransport, interval: Duration = .milliseconds(250),
+    public init(provider: SearchProvider,
                 sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }) {
-        self.transport = transport
-        self.interval = interval
+        self.provider = provider
         self.sleep = sleep
+    }
+
+    /// Fli with explicit pacing (tests use `maxInFlight: 1` for the one-at-a-time engine).
+    public init(transport: FliTransport, interval: Duration = ProviderPacing.fli.interval,
+                maxInFlight: Int = ProviderPacing.fli.maxInFlight,
+                sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }) {
+        self.init(provider: FliSearchProvider(transport: transport, pacing: ProviderPacing(interval: interval, maxInFlight: maxInFlight)),
+                  sleep: sleep)
     }
 
     /// Cancelling the consuming task (or dropping the stream) cancels the search.
     public nonisolated func run(_ request: SearchRequest, combos: [RouteDate]) -> AsyncStream<SearchEvent> {
         AsyncStream { continuation in
-            let task = Task { await self.execute(request, combos, continuation) }
+            let task = Task { [provider, sleep] in
+                await PacedRunner.execute(provider: provider, request: request, combos: combos, sleep: sleep, out: continuation)
+            }
             continuation.onTermination = { _ in task.cancel() }
         }
-    }
-
-    private func execute(_ request: SearchRequest, _ combos: [RouteDate], _ out: AsyncStream<SearchEvent>.Continuation) async {
-        func stop(_ reason: StopReason) {
-            out.yield(.stopped(reason))
-            out.finish()
-        }
-        out.yield(.started(total: combos.count))
-        for (index, combo) in combos.enumerated() {
-            if index > 0 {
-                do { try await sleep(interval) } catch { return stop(.cancelled) }
-            }
-            if Task.isCancelled { return stop(.cancelled) }
-            let url = request.searchURL(combo)
-            let page: FetchedPage
-            do {
-                page = try await transport.fetch(url)
-            } catch {
-                if Task.isCancelled { return stop(.cancelled) }
-                // No connection: pause (route/date stays pending for Resume) instead of failing
-                // every remaining route/date within seconds at 0.25 s.
-                if let code = (error as? URLError)?.code, Self.offlineCodes.contains(code) { return stop(.offline) }
-                out.yield(.comboFailed(combo, code: "network"))
-                out.yield(.progress(done: index + 1, total: combos.count))
-                continue
-            }
-            if Task.isCancelled { return stop(.cancelled) }  // never deliver after cancel
-            if page.status == 429 { return stop(.rateLimited) }
-            // providers/fli.py `_deny()`: 401/403 block the provider for good.
-            if page.status == 401 || page.status == 403 { return stop(.blocked("http_\(page.status)")) }
-            if let refused = page.refusedRedirect { return stop(.blocked((refused.host ?? "?") + refused.path)) }
-            if page.status != 200 {
-                out.yield(.comboFailed(combo, code: "http_\(page.status)"))
-            } else {
-                do {
-                    let decoded = try fliDecodePage(html: String(decoding: page.body, as: UTF8.self))
-                    // Per-offer check: a row Google sends without a currency token must not
-                    // discard the page's other offers (P5.2 owner test, CGK→HND).
-                    let checked = fliFilterOffers(page: decoded, origin: combo.origin, destination: combo.destination,
-                                                  date: combo.date, currency: request.currency, maxStops: request.maxStops)
-                    // Failed only when bad data removed everything; Max stops alone is a normal result.
-                    if checked.offers.isEmpty, checked.excludedByStops == 0, let reason = checked.rejected.first {
-                        out.yield(.comboFailed(combo, code: "cross_check: \(reason)"))
-                    } else {
-                        if !checked.offers.isEmpty {
-                            out.yield(.offers(checked.offers.enumerated().map {
-                                FoundOffer(routeDate: combo, index: $0.offset, offer: $0.element, searchURL: url)
-                            }))
-                        }
-                        let hidden = checked.rejected
-                            + Array(repeating: Self.stopLimitReason, count: Int(checked.excludedByStops))
-                        if !hidden.isEmpty { out.yield(.offersHidden(combo, reasons: hidden)) }
-                    }
-                } catch FliDecodeError.Failed(let code, _) {
-                    if code == "auth_denied" { return stop(.blocked("auth_denied")) }
-                    out.yield(.comboFailed(combo, code: code))
-                } catch {
-                    out.yield(.comboFailed(combo, code: "decode"))
-                }
-            }
-            out.yield(.progress(done: index + 1, total: combos.count))
-        }
-        stop(.finished)
     }
 }
 

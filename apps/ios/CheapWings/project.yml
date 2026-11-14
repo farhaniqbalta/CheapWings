@@ -15,6 +15,8 @@ targets:
     platform: iOS
     sources:
       - Sources
+      # App icon (light / dark / tinted); SVG sources in docs/design/app-icon.
+      - Resources/Assets.xcassets
       # Same location catalog as the backend and web app (one file, no copy to drift).
       - path: ../../../backend/src/cheapwings/locations/catalog.json
         buildPhase: resources
@@ -35,6 +37,7 @@ targets:
         PRODUCT_NAME: CheapWings
         TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_KEY_CFBundleDisplayName: CheapWings
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"

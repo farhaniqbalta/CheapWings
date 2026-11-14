@@ -57,6 +57,7 @@ pub enum SkiplaggedError {
     SchemaChanged,
     InvalidPrice,
     MissingSegments,
+    ProviderUnavailable,
 }
 
 impl std::fmt::Display for SkiplaggedError {
@@ -65,6 +66,7 @@ impl std::fmt::Display for SkiplaggedError {
             Self::SchemaChanged => "response does not match the expected Skiplagged shape",
             Self::InvalidPrice => "price is missing, negative or not a number",
             Self::MissingSegments => "a time has no UTC offset",
+            Self::ProviderUnavailable => "Skiplagged returned a tool error",
         })
     }
 }
@@ -77,8 +79,38 @@ impl SkiplaggedError {
             Self::SchemaChanged => "schema_changed",
             Self::InvalidPrice => "invalid_price",
             Self::MissingSegments => "missing_segments",
+            Self::ProviderUnavailable => "provider_unavailable",
         }
     }
+}
+
+/// The `sk_flights_search` payload (exact JSON text) from a raw JSON-RPC `tools/call` reply, in
+/// `mcp_search`'s order: exact structured content, then a text block holding a JSON object with
+/// `flights`. A tool error or JSON-RPC error is `provider_unavailable`.
+pub fn skiplagged_tool_payload(rpc_json: &str) -> Result<String, SkiplaggedError> {
+    let message: Value = serde_json::from_str(rpc_json).map_err(|_| SkiplaggedError::SchemaChanged)?;
+    if message.get("error").is_some() {
+        return Err(SkiplaggedError::ProviderUnavailable);
+    }
+    let result = message.get("result").ok_or(SkiplaggedError::SchemaChanged)?;
+    if result.get("isError").and_then(Value::as_bool) == Some(true) {
+        return Err(SkiplaggedError::ProviderUnavailable);
+    }
+    if let Some(structured) = result.get("structuredContent").filter(|v| v.get("flights").is_some()) {
+        return serde_json::to_string(structured).map_err(|_| SkiplaggedError::SchemaChanged);
+    }
+    for block in result.get("content").and_then(Value::as_array).into_iter().flatten() {
+        if block.get("type").and_then(Value::as_str) != Some("text") {
+            continue;
+        }
+        let Some(text) = block.get("text").and_then(Value::as_str) else { continue };
+        if let Ok(parsed) = serde_json::from_str::<Value>(text) {
+            if parsed.is_object() && parsed.get("flights").is_some() {
+                return Ok(text.to_owned());
+            }
+        }
+    }
+    Err(SkiplaggedError::SchemaChanged)
 }
 
 use SkiplaggedError::*;

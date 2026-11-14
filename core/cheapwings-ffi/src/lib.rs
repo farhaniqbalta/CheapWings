@@ -379,6 +379,12 @@ pub fn skiplagged_parse(json: String, origin: String, destination: String, date:
     Ok(SkiplaggedPage { offers: page.offers.into_iter().map(SourceOffer::from).collect(), complete: page.complete })
 }
 
+/// The exact `sk_flights_search` payload text from a raw JSON-RPC `tools/call` reply.
+#[uniffi::export]
+pub fn skiplagged_tool_payload(rpc_json: String) -> Result<String, SkiplaggedError> {
+    Ok(skiplagged::skiplagged_tool_payload(&rpc_json)?)
+}
+
 /// A Fli offer as a provider-neutral offer.
 #[uniffi::export]
 pub fn fli_source_offer(offer: FliOffer, id: String, display_currency: String) -> SourceOffer {

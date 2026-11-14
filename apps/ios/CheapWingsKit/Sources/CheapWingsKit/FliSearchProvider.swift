@@ -8,11 +8,6 @@ public struct FliSearchProvider: SearchProvider {
     public let pacing: ProviderPacing
     private let transport: FliTransport
 
-    /// Pause (Resume later) rather than fail: a wrong "failed" loses that route/date for good.
-    /// Includes DNS/host errors from Wi-Fi with no internet (captive portal, dead router).
-    static let offlineCodes: Set<URLError.Code> = [.notConnectedToInternet, .networkConnectionLost,
-                                                   .dataNotAllowed, .internationalRoamingOff,
-                                                   .cannotFindHost, .dnsLookupFailed, .cannotConnectToHost]
 
     public init(transport: FliTransport, pacing: ProviderPacing = .fli) {
         self.transport = transport
@@ -26,7 +21,7 @@ public struct FliSearchProvider: SearchProvider {
             page = try await transport.fetch(url)
         } catch {
             if Task.isCancelled { return .stop(.cancelled) }
-            if let code = (error as? URLError)?.code, Self.offlineCodes.contains(code) { return .stop(.offline) }
+            if let code = (error as? URLError)?.code, OfflineErrors.codes.contains(code) { return .stop(.offline) }
             return .failed(code: "network", hidden: [])
         }
         if Task.isCancelled { return .stop(.cancelled) }

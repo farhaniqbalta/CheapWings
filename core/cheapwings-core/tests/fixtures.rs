@@ -480,3 +480,23 @@ fn fli_source_offer_keeps_legs() {
     assert_eq!(s.minutes, None);
     assert_eq!(s.hidden_city, "unknown");
 }
+
+#[test]
+fn skiplagged_tool_payload_prefers_exact_structured_content() {
+    use cheapwings_core::skiplagged::skiplagged_tool_payload;
+    let rpc = r##"{"jsonrpc":"2.0","id":2,"result":{"content":[{"type":"text","text":"# Flights"}],"structuredContent":{"flights":[],"pricing":{"rate":18108.70}},"isError":false}}"##;
+    let payload = skiplagged_tool_payload(rpc).expect("payload");
+    assert!(payload.contains("18108.70"), "exact number text kept: {payload}");
+    assert!(payload.contains("\"flights\""));
+    // No structured content: a text block holding the JSON object with flights.
+    let text_only = r#"{"jsonrpc":"2.0","id":2,"result":{"content":[{"type":"text","text":"note"},{"type":"text","text":"{\"flights\":[],\"x\":1.50}"}],"isError":false}}"#;
+    assert!(skiplagged_tool_payload(text_only).expect("text payload").contains("1.50"));
+    // Tool error and JSON-RPC error.
+    let tool_error = r#"{"jsonrpc":"2.0","id":2,"result":{"content":[],"isError":true}}"#;
+    assert_eq!(skiplagged_tool_payload(tool_error).unwrap_err().code(), "provider_unavailable");
+    let rpc_error = r#"{"jsonrpc":"2.0","id":2,"error":{"code":-32603,"message":"boom"}}"#;
+    assert_eq!(skiplagged_tool_payload(rpc_error).unwrap_err().code(), "provider_unavailable");
+    // Neither: schema changed.
+    let empty = r#"{"jsonrpc":"2.0","id":2,"result":{"content":[{"type":"text","text":"no json"}],"isError":false}}"#;
+    assert_eq!(skiplagged_tool_payload(empty).unwrap_err().code(), "schema_changed");
+}

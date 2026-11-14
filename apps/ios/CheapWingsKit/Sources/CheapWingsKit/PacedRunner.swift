@@ -61,6 +61,9 @@ enum PacedRunner {
                     case .failed(let code, let hidden):
                         out.yield(.comboFailed(combo, code: code))
                         if !hidden.isEmpty { out.yield(.offersHidden(combo, reasons: hidden)) }
+                    case .retry:
+                        // Interim (P5.4 Task 2): retries are honoured by provider lanes in Task 3.
+                        out.yield(.comboFailed(combo, code: "http_rate_limited"))
                     }
                     nextToRelease += 1
                     out.yield(.progress(done: nextToRelease, total: combos.count))

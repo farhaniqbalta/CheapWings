@@ -1,7 +1,7 @@
 //! UniFFI surface of `cheapwings-core` for Swift. Thin wrappers only: records mirror the core
 //! types and every function delegates. UniFFI has no i128, so minor units cross as text.
 
-use cheapwings_core::{fingerprint as fp, fli, locations, money, planning, ranking};
+use cheapwings_core::{fingerprint as fp, fli, locations, money, planning, ranking, skiplagged};
 
 uniffi::setup_scaffolding!();
 
@@ -291,6 +291,99 @@ pub struct AirportChange {
 pub fn fli_airport_changes(offer: FliOffer) -> Vec<AirportChange> {
     let page = fli::FliPage::from(FliPage { offers: vec![offer], unpriced: 0 });
     fli::airport_changes(&page.offers[0]).into_iter().map(|(from, to)| AirportChange { from, to }).collect()
+}
+
+// ---------- Skiplagged + provider-neutral offers (P5.4) ----------
+
+#[derive(Debug, thiserror::Error, uniffi::Error)]
+pub enum SkiplaggedError {
+    /// `code`: `schema_changed | invalid_price | missing_segments`.
+    #[error("{code}: {message}")]
+    Failed { code: String, message: String },
+}
+
+impl From<skiplagged::SkiplaggedError> for SkiplaggedError {
+    fn from(err: skiplagged::SkiplaggedError) -> Self {
+        Self::Failed { code: err.code().to_owned(), message: err.to_string() }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct FxNote {
+    pub rate: String,
+    pub as_of: String,
+    pub to_currency: String,
+}
+
+/// One offer from any source; `legs` empty when the source gives no per-flight detail.
+#[derive(Debug, PartialEq, Eq, uniffi::Record)]
+pub struct SourceOffer {
+    pub provider: String,
+    pub id: String,
+    pub origin: String,
+    pub destination: String,
+    pub depart_local: String,
+    pub arrive_local: String,
+    pub minutes: Option<i64>,
+    pub stops: u32,
+    pub carriers: Vec<String>,
+    pub legs: Vec<FliLeg>,
+    pub price_original: String,
+    pub currency_original: String,
+    pub price_comparable: Option<String>,
+    pub fx: Option<FxNote>,
+    pub link: Option<String>,
+    /// `no | yes | unknown`
+    pub hidden_city: String,
+}
+
+#[derive(Debug, PartialEq, Eq, uniffi::Record)]
+pub struct SkiplaggedPage {
+    pub offers: Vec<SourceOffer>,
+    pub complete: Option<bool>,
+}
+
+fn leg_from_core(l: fli::FliLeg) -> FliLeg {
+    FliLeg { origin: l.origin, destination: l.destination, airline: l.airline, flight_number: l.flight_number,
+             depart_local: l.depart_local, arrive_local: l.arrive_local }
+}
+
+impl From<skiplagged::SourceOffer> for SourceOffer {
+    fn from(o: skiplagged::SourceOffer) -> Self {
+        Self {
+            provider: o.provider,
+            id: o.id,
+            origin: o.origin,
+            destination: o.destination,
+            depart_local: o.depart_local,
+            arrive_local: o.arrive_local,
+            minutes: o.minutes,
+            stops: o.stops,
+            carriers: o.carriers,
+            legs: o.legs.into_iter().map(leg_from_core).collect(),
+            price_original: o.price_original,
+            currency_original: o.currency_original,
+            price_comparable: o.price_comparable,
+            fx: o.fx.map(|f| FxNote { rate: f.rate, as_of: f.as_of, to_currency: f.to_currency }),
+            link: o.link,
+            hidden_city: o.hidden_city,
+        }
+    }
+}
+
+/// Parses the raw `sk_flights_search` JSON text (exact numbers) for one route/date.
+#[uniffi::export]
+pub fn skiplagged_parse(json: String, origin: String, destination: String, date: String,
+                        display_currency: String) -> Result<SkiplaggedPage, SkiplaggedError> {
+    let page = skiplagged::skiplagged_parse(&json, &origin, &destination, &date, &display_currency)?;
+    Ok(SkiplaggedPage { offers: page.offers.into_iter().map(SourceOffer::from).collect(), complete: page.complete })
+}
+
+/// A Fli offer as a provider-neutral offer.
+#[uniffi::export]
+pub fn fli_source_offer(offer: FliOffer, id: String, display_currency: String) -> SourceOffer {
+    let page = fli::FliPage::from(FliPage { offers: vec![offer], unpriced: 0 });
+    skiplagged::fli_source_offer(&page.offers[0], &id, &display_currency).into()
 }
 
 // ---------- location catalog ----------

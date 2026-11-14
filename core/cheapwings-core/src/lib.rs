@@ -6,3 +6,4 @@ pub mod locations;
 pub mod money;
 pub mod planning;
 pub mod ranking;
+pub mod skiplagged;

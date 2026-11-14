@@ -369,6 +369,86 @@ def location_major_cases():
     return cases
 
 
+def skiplagged_cases():
+    """P5.4: SkiplaggedProvider.normalize over the recorded MEL→DPS payload plus edge cases.
+
+    Input is the exact JSON text a Rust parser sees; numbers stay exact (parse_float=Decimal,
+    as providers/common.json_payload does for the raw MCP text).
+    """
+    import copy
+    import re
+
+    from cheapwings.domain.evidence import ProviderFailure
+    from cheapwings.providers.common import json_payload
+    from cheapwings.providers.skiplagged import SkiplaggedProvider
+
+    root = Path(__file__).resolve().parents[1]
+    recorded = json.loads((root / "contracts/fixtures/provider/skiplagged_probe_20261109T123430Z.json").read_text(),
+                          parse_float=Decimal)["search_structured_content"]
+
+    def text(payload):
+        raw = json.dumps(payload, default=lambda d: f"__DEC__{d}")
+        return re.sub(r'"__DEC__([^"]+)"', r"\1", raw)
+
+    def case(name, payload, origin="MEL", destination="DPS", date="2026-12-16", currency="IDR"):
+        body = text(payload)
+        query = SimpleNamespace(origin=origin, destination=destination,
+                                departure_date=datetime.fromisoformat(date).date(), display_currency=currency)
+        try:
+            result = SkiplaggedProvider().normalize(json_payload(body), query)
+        except ProviderFailure as failure:
+            expect = {"error": failure.code}
+        except (KeyError, TypeError, ValueError, IndexError):
+            expect = {"error": "schema_changed"}
+        else:
+            offers = []
+            for (offer,), summary in zip(result.offers_by_itinerary_index, result.itinerary_summaries):
+                fx = offer.evidence.fx_snapshot
+                offers.append({
+                    "id": offer.quote_id,
+                    "depart_local": summary.depart_at.isoformat()[:16],
+                    "arrive_local": summary.arrive_at.isoformat()[:16],
+                    "minutes": summary.duration_minutes,
+                    "stops": summary.stops,
+                    "carriers": list(summary.carrier_names),
+                    "price_original": str(offer.amount_original.amount),
+                    "price_comparable": str(offer.comparable_amount.amount) if offer.comparable_amount else None,
+                    "fx": {"rate": str(fx.rate), "as_of": fx.retrieved_at, "to_currency": fx.quote_currency} if fx else None,
+                    "link": offer.link,
+                })
+            expect = {"offers": offers, "complete": result.provider_complete}
+        return {"name": name, "json": body, "origin": origin, "destination": destination, "date": date,
+                "currency": currency, "expect": expect}
+
+    def edit(fn):
+        payload = copy.deepcopy(recorded)
+        fn(payload)
+        return payload
+
+    first = lambda p: p["flights"][0]  # noqa: E731
+    return [
+        case("recorded_idr", recorded),
+        case("usd_display", recorded, currency="USD"),
+        case("rate_for_other_currency", recorded, currency="AUD"),
+        case("missing_rate_as_of", edit(lambda p: p["pricing"].pop("rateAsOf"))),
+        case("wrong_origin", recorded, origin="SYD"),
+        case("wrong_date", recorded, date="2026-12-17"),
+        case("negative_price", edit(lambda p: first(p)["price"].update(usdAmount=Decimal("-1")))),
+        case("string_price", edit(lambda p: first(p)["price"].update(usdAmount="271.50"))),
+        case("decimal_price", edit(lambda p: first(p)["price"].update(usdAmount=Decimal("271.55")))),
+        case("bad_link_host", edit(lambda p: first(p).update(deepLink="https://evil.example/flights"))),
+        case("http_link", edit(lambda p: first(p).update(deepLink="http://skiplagged.com/flights"))),
+        case("negative_layovers", edit(lambda p: first(p).update(layovers=-1))),
+        case("string_layovers", edit(lambda p: first(p).update(layovers="0"))),
+        case("naive_datetime", edit(lambda p: first(p)["departure"].update(dateTime="2026-12-16T07:00:00"))),
+        case("flights_not_list", edit(lambda p: p.update(flights={}))),
+        case("empty_flights", edit(lambda p: p.update(flights=[]))),
+        case("no_has_more", edit(lambda p: p["pagination"].pop("hasMoreResults"))),
+        case("no_airlines", edit(lambda p: first(p).pop("airlines"))),
+        case("missing_price", edit(lambda p: first(p).pop("price"))),
+    ]
+
+
 def main():
     root = Path(__file__).resolve().parents[1]
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True,
@@ -378,13 +458,13 @@ def main():
                 "money": money_cases(1000), "fingerprint": fingerprint_cases(500),
                 "ranking": ranking_cases(300), "fli_tfs": fli_tfs_cases(50), "fli_pages": fli_page_cases(40),
                 "planning": planning_cases(60), "location_search": location_search_cases(),
-                "location_major": location_major_cases()}
+                "location_major": location_major_cases(), "skiplagged": skiplagged_cases()}
     out = root / "contracts" / "fixtures" / "core" / "core_fixtures.json"
     out.write_text(json.dumps(fixtures, separators=(",", ":")))
     print(f"wrote {out.name}: {len(fixtures['money'])} money, {len(fixtures['fingerprint'])} fingerprint, "
           f"{len(fixtures['ranking'])} ranking, {len(fixtures['fli_tfs'])} fli_tfs, "
           f"{len(fixtures['fli_pages'])} fli_pages, {len(fixtures['planning'])} planning, "
-          f"{len(fixtures['location_search'])} location_search, {len(fixtures['location_major'])} location_major cases, "
+          f"{len(fixtures['location_search'])} location_search, {len(fixtures["location_major"])} location_major, {len(fixtures["skiplagged"])} skiplagged cases, "
           f"{out.stat().st_size} bytes")
 
 

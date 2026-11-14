@@ -95,6 +95,8 @@ struct SearchCase {
     text: String,
     within: Option<String>,
     expect: SearchExpect,
+    #[serde(default)]
+    total: Option<u32>,
 }
 
 #[derive(Deserialize)]
@@ -281,17 +283,18 @@ fn location_search_matches_python() {
     let cat = catalog();
     let cases = fixtures().location_search;
     for c in &cases {
-        let got = cat.search(&c.text, c.within.as_deref());
+        let got = cat.search_page(&c.text, c.within.as_deref(), 15);
         match (&got, &c.expect) {
-            (Ok(found), SearchExpect::Ids(ids)) => {
-                let got_ids: Vec<&str> = found.iter().take(15).map(|l| l.id.as_str()).collect();
+            (Ok(page), SearchExpect::Ids(ids)) => {
+                let got_ids: Vec<&str> = page.locations.iter().map(|l| l.id.as_str()).collect();
                 assert_eq!(got_ids, ids.iter().map(String::as_str).collect::<Vec<_>>(), "search {:?} within {:?}", c.text, c.within);
+                assert_eq!(Some(page.total), c.total, "total for {:?} within {:?}", c.text, c.within);
             }
             (Err(e), SearchExpect::Error { error }) => assert_eq!(e.code(), error, "search {:?}", c.text),
             _ => panic!("search {:?} within {:?}: got {got:?}", c.text, c.within),
         }
     }
-    assert_eq!(cases.len(), 54);
+    assert_eq!(cases.len(), 57);
 }
 
 #[test]

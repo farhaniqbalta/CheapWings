@@ -5,7 +5,7 @@
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
-use unicode_normalization::char::is_combining_mark;
+use unicode_normalization::char::canonical_combining_class;
 use unicode_normalization::UnicodeNormalization;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -20,6 +20,12 @@ pub struct Location {
     pub country_name: String,
     pub codes: Vec<String>,
     pub timezone: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SearchPage {
+    pub locations: Vec<Location>,
+    pub total: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -105,7 +111,8 @@ pub fn fold(text: &str) -> String {
             'ß' | 'ẞ' => "ss".chars().collect::<Vec<_>>(),
             other => other.to_lowercase().collect(),
         })
-        .filter(|c| !is_combining_mark(*c))
+        // Python `unicodedata.combining`: drop only combining class != 0 (keeps Mc spacing marks).
+        .filter(|c| canonical_combining_class(*c) == 0)
         .collect()
 }
 
@@ -194,6 +201,12 @@ impl Catalog {
     /// Full deterministic matches (presentation may paginate; selection never truncates).
     /// `within` limits results to that place's airports; an empty term then lists them all.
     pub fn search(&self, text: &str, within: Option<&str>) -> Result<Vec<Location>, CatalogError> {
+        Ok(self.search_page(text, within, usize::MAX)?.locations)
+    }
+
+    /// The first `limit` matches in search order plus the total match count, so a picker copies
+    /// only what it shows (a one-letter query matches most of the catalog).
+    pub fn search_page(&self, text: &str, within: Option<&str>, limit: usize) -> Result<SearchPage, CatalogError> {
         if text.chars().count() > 100 {
             return Err(CatalogError::TooLong);
         }
@@ -215,7 +228,8 @@ impl Catalog {
             let exact_name = !(term == fold(&e.name) || self.aliases[i].iter().any(|a| fold(a) == term));
             (exact_code, exact_name, e.kind.clone(), fold(&e.name), e.id.clone())
         });
-        Ok(matches.into_iter().map(|i| self.entities[i].clone()).collect())
+        let total = matches.len() as u32;
+        Ok(SearchPage { locations: matches.into_iter().take(limit).map(|i| self.entities[i].clone()).collect(), total })
     }
 
     pub fn airports_of(&self, id: &str) -> Result<Vec<Location>, CatalogError> {

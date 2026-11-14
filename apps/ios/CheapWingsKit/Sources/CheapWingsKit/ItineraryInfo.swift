@@ -29,7 +29,8 @@ public struct ItineraryInfo: Sendable, Equatable {
         }
         func minutes(_ from: Date?, _ to: Date?) -> Int? {
             guard let from, let to else { return nil }
-            return Int(to.timeIntervalSince(from) / 60)
+            let minutes = Int(to.timeIntervalSince(from) / 60)
+            return minutes >= 0 ? minutes : nil  // inconsistent times: unknown, never negative
         }
         let legs = offer.legs
         let departs = legs.map { instant($0.departLocal, at: $0.origin) }

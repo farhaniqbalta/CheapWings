@@ -43,8 +43,9 @@ struct AirportPicker: View {
     }
 
     @ViewBuilder private func results(chosen: Set<String>) -> some View {
-        let found = (try? catalog.search(text: query, within: nil)) ?? []
-        let shown = Array(found.prefix(Self.shownLimit))
+        let result = Result { try catalog.searchPage(text: query, within: nil, limit: UInt32(Self.shownLimit)) }
+        let shown = (try? result.get())?.locations ?? []
+        let total = Int((try? result.get())?.total ?? 0)
         // Places first: Major airports of a city or country is the common choice.
         ForEach(["city", "country", "airport"], id: \.self) { kind in
             let group = shown.filter { $0.kind == kind }
@@ -62,10 +63,12 @@ struct AirportPicker: View {
                 }
             }
         }
-        if found.count > Self.shownLimit {
-            Text("\(found.count - Self.shownLimit) more matches. Type more to narrow the list.")
+        if case .failure(CatalogError.Failed("too_long", _)) = result {
+            Text("Search text is too long. Use up to 100 characters.").foregroundStyle(.secondary)
+        } else if total > shown.count {
+            Text("\(total - shown.count) more matches. Type more to narrow the list.")
                 .font(.caption).foregroundStyle(.secondary)
-        } else if !query.isEmpty && found.isEmpty {
+        } else if !query.isEmpty && shown.isEmpty {
             Text("No city, country or airport matches “\(query)”.").foregroundStyle(.secondary)
         }
     }

@@ -345,6 +345,12 @@ pub struct MajorResolution {
     pub definition: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct SearchPage {
+    pub locations: Vec<Location>,
+    pub total: u32,
+}
+
 /// The shared airport/city/country catalog (same JSON as the backend and web app).
 #[derive(uniffi::Object)]
 pub struct LocationCatalog {
@@ -364,6 +370,12 @@ impl LocationCatalog {
 
     pub fn search(&self, text: String, within: Option<String>) -> Result<Vec<Location>, CatalogError> {
         Ok(self.inner.search(&text, within.as_deref())?.into_iter().map(Location::from).collect())
+    }
+
+    /// The first `limit` matches plus the total count (the picker shows "N more").
+    pub fn search_page(&self, text: String, within: Option<String>, limit: u32) -> Result<SearchPage, CatalogError> {
+        let page = self.inner.search_page(&text, within.as_deref(), limit as usize)?;
+        Ok(SearchPage { locations: page.locations.into_iter().map(Location::from).collect(), total: page.total })
     }
 
     pub fn airports_of(&self, id: String) -> Result<Vec<Location>, CatalogError> {

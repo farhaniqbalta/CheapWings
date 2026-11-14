@@ -3,7 +3,7 @@ import XCTest
 
 /// The shared location catalog and its Python-generated fixtures, through the Swift API.
 final class LocationTests: XCTestCase {
-    struct SearchCase: Decodable { let text: String; let within: String?; let expect: Expect }
+    struct SearchCase: Decodable { let text: String; let within: String?; let expect: Expect; let total: UInt32? }
     struct MajorCase: Decodable { let kind, id, version: String; let expect: MajorExpect }
     enum Expect: Decodable {
         case ids([String]), error(String)
@@ -32,16 +32,17 @@ final class LocationTests: XCTestCase {
 
     func testLocationSearch() {
         for c in Self.fixtures.location_search {
-            switch (Result { try Self.catalog.search(text: c.text, within: c.within) }, c.expect) {
-            case (.success(let found), .ids(let ids)):
-                XCTAssertEqual(found.prefix(15).map(\.id), ids, "\(c.text) within \(c.within ?? "-")")
+            switch (Result { try Self.catalog.searchPage(text: c.text, within: c.within, limit: 15) }, c.expect) {
+            case (.success(let page), .ids(let ids)):
+                XCTAssertEqual(page.locations.map(\.id), ids, "\(c.text) within \(c.within ?? "-")")
+                XCTAssertEqual(page.total, c.total, "total for \(c.text)")
             case (.failure(CatalogError.Failed(let code, _)), .error(let want)):
                 XCTAssertEqual(code, want, c.text)
             case (let got, _):
                 XCTFail("\(c.text): got \(got)")
             }
         }
-        XCTAssertEqual(Self.fixtures.location_search.count, 54)
+        XCTAssertEqual(Self.fixtures.location_search.count, 57)
     }
 
     func testMajorResolution() {

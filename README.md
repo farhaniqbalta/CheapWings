@@ -73,16 +73,20 @@ URL or browser storage, and must be re-entered after refresh. Do not put tokens
 or upstream credentials in `VITE_*` variables: these become public build assets.
 Use HTTPS for remote private access; no public deployment is configured.
 
-## Run the iPad app (P5.2–P5.8)
+## Run the iPad app (P5.2–P5.8, P5.4)
 
-Standalone: the iPad searches Google Flights (Fli) itself — a request every 0.25 s with up to
-6 open, foreground only; no backend is needed. Shared logic (money, ranking, the Fli decoder,
-the location catalog, storage) is the Rust core in `core/`; networking and UI are Swift.
+Standalone: the iPad searches Google Flights (Fli) and Skiplagged itself, side by side, each
+at its own pace — Fli a request every 0.25 s with up to 6 open, Skiplagged every 3 s with up to
+3 (its "slow down" replies are retried after the wait it asks for); foreground only; no backend
+is needed. Pick the sources on the search form; each fare shows where it came from; Skiplagged
+prices are in USD, converted with Skiplagged's own rate. Shared logic (money, ranking, the Fli
+decoder, the Skiplagged parser, the location catalog, storage) is the Rust core in `core/`;
+networking and UI are Swift.
 Features: airport picker with Major airports (stack several places, remove single airports),
 Max stops, a lowest-fare-per-day date strip, flight details timeline with airline names and
 airport-change warnings, offline pause and Resume, VoiceOver and larger text, dark mode.
-The engine is provider-neutral (`SearchProvider` + `PacedRunner`), ready for Skiplagged /
-OctoTrip in P5.4. The same app runs on Apple-silicon Macs (Designed for iPad).
+The engine is provider-neutral (`SearchProvider` + `PacedRunner`, one lane per source);
+OctoTrip on the iPad is deferred. The same app runs on Apple-silicon Macs (Designed for iPad).
 Requires Xcode, Rust with the iOS targets
 (`rustup target add aarch64-apple-ios aarch64-apple-ios-sim`) and `brew install xcodegen`.
 

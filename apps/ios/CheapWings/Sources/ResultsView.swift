@@ -26,10 +26,18 @@ struct ResultsView: View {
                     }
                 }
             }
-            if case .stopped(let reason) = session.phase, let message = Self.message(for: reason) {
+            if !session.providerStops.isEmpty || session.phase.stopMessage != nil {
                 Section {
-                    Label(message, systemImage: "exclamationmark.triangle")
-                        .foregroundStyle(reason.isGoogleStop ? Theme.hold : Theme.warn)
+                    // A source that stopped on its own is named, so a Skiplagged limit is never shown as Google's.
+                    ForEach(session.providerStops.keys.sorted(), id: \.self) { provider in
+                        if let stop = session.providerStops[provider] {
+                            Label(Self.message(for: stop.reason, source: provider), systemImage: "exclamationmark.triangle")
+                                .foregroundStyle(Theme.hold)
+                        }
+                    }
+                    if case .stopped(let reason) = session.phase, !reason.isGoogleStop, let message = Self.message(for: reason) {
+                        Label(message, systemImage: "exclamationmark.triangle").foregroundStyle(Theme.warn)
+                    }
                 }
             }
             if !days.isEmpty && (session.isRunning || !session.offers.isEmpty || session.resumable != nil) {
@@ -81,7 +89,7 @@ struct ResultsView: View {
             if !session.failures.isEmpty {
                 Section("Days that could not be searched") {
                     ForEach(Array(session.failures.enumerated()), id: \.offset) { _, failure in
-                        Text("\(failure.routeDate.origin) to \(failure.routeDate.destination), \(Self.day(failure.routeDate.date)): \(failure.code)")
+                        Text("\(Sources.name(failure.provider)): \(failure.routeDate.origin) to \(failure.routeDate.destination), \(Self.day(failure.routeDate.date)): \(failure.code)")
                             .font(.footnote).foregroundStyle(.secondary)
                     }
                 }
@@ -135,6 +143,16 @@ struct ResultsView: View {
         case .offline: return "Paused: no internet connection. Resume when you are back online."
         }
     }
+
+    /// "Google Flights stopped: rate limit on this device. Its remaining days wait 30 minutes."
+    static func message(for reason: StopReason, source: String) -> String {
+        let name = Sources.name(source)
+        switch reason {
+        case .rateLimited: return "\(name) stopped: rate limit on this device. Its remaining days wait 30 minutes."
+        case .blocked(let detail): return "\(name) stopped: automated access blocked (\(detail)). Its remaining days wait 30 minutes."
+        default: return "\(name) stopped."
+        }
+    }
 }
 
 private extension StopReason {
@@ -146,8 +164,18 @@ private extension StopReason {
     }
 }
 
+private extension SearchSession.Phase {
+    /// The non-source stop message to show (offline, cancelled, …), if any.
+    var stopMessage: String? {
+        guard case .stopped(let reason) = self, !reason.isGoogleStop else { return nil }
+        return ResultsView.message(for: reason)
+    }
+}
+
 /// One flight: price first, codes like airport signs, stops and duration on the right. Reads as one
 /// VoiceOver element; stacks vertically at accessibility text sizes.
+/// One flight: price first, codes like airport signs, stops and duration on the right, and which
+/// source it came from. Reads as one VoiceOver element; stacks vertically at accessibility sizes.
 struct OfferRow: View {
     let found: FoundOffer
     let currency: String
@@ -156,6 +184,9 @@ struct OfferRow: View {
     let airlines: AirlineNames?
     @Environment(\.dynamicTypeSize) private var typeSize
 
+    private var offer: SourceOffer { found.offer }
+    private var hasLegs: Bool { !offer.legs.isEmpty }
+
     var body: some View {
         let layout = typeSize.isAccessibilitySize
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
@@ -163,12 +194,15 @@ struct OfferRow: View {
         layout {
             VStack(alignment: .leading, spacing: 6) {
                 Text(price).font(.title3.weight(.bold).monospacedDigit())
-                if isCheapest {
-                    Text("Cheapest")
-                        .font(.caption.weight(.bold))
-                        .padding(.horizontal, 8).padding(.vertical, 2)
-                        .foregroundStyle(Theme.onSign)
-                        .background(Theme.sign, in: RoundedRectangle(cornerRadius: 6))
+                HStack(spacing: 6) {
+                    if isCheapest {
+                        Text("Cheapest")
+                            .font(.caption.weight(.bold))
+                            .padding(.horizontal, 8).padding(.vertical, 2)
+                            .foregroundStyle(Theme.onSign)
+                            .background(Theme.sign, in: RoundedRectangle(cornerRadius: 6))
+                    }
+                    SourcePlate(provider: offer.provider)
                 }
             }
             .frame(minWidth: typeSize.isAccessibilitySize ? nil : 150, alignment: .leading)
@@ -178,8 +212,15 @@ struct OfferRow: View {
                     HStack(alignment: .firstTextBaseline, spacing: 6) { codesLine }
                     VStack(alignment: .leading, spacing: 2) { codesLine }
                 }
-                if let airlines { CarriersLine(carriers: airlines.carriers(found.offer.legs)) }
+                if hasLegs, let airlines {
+                    CarriersLine(carriers: airlines.carriers(offer.legs))
+                } else if !offer.carriers.isEmpty {
+                    Text(offer.carriers.joined(separator: " and ")).font(.subheadline.weight(.medium))
+                }
                 Text(detailLine).font(.subheadline).foregroundStyle(.secondary)
+                if let note = FxText.note(offer, displayCurrency: currency) {
+                    Text(note).font(.footnote).foregroundStyle(offer.priceComparable == nil ? AnyShapeStyle(Theme.warn) : AnyShapeStyle(.secondary))
+                }
                 if let change = info?.airportChanges.first {
                     Text("Change airports: \(change.from) to \(change.to)")
                         .font(.subheadline.weight(.semibold)).foregroundStyle(Theme.warn)
@@ -205,32 +246,34 @@ struct OfferRow: View {
     }
 
     @ViewBuilder private var codesLine: some View {
-        let first = found.offer.legs.first, last = found.offer.legs.last
-        Text(first?.origin ?? found.routeDate.origin).codeStyle()
-        Text(Self.time(first?.departLocal)).monospacedDigit()
+        Text(offer.origin.isEmpty ? found.routeDate.origin : offer.origin).codeStyle()
+        Text(Self.time(offer.departLocal)).monospacedDigit()
         Text("to").foregroundStyle(.secondary)
-        Text(last?.destination ?? found.routeDate.destination).codeStyle()
-        Text(Self.time(last?.arriveLocal)).monospacedDigit()
+        Text(offer.destination.isEmpty ? found.routeDate.destination : offer.destination).codeStyle()
+        Text(Self.time(offer.arriveLocal)).monospacedDigit()
         if dayShift > 0 {
             Text("+\(dayShift) day").font(.caption).foregroundStyle(.secondary)
         }
     }
 
-    /// Spoken: "All Nippon Airways NH 856"; codes only without the table.
+    /// Spoken airline: "All Nippon Airways NH 856", or Skiplagged's airline names.
     private var flights: String {
-        airlines?.flightsText(found.offer.legs) ?? AirlineNames.numbersText(found.offer.legs)
+        if !hasLegs { return offer.carriers.joined(separator: " and ") }
+        return airlines?.flightsText(offer.legs) ?? AirlineNames.numbersText(offer.legs)
     }
 
-    private var price: String { PriceText.display(found.offer.price, currency: found.offer.currency ?? currency) }
+    private var price: String { PriceText.display(found.shownPrice.amount, currency: found.shownPrice.currency) }
 
     private var stopsText: String {
-        let n = max(found.offer.legs.count - 1, 0)
+        let n = Int(offer.stops)
         return n == 0 ? "Nonstop" : "\(n) stop\(n == 1 ? "" : "s")"
     }
 
-    /// "All Nippon Airways NH 856, Thu 17 Dec" or "Singapore Airlines SQ 951 and SQ 632, via SIN, 1h 55m layover, Wed 16 Dec".
+    /// Fli: "NH 856, Thu 17 Dec" or "SQ 951 and SQ 632, via SIN, 1h 55m layover, Wed 16 Dec".
+    /// Skiplagged (no individual flights): "Thu 17 Dec".
     private var detailLine: String {
-        var parts = [AirlineNames.numbersText(found.offer.legs)]
+        var parts: [String] = []
+        if hasLegs { parts.append(AirlineNames.numbersText(offer.legs)) }
         if let layovers = info?.layovers, !layovers.isEmpty {
             parts.append("via " + layovers.map { layover in
                 layover.airport + (layover.minutes.map { ", \(ItineraryInfo.durationText($0)) layover" } ?? "")
@@ -241,18 +284,18 @@ struct OfferRow: View {
     }
 
     private var dayShift: Int {
-        guard let dep = found.offer.legs.first?.departLocal.prefix(10), let arr = found.offer.legs.last?.arriveLocal.prefix(10),
-              let a = SearchModel.date(String(dep)), let b = SearchModel.date(String(arr)) else { return 0 }
+        guard let a = SearchModel.date(String(offer.departLocal.prefix(10))),
+              let b = SearchModel.date(String(offer.arriveLocal.prefix(10))) else { return 0 }
         return Calendar(identifier: .gregorian).dateComponents([.day], from: a, to: b).day ?? 0
     }
 
     private var spoken: String {
-        let first = found.offer.legs.first, last = found.offer.legs.last
-        let route = "\(first?.origin ?? "") \(Self.time(first?.departLocal)) to \(last?.destination ?? "") \(Self.time(last?.arriveLocal))"
+        let route = "\(offer.origin) \(Self.time(offer.departLocal)) to \(offer.destination) \(Self.time(offer.arriveLocal))"
             + (dayShift > 0 ? ", next day" : "")
-        var parts = [price, isCheapest ? "cheapest" : nil, stopsText,
+        var parts = [price, isCheapest ? "cheapest" : nil, "from \(Sources.name(offer.provider))", stopsText,
                      info?.totalMinutes.map { ItineraryInfo.spokenDuration($0) },
-                     route, flights, ResultsView.day(found.routeDate.date)].compactMap { $0 }
+                     route, flights.isEmpty ? nil : flights, ResultsView.day(found.routeDate.date)].compactMap { $0 }
+        if let note = FxText.note(offer, displayCurrency: currency) { parts.append(note) }
         if let change = info?.airportChanges.first { parts.append("change airports from \(change.from) to \(change.to)") }
         if found.isStale { parts.append("found over an hour ago") }
         parts.append("indicative price")

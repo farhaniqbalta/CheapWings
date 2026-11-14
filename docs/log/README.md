@@ -28,6 +28,7 @@ their original sessions; they are not current instructions or deployment state.
 | [P5.5 iPad feature parity](p5.5.md) | Location catalog in Rust, iPad airport picker (Major airports, stacked places, removable airports), Max stops filter, itinerary details. [Plan](p5.5-plan.md) |
 | [P5.6 iPad polish](p5.6.md) | Offline pause/resume, picker search pages, airfield-signage design with date strip, airline names, ties, VoiceOver and larger text. [Plan](p5.6-plan.md) |
 | [P5.8 iPad parallel Fli pacing](p5.8.md) | Start-to-start pacing (0.25 s, up to 6 open) with in-order release, provider-neutral runner for later providers, app icon. [Plan](p5.8-plan.md) |
+| [P5.4 Skiplagged on iPad](p5.4.md) | Rust Skiplagged parser, Swift MCP client, one lane per source with retry-after, store v2 per-provider work items, Resume per source, Sources switches. [Plan](p5.4-plan.md) |
 
 ## Reporting convention
 

@@ -40,6 +40,18 @@ final class FixtureTests: XCTestCase {
         let fli_tfs: [TfsCase]
         let fli_pages: [PageCase]
         let planning: [PlanCase]
+        let skiplagged: [SkipCase]
+    }
+    struct SkipOfferJ: Decodable {
+        let id, depart_local, arrive_local, price_original: String
+        let price_comparable, link: String?
+        let stops: UInt32
+        let carriers: [String]
+    }
+    struct SkipExpect: Decodable { let offers: [SkipOfferJ]?; let complete: Bool?; let error: String? }
+    struct SkipCase: Decodable {
+        let name, json, origin, destination, date, currency: String
+        let expect: SkipExpect
     }
 
     static let fixtures: Fixtures = {
@@ -48,6 +60,29 @@ final class FixtureTests: XCTestCase {
         let file = url.appendingPathComponent("contracts/fixtures/core/core_fixtures.json")
         return try! JSONDecoder().decode(Fixtures.self, from: Data(contentsOf: file))
     }()
+
+    func testSkiplaggedParse() {
+        XCTAssertEqual(Self.fixtures.skiplagged.count, 19)
+        for c in Self.fixtures.skiplagged {
+            do {
+                let page = try skiplaggedParse(json: c.json, origin: c.origin, destination: c.destination,
+                                               date: c.date, displayCurrency: c.currency)
+                let want = try XCTUnwrap(c.expect.offers, c.name)
+                XCTAssertEqual(page.complete, c.expect.complete, c.name)
+                XCTAssertEqual(page.offers.map(\.id), want.map(\.id), c.name)
+                XCTAssertEqual(page.offers.map(\.priceOriginal), want.map(\.price_original), c.name)
+                XCTAssertEqual(page.offers.map(\.priceComparable), want.map(\.price_comparable), c.name)
+                XCTAssertEqual(page.offers.map(\.departLocal), want.map(\.depart_local), c.name)
+                XCTAssertEqual(page.offers.map(\.stops), want.map(\.stops), c.name)
+                XCTAssertEqual(page.offers.map(\.carriers), want.map(\.carriers), c.name)
+                XCTAssertEqual(page.offers.map(\.link), want.map(\.link), c.name)
+            } catch SkiplaggedError.Failed(let code, _) {
+                XCTAssertEqual(code, c.expect.error, c.name)
+            } catch {
+                XCTFail("\(c.name): \(error)")
+            }
+        }
+    }
 
     func testMoney() {
         let cases = Self.fixtures.money

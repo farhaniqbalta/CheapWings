@@ -1,7 +1,7 @@
 //! UniFFI surface of `cheapwings-core` for Swift. Thin wrappers only: records mirror the core
 //! types and every function delegates. UniFFI has no i128, so minor units cross as text.
 
-use cheapwings_core::{fingerprint as fp, fli, locations, money, planning, ranking};
+use cheapwings_core::{fingerprint as fp, fli, locations, money, planning, ranking, skiplagged};
 
 uniffi::setup_scaffolding!();
 
@@ -293,6 +293,105 @@ pub fn fli_airport_changes(offer: FliOffer) -> Vec<AirportChange> {
     fli::airport_changes(&page.offers[0]).into_iter().map(|(from, to)| AirportChange { from, to }).collect()
 }
 
+// ---------- Skiplagged + provider-neutral offers (P5.4) ----------
+
+#[derive(Debug, thiserror::Error, uniffi::Error)]
+pub enum SkiplaggedError {
+    /// `code`: `schema_changed | invalid_price | missing_segments`.
+    #[error("{code}: {message}")]
+    Failed { code: String, message: String },
+}
+
+impl From<skiplagged::SkiplaggedError> for SkiplaggedError {
+    fn from(err: skiplagged::SkiplaggedError) -> Self {
+        Self::Failed { code: err.code().to_owned(), message: err.to_string() }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct FxNote {
+    pub rate: String,
+    pub as_of: String,
+    pub to_currency: String,
+}
+
+/// One offer from any source; `legs` empty when the source gives no per-flight detail.
+#[derive(Debug, PartialEq, Eq, uniffi::Record)]
+pub struct SourceOffer {
+    pub provider: String,
+    pub id: String,
+    pub origin: String,
+    pub destination: String,
+    pub depart_local: String,
+    pub arrive_local: String,
+    pub minutes: Option<i64>,
+    pub stops: u32,
+    pub carriers: Vec<String>,
+    pub legs: Vec<FliLeg>,
+    pub price_original: String,
+    pub currency_original: String,
+    pub price_comparable: Option<String>,
+    pub fx: Option<FxNote>,
+    pub link: Option<String>,
+    /// `no | yes | unknown`
+    pub hidden_city: String,
+}
+
+#[derive(Debug, PartialEq, Eq, uniffi::Record)]
+pub struct SkiplaggedPage {
+    pub offers: Vec<SourceOffer>,
+    pub complete: Option<bool>,
+}
+
+fn leg_from_core(l: fli::FliLeg) -> FliLeg {
+    FliLeg { origin: l.origin, destination: l.destination, airline: l.airline, flight_number: l.flight_number,
+             depart_local: l.depart_local, arrive_local: l.arrive_local }
+}
+
+impl From<skiplagged::SourceOffer> for SourceOffer {
+    fn from(o: skiplagged::SourceOffer) -> Self {
+        Self {
+            provider: o.provider,
+            id: o.id,
+            origin: o.origin,
+            destination: o.destination,
+            depart_local: o.depart_local,
+            arrive_local: o.arrive_local,
+            minutes: o.minutes,
+            stops: o.stops,
+            carriers: o.carriers,
+            legs: o.legs.into_iter().map(leg_from_core).collect(),
+            price_original: o.price_original,
+            currency_original: o.currency_original,
+            price_comparable: o.price_comparable,
+            fx: o.fx.map(|f| FxNote { rate: f.rate, as_of: f.as_of, to_currency: f.to_currency }),
+            link: o.link,
+            hidden_city: o.hidden_city,
+        }
+    }
+}
+
+/// Parses the raw `sk_flights_search` JSON text (exact numbers) for one route/date.
+#[uniffi::export]
+pub fn skiplagged_parse(json: String, origin: String, destination: String, date: String,
+                        display_currency: String) -> Result<SkiplaggedPage, SkiplaggedError> {
+    let page = skiplagged::skiplagged_parse(&json, &origin, &destination, &date, &display_currency)?;
+    Ok(SkiplaggedPage { offers: page.offers.into_iter().map(SourceOffer::from).collect(), complete: page.complete })
+}
+
+/// The exact `sk_flights_search` payload text from a raw JSON-RPC `tools/call` reply.
+#[uniffi::export]
+pub fn skiplagged_tool_payload(rpc_json: String) -> Result<String, SkiplaggedError> {
+    Ok(skiplagged::skiplagged_tool_payload(&rpc_json)?)
+}
+
+/// A Fli offer as a provider-neutral offer.
+#[uniffi::export]
+pub fn fli_source_offer(offer: FliOffer, id: String, display_currency: String) -> SourceOffer {
+    let page = fli::FliPage::from(FliPage { offers: vec![offer], unpriced: 0 });
+    skiplagged::fli_source_offer(&page.offers[0], &id, &display_currency).into()
+}
+
 // ---------- location catalog ----------
 
 #[derive(Debug, thiserror::Error, uniffi::Error)]
@@ -436,6 +535,41 @@ pub struct StoredRequest {
     pub origin_majors: Vec<String>,
     #[uniffi(default = [])]
     pub destination_majors: Vec<String>,
+    /// P5.4 sources; empty means Fli only (searches stored before P5.4).
+    #[uniffi(default = [])]
+    pub providers: Vec<String>,
+}
+
+impl From<StoredRequest> for store::StoredRequest {
+    fn from(r: StoredRequest) -> Self {
+        Self {
+            origins: r.origins,
+            destinations: r.destinations,
+            date_from: r.date_from,
+            date_through: r.date_through,
+            currency: r.currency,
+            max_stops: r.max_stops,
+            origin_majors: r.origin_majors,
+            destination_majors: r.destination_majors,
+            providers: if r.providers.is_empty() { vec!["fli".into()] } else { r.providers },
+        }
+    }
+}
+
+impl From<store::StoredRequest> for StoredRequest {
+    fn from(r: store::StoredRequest) -> Self {
+        Self {
+            origins: r.origins,
+            destinations: r.destinations,
+            date_from: r.date_from,
+            date_through: r.date_through,
+            currency: r.currency,
+            max_stops: r.max_stops,
+            origin_majors: r.origin_majors,
+            destination_majors: r.destination_majors,
+            providers: r.providers,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
@@ -445,9 +579,17 @@ pub enum ComboStatus {
     Failed,
 }
 
+/// One unit of work: a provider searching one route/date.
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct WorkItem {
+    pub provider: String,
+    pub route_date: RouteDate,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
 pub struct StoredCombo {
     pub index: u32,
+    pub provider: String,
     pub route_date: RouteDate,
     pub status: ComboStatus,
     pub code: Option<String>,
@@ -458,7 +600,7 @@ pub struct StoredCombo {
 pub struct StoredOffer {
     pub combo_index: u32,
     pub offer_index: u32,
-    pub offer: FliOffer,
+    pub offer: SourceOffer,
     pub fetched_at_ms: i64,
 }
 
@@ -468,6 +610,12 @@ pub struct HiddenCount {
     pub count: u32,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct ProviderStop {
+    pub provider: String,
+    pub reason: String,
+}
+
 #[derive(Debug, PartialEq, Eq, uniffi::Record)]
 pub struct StoredSearch {
     pub id: i64,
@@ -475,6 +623,7 @@ pub struct StoredSearch {
     pub created_at_ms: i64,
     pub updated_at_ms: i64,
     pub stop_reason: Option<String>,
+    pub provider_stops: Vec<ProviderStop>,
     pub combos: Vec<StoredCombo>,
     pub offers: Vec<StoredOffer>,
     pub hidden: Vec<HiddenCount>,
@@ -488,9 +637,38 @@ fn route_from_core(c: planning::RouteDate) -> RouteDate {
     RouteDate { origin: c.origin, destination: c.destination, date: c.date }
 }
 
+fn leg_to_core(l: FliLeg) -> fli::FliLeg {
+    fli::FliLeg { origin: l.origin, destination: l.destination, airline: l.airline, flight_number: l.flight_number,
+                  depart_local: l.depart_local, arrive_local: l.arrive_local }
+}
+
+impl From<SourceOffer> for skiplagged::SourceOffer {
+    fn from(o: SourceOffer) -> Self {
+        Self {
+            provider: o.provider,
+            id: o.id,
+            origin: o.origin,
+            destination: o.destination,
+            depart_local: o.depart_local,
+            arrive_local: o.arrive_local,
+            minutes: o.minutes,
+            stops: o.stops,
+            carriers: o.carriers,
+            legs: o.legs.into_iter().map(leg_to_core).collect(),
+            price_original: o.price_original,
+            currency_original: o.currency_original,
+            price_comparable: o.price_comparable,
+            fx: o.fx.map(|f| skiplagged::FxNote { rate: f.rate, as_of: f.as_of, to_currency: f.to_currency }),
+            link: o.link,
+            hidden_city: o.hidden_city,
+        }
+    }
+}
+
 fn combo_from_store(c: store::StoredCombo) -> StoredCombo {
     StoredCombo {
         index: c.index,
+        provider: c.provider,
         route_date: route_from_core(c.route_date),
         status: match c.status {
             store::ComboStatus::Pending => ComboStatus::Pending,
@@ -502,7 +680,7 @@ fn combo_from_store(c: store::StoredCombo) -> StoredCombo {
     }
 }
 
-/// The app's on-device history: one SQLite file, one transaction per finished route/date.
+/// The app's on-device history: one SQLite file, one transaction per finished work item.
 #[derive(uniffi::Object)]
 pub struct SearchStore {
     inner: store::Store,
@@ -515,36 +693,33 @@ impl SearchStore {
         Ok(Arc::new(Self { inner: store::Store::open(&path)? }))
     }
 
-    pub fn create_search(&self, request: StoredRequest, combos: Vec<RouteDate>, now_ms: i64) -> Result<i64, StoreError> {
-        let request = store::StoredRequest {
-            origins: request.origins,
-            destinations: request.destinations,
-            date_from: request.date_from,
-            date_through: request.date_through,
-            currency: request.currency,
-            max_stops: request.max_stops,
-            origin_majors: request.origin_majors,
-            destination_majors: request.destination_majors,
-        };
-        let combos: Vec<planning::RouteDate> = combos.into_iter().map(route_to_core).collect();
-        Ok(self.inner.create_search(&request, &combos, now_ms)?)
+    pub fn create_search(&self, request: StoredRequest, items: Vec<WorkItem>, now_ms: i64) -> Result<i64, StoreError> {
+        let items: Vec<store::WorkItem> = items
+            .into_iter()
+            .map(|i| store::WorkItem { provider: i.provider, route_date: route_to_core(i.route_date) })
+            .collect();
+        Ok(self.inner.create_search(&request.into(), &items, now_ms)?)
     }
 
     pub fn finish_combo(
         &self,
         search_id: i64,
         index: u32,
-        offers: Vec<FliOffer>,
+        offers: Vec<SourceOffer>,
         hidden: Vec<String>,
         failure: Option<String>,
         now_ms: i64,
     ) -> Result<(), StoreError> {
-        let offers = fli::FliPage::from(FliPage { offers, unpriced: 0 }).offers;
+        let offers: Vec<skiplagged::SourceOffer> = offers.into_iter().map(Into::into).collect();
         Ok(self.inner.finish_combo(search_id, index, &offers, &hidden, failure.as_deref(), now_ms)?)
     }
 
     pub fn set_stopped(&self, search_id: i64, reason: String, now_ms: i64) -> Result<(), StoreError> {
         Ok(self.inner.set_stopped(search_id, &reason, now_ms)?)
+    }
+
+    pub fn set_provider_stopped(&self, search_id: i64, provider: String, reason: String, now_ms: i64) -> Result<(), StoreError> {
+        Ok(self.inner.set_provider_stopped(search_id, &provider, &reason, now_ms)?)
     }
 
     pub fn clear_stopped(&self, search_id: i64) -> Result<(), StoreError> {
@@ -557,35 +732,20 @@ impl SearchStore {
 
     pub fn latest(&self) -> Result<Option<StoredSearch>, StoreError> {
         let Some(s) = self.inner.latest()? else { return Ok(None) };
-        let offer_page = FliPage::from(fli::FliPage { offers: s.offers.iter().map(|o| o.offer.clone()).collect(), unpriced: 0 });
-        let offers = s
-            .offers
-            .iter()
-            .zip(offer_page.offers)
-            .map(|(stored, offer)| StoredOffer {
-                combo_index: stored.combo_index,
-                offer_index: stored.offer_index,
-                offer,
-                fetched_at_ms: stored.fetched_at_ms,
-            })
-            .collect();
         Ok(Some(StoredSearch {
             id: s.id,
-            request: StoredRequest {
-                origins: s.request.origins,
-                destinations: s.request.destinations,
-                date_from: s.request.date_from,
-                date_through: s.request.date_through,
-                currency: s.request.currency,
-                max_stops: s.request.max_stops,
-                origin_majors: s.request.origin_majors,
-                destination_majors: s.request.destination_majors,
-            },
+            request: s.request.into(),
             created_at_ms: s.created_at_ms,
             updated_at_ms: s.updated_at_ms,
             stop_reason: s.stop_reason,
+            provider_stops: s.provider_stops.into_iter().map(|(provider, reason)| ProviderStop { provider, reason }).collect(),
             combos: s.combos.into_iter().map(combo_from_store).collect(),
-            offers,
+            offers: s
+                .offers
+                .into_iter()
+                .map(|o| StoredOffer { combo_index: o.combo_index, offer_index: o.offer_index, offer: o.offer.into(),
+                                       fetched_at_ms: o.fetched_at_ms })
+                .collect(),
             hidden: s.hidden.into_iter().map(|(reason, count)| HiddenCount { reason, count }).collect(),
         }))
     }

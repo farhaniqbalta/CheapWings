@@ -18,6 +18,16 @@ public struct ItineraryInfo: Sendable, Equatable {
     public let layovers: [Layover]
     public let airportChanges: [AirportChange]
 
+    /// Any source: with legs (Fli) the full breakdown; without (Skiplagged) the source's own stop
+    /// count and door-to-door minutes, no layover detail.
+    public static func make(offer: SourceOffer, catalog: LocationCatalog) -> ItineraryInfo {
+        guard !offer.legs.isEmpty else {
+            return ItineraryInfo(stops: Int(offer.stops), totalMinutes: offer.minutes.map { Int($0) }.flatMap { $0 >= 0 ? $0 : nil },
+                                 legMinutes: [], layovers: [], airportChanges: [])
+        }
+        return make(offer: FliOffer(price: offer.priceOriginal, currency: offer.currencyOriginal, legs: offer.legs), catalog: catalog)
+    }
+
     public static func make(offer: FliOffer, catalog: LocationCatalog) -> ItineraryInfo {
         func instant(_ local: String, at airport: String) -> Date? {
             guard let zone = catalog.airport(code: airport)?.timezone.flatMap(TimeZone.init(identifier:)) else { return nil }

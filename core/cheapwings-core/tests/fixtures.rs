@@ -6,6 +6,7 @@ use cheapwings_core::locations::Catalog;
 use cheapwings_core::money::{as_minor_units, from_minor_units, fx_convert};
 use cheapwings_core::planning::{plan_search, RouteDate};
 use cheapwings_core::ranking::{best_checked_deal, lowest_advertised, RankOffer};
+use cheapwings_core::skiplagged::{fli_source_offer, skiplagged_parse};
 use serde::Deserialize;
 
 const FIXTURES: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../contracts/fixtures/core/core_fixtures.json");
@@ -81,6 +82,46 @@ struct Fixtures {
     planning: Vec<PlanCase>,
     location_search: Vec<SearchCase>,
     location_major: Vec<MajorCase>,
+    skiplagged: Vec<SkipCase>,
+}
+
+#[derive(Deserialize)]
+struct SkipCase {
+    name: String,
+    json: String,
+    origin: String,
+    destination: String,
+    date: String,
+    currency: String,
+    expect: SkipExpect,
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum SkipExpect {
+    Offers { offers: Vec<SkipOffer>, complete: Option<bool> },
+    Error { error: String },
+}
+
+#[derive(Deserialize)]
+struct SkipFx {
+    rate: String,
+    as_of: String,
+    to_currency: String,
+}
+
+#[derive(Deserialize)]
+struct SkipOffer {
+    id: String,
+    depart_local: String,
+    arrive_local: String,
+    minutes: i64,
+    stops: u32,
+    carriers: Vec<String>,
+    price_original: String,
+    price_comparable: Option<String>,
+    fx: Option<SkipFx>,
+    link: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -380,4 +421,82 @@ fn isoformat_matches_python_shapes() {
 fn fx_negative_zero_keeps_sign() {
     assert_eq!(fx_convert("-0.004", "1", "USD").as_deref(), Ok("-0.00"));
     assert_eq!(fx_convert("-0.4", "1", "IDR").as_deref(), Ok("-0"));
+}
+
+#[test]
+fn skiplagged_parse_matches_python() {
+    let cases = fixtures().skiplagged;
+    assert_eq!(cases.len(), 19);
+    for c in &cases {
+        let got = skiplagged_parse(&c.json, &c.origin, &c.destination, &c.date, &c.currency);
+        match (&got, &c.expect) {
+            (Ok(page), SkipExpect::Offers { offers, complete }) => {
+                assert_eq!(page.complete, *complete, "{}", c.name);
+                assert_eq!(page.offers.len(), offers.len(), "{}", c.name);
+                for (o, e) in page.offers.iter().zip(offers) {
+                    assert_eq!(o.provider, "skiplagged");
+                    assert_eq!(o.id, e.id, "{} id", c.name);
+                    assert_eq!((o.origin.as_str(), o.destination.as_str()), (c.origin.as_str(), c.destination.as_str()));
+                    assert_eq!(o.depart_local, e.depart_local, "{}", c.name);
+                    assert_eq!(o.arrive_local, e.arrive_local, "{}", c.name);
+                    assert_eq!(o.minutes, Some(e.minutes), "{}", c.name);
+                    assert_eq!(o.stops, e.stops, "{}", c.name);
+                    assert_eq!(o.carriers, e.carriers, "{}", c.name);
+                    assert!(o.legs.is_empty());
+                    assert_eq!(o.price_original, e.price_original, "{}", c.name);
+                    assert_eq!(o.currency_original, "USD");
+                    assert_eq!(o.price_comparable, e.price_comparable, "{}", c.name);
+                    match (&o.fx, &e.fx) {
+                        (None, None) => {}
+                        (Some(a), Some(b)) => assert_eq!((&a.rate, &a.as_of, &a.to_currency), (&b.rate, &b.as_of, &b.to_currency), "{}", c.name),
+                        _ => panic!("{}: fx mismatch", c.name),
+                    }
+                    assert_eq!(o.link, e.link, "{}", c.name);
+                    assert_eq!(o.hidden_city, "no");
+                }
+            }
+            (Err(err), SkipExpect::Error { error }) => assert_eq!(err.code(), error, "{}", c.name),
+            _ => panic!("{}: got {got:?}", c.name),
+        }
+    }
+}
+
+#[test]
+fn fli_source_offer_keeps_legs() {
+    let offer = FliOffer {
+        price: "1250000".into(),
+        currency: Some("IDR".into()),
+        legs: vec![leg("CGK", "SIN", "2026-12-15T09:30", "2026-12-15T12:10"), leg("SIN", "HND", "2026-12-15T14:05", "2026-12-15T22:00")],
+    };
+    let s = fli_source_offer(&offer, "CGK-HND-2026-12-15-0", "IDR");
+    assert_eq!(s.provider, "fli");
+    assert_eq!((s.origin.as_str(), s.destination.as_str()), ("CGK", "HND"));
+    assert_eq!((s.depart_local.as_str(), s.arrive_local.as_str()), ("2026-12-15T09:30", "2026-12-15T22:00"));
+    assert_eq!(s.stops, 1);
+    assert_eq!(s.legs.len(), 2);
+    assert_eq!(s.price_original, "1250000");
+    assert_eq!(s.price_comparable.as_deref(), Some("1250000"));
+    assert_eq!(s.currency_original, "IDR");
+    assert_eq!(s.minutes, None);
+    assert_eq!(s.hidden_city, "unknown");
+}
+
+#[test]
+fn skiplagged_tool_payload_prefers_exact_structured_content() {
+    use cheapwings_core::skiplagged::skiplagged_tool_payload;
+    let rpc = r##"{"jsonrpc":"2.0","id":2,"result":{"content":[{"type":"text","text":"# Flights"}],"structuredContent":{"flights":[],"pricing":{"rate":18108.70}},"isError":false}}"##;
+    let payload = skiplagged_tool_payload(rpc).expect("payload");
+    assert!(payload.contains("18108.70"), "exact number text kept: {payload}");
+    assert!(payload.contains("\"flights\""));
+    // No structured content: a text block holding the JSON object with flights.
+    let text_only = r#"{"jsonrpc":"2.0","id":2,"result":{"content":[{"type":"text","text":"note"},{"type":"text","text":"{\"flights\":[],\"x\":1.50}"}],"isError":false}}"#;
+    assert!(skiplagged_tool_payload(text_only).expect("text payload").contains("1.50"));
+    // Tool error and JSON-RPC error.
+    let tool_error = r#"{"jsonrpc":"2.0","id":2,"result":{"content":[],"isError":true}}"#;
+    assert_eq!(skiplagged_tool_payload(tool_error).unwrap_err().code(), "provider_unavailable");
+    let rpc_error = r#"{"jsonrpc":"2.0","id":2,"error":{"code":-32603,"message":"boom"}}"#;
+    assert_eq!(skiplagged_tool_payload(rpc_error).unwrap_err().code(), "provider_unavailable");
+    // Neither: schema changed.
+    let empty = r#"{"jsonrpc":"2.0","id":2,"result":{"content":[{"type":"text","text":"no json"}],"isError":false}}"#;
+    assert_eq!(skiplagged_tool_payload(empty).unwrap_err().code(), "schema_changed");
 }

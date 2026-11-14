@@ -15,13 +15,18 @@ struct OfferDetailView: View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(PriceText.display(found.offer.price, currency: found.offer.currency ?? currency))
+                    Text(PriceText.display(found.shownPrice.amount, currency: found.shownPrice.currency))
                         .font(.largeTitle.weight(.bold).monospacedDigit())
                     Text(summary).font(.subheadline).foregroundStyle(.secondary)
                 }
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(.isHeader)
-                Link("Open this search on Google Flights", destination: found.searchURL)
+                Link(found.offer.provider == "skiplagged" ? "Open on Skiplagged" : "Open this search on Google Flights",
+                     destination: found.searchURL)
+                if let note = FxText.note(found.offer, displayCurrency: currency) {
+                    Text(note).font(.footnote)
+                        .foregroundStyle(found.offer.priceComparable == nil ? AnyShapeStyle(Theme.warn) : AnyShapeStyle(.secondary))
+                }
             }
             Section {
                 ForEach(Array(steps.enumerated()), id: \.offset) { index, step in
@@ -30,7 +35,7 @@ struct OfferDetailView: View {
                 }
             }
             Section {
-                Text("Indicative price from Google Flights, found \(found.fetchedAt.formatted(.relative(presentation: .named))). Fees, baggage and final availability are checked on the seller's site. Times are local at each airport.")
+                Text("Indicative price from \(Sources.name(found.offer.provider)), found \(found.fetchedAt.formatted(.relative(presentation: .named))). Fees, baggage and final availability are checked on the seller's site. Times are local at each airport.")
                     .font(.footnote).foregroundStyle(.secondary)
                 if found.isStale {
                     Text("Found over an hour ago; the price may have changed.").font(.footnote).foregroundStyle(Theme.warn)
@@ -42,7 +47,7 @@ struct OfferDetailView: View {
     }
 
     private var summary: String {
-        let stops = max(found.offer.legs.count - 1, 0)
+        let stops = Int(found.offer.stops)
         var parts = [ResultsView.day(found.routeDate.date), stops == 0 ? "nonstop" : "\(stops) stop\(stops == 1 ? "" : "s")"]
         if let total = info?.totalMinutes { parts.append("\(ItineraryInfo.durationText(total)) total") }
         return parts.joined(separator: ", ")
@@ -50,6 +55,16 @@ struct OfferDetailView: View {
 
     /// Airports, flights and connections in order.
     private var steps: [Step] {
+        let offer = found.offer
+        guard !offer.legs.isEmpty else {
+            // Skiplagged gives the trip as a whole: departure, a summary, arrival.
+            var summary = ["\(Sources.name(offer.provider)) does not list individual flights"]
+            if !offer.carriers.isEmpty { summary.append(offer.carriers.joined(separator: " and ")) }
+            if let minutes = info?.totalMinutes { summary.append("\(ItineraryInfo.durationText(minutes)) door to door") }
+            return [.airport(code: offer.origin, time: offer.departLocal, place: place(offer.origin), endpoint: true),
+                    .summary(summary.joined(separator: ". ") + "."),
+                    .airport(code: offer.destination, time: offer.arriveLocal, place: place(offer.destination), endpoint: true)]
+        }
         var out: [Step] = []
         for (i, leg) in found.offer.legs.enumerated() {
             if i == 0 { out.append(.airport(code: leg.origin, time: leg.departLocal, place: place(leg.origin), endpoint: true)) }
@@ -77,6 +92,8 @@ enum Step {
     case flight(FliLeg, String?, Int?)
     case layover(Int?)
     case change(from: String, to: String, minutes: Int?)
+    /// A source without individual flights (Skiplagged).
+    case summary(String)
 }
 
 private struct StepRow: View {
@@ -136,6 +153,8 @@ private struct StepRow: View {
         case .layover(let minutes):
             Text("Layover" + (minutes.map { ", \(ItineraryInfo.durationText($0))" } ?? ""))
                 .font(.subheadline).foregroundStyle(.secondary)
+        case .summary(let text):
+            Text(text).font(.subheadline).foregroundStyle(.secondary).padding(.vertical, 2)
         case .change(let from, let to, let minutes):
             VStack(alignment: .leading, spacing: 4) {
                 Text("Change airports: \(from) to \(to)" + (minutes.map { ", \(ItineraryInfo.durationText($0))" } ?? ""))

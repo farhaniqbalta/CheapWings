@@ -28,6 +28,19 @@ final class AirlineNamesTests: XCTestCase {
         XCTAssertEqual(testAirlines.flightsText([leg("Q9X", "1")]), "Q9X 1")
     }
 
+    func testCarriersAndNumbers() {
+        let mixed = [leg("GA", "878"), leg("KE", "2101")]
+        XCTAssertEqual(testAirlines.carriers(mixed).map(\.code), ["GA", "KE"])
+        XCTAssertEqual(testAirlines.carriers(mixed).map(\.name), ["Garuda Indonesia", "Korean Air"])
+        XCTAssertEqual(testAirlines.carriersText(mixed), "Garuda Indonesia and Korean Air")
+        XCTAssertEqual(AirlineNames.numbersText(mixed), "GA 878, KE 2101")
+        let same = [leg("SQ", "951"), leg("SQ", "632")]
+        XCTAssertEqual(testAirlines.carriers(same).map(\.code), ["SQ"])
+        XCTAssertEqual(testAirlines.carriersText(same), "Singapore Airlines")
+        XCTAssertEqual(AirlineNames.numbersText(same), "SQ 951 and SQ 632")
+        XCTAssertEqual(testAirlines.carriersText([leg("Q9X", "1")]), "Q9X")
+    }
+
     func testBadFileThrows() {
         XCTAssertThrowsError(try AirlineNames(json: Data("{}".utf8)))
     }

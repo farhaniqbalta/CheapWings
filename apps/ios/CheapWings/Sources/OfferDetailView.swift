@@ -53,7 +53,7 @@ struct OfferDetailView: View {
         var out: [Step] = []
         for (i, leg) in found.offer.legs.enumerated() {
             if i == 0 { out.append(.airport(code: leg.origin, time: leg.departLocal, place: place(leg.origin), endpoint: true)) }
-            out.append(.flight(airlines?.flightsText([leg]) ?? "\(leg.airline) \(leg.flightNumber)", info?.legMinutes[safe: i] ?? nil))
+            out.append(.flight(leg, airlines?.name(leg.airline), info?.legMinutes[safe: i] ?? nil))
             let last = i == found.offer.legs.count - 1
             out.append(.airport(code: leg.destination, time: leg.arriveLocal, place: place(leg.destination), endpoint: last))
             if !last, let layover = info?.layovers[safe: i] {
@@ -74,7 +74,7 @@ struct OfferDetailView: View {
 
 enum Step {
     case airport(code: String, time: String, place: String, endpoint: Bool)
-    case flight(String, Int?)
+    case flight(FliLeg, String?, Int?)
     case layover(Int?)
     case change(from: String, to: String, minutes: Int?)
 }
@@ -126,9 +126,13 @@ private struct StepRow: View {
                 Text([place, OfferDetailView.dayText(time)].filter { !$0.isEmpty }.joined(separator: ", "))
                     .font(.subheadline).foregroundStyle(.secondary)
             }
-        case .flight(let number, let minutes):
-            Text(number + (minutes.map { ", \(ItineraryInfo.durationText($0)) in the air" } ?? ""))
-                .font(.subheadline).foregroundStyle(.secondary)
+        case .flight(let leg, let name, let minutes):
+            VStack(alignment: .leading, spacing: 3) {
+                CarriersLine(carriers: [AirlineNames.Carrier(code: leg.airline, name: name)], font: .body.weight(.medium))
+                Text("\(leg.airline) \(leg.flightNumber)" + (minutes.map { ", \(ItineraryInfo.durationText($0)) in the air" } ?? ""))
+                    .font(.subheadline).foregroundStyle(.secondary)
+            }
+            .padding(.vertical, 2)
         case .layover(let minutes):
             Text("Layover" + (minutes.map { ", \(ItineraryInfo.durationText($0))" } ?? ""))
                 .font(.subheadline).foregroundStyle(.secondary)

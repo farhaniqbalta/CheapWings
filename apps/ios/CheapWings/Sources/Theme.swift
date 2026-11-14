@@ -1,3 +1,4 @@
+import CheapWingsKit
 import SwiftUI
 import UIKit
 
@@ -19,6 +20,36 @@ extension View {
     /// IATA codes and the route header: wide letterforms, like airport signs; scales with Dynamic Type.
     func codeStyle(_ style: Font.TextStyle = .body) -> some View {
         font(.system(style, weight: .bold)).fontWidth(.expanded)
+    }
+}
+
+/// An airline's two-letter designator as a small outlined plate, in the same wide sign letters as
+/// airport codes. No logos (none available, and imitations would mislead) and no airline colours
+/// (yellow stays reserved for "cheapest" and the main action).
+struct CarrierPlate: View {
+    let code: String
+
+    var body: some View {
+        Text(code)
+            .font(.caption.weight(.bold)).fontWidth(.expanded)
+            .padding(.horizontal, 5).padding(.vertical, 2)
+            .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(.secondary, lineWidth: 1))
+            .accessibilityHidden(true)  // the airline name is read instead
+    }
+}
+
+/// Plates + "Garuda Indonesia and Korean Air" on one line; wraps under the plates when narrow.
+struct CarriersLine: View {
+    let carriers: [AirlineNames.Carrier]
+    var font: Font = .subheadline.weight(.medium)
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            HStack(spacing: 4) { ForEach(carriers, id: \.code) { CarrierPlate(code: $0.code) } }
+                .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 4 }
+            let names = carriers.compactMap(\.name)
+            if !names.isEmpty { Text(names.joined(separator: " and ")).font(font) }
+        }
     }
 }
 

@@ -178,6 +178,7 @@ struct OfferRow: View {
                     HStack(alignment: .firstTextBaseline, spacing: 6) { codesLine }
                     VStack(alignment: .leading, spacing: 2) { codesLine }
                 }
+                if let airlines { CarriersLine(carriers: airlines.carriers(found.offer.legs)) }
                 Text(detailLine).font(.subheadline).foregroundStyle(.secondary)
                 if let change = info?.airportChanges.first {
                     Text("Change airports: \(change.from) to \(change.to)")
@@ -215,9 +216,9 @@ struct OfferRow: View {
         }
     }
 
+    /// Spoken: "All Nippon Airways NH 856"; codes only without the table.
     private var flights: String {
-        airlines?.flightsText(found.offer.legs)
-            ?? found.offer.legs.map { "\($0.airline) \($0.flightNumber)" }.joined(separator: " and ")
+        airlines?.flightsText(found.offer.legs) ?? AirlineNames.numbersText(found.offer.legs)
     }
 
     private var price: String { PriceText.display(found.offer.price, currency: found.offer.currency ?? currency) }
@@ -229,7 +230,7 @@ struct OfferRow: View {
 
     /// "All Nippon Airways NH 856, Thu 17 Dec" or "Singapore Airlines SQ 951 and SQ 632, via SIN, 1h 55m layover, Wed 16 Dec".
     private var detailLine: String {
-        var parts = [flights]
+        var parts = [AirlineNames.numbersText(found.offer.legs)]
         if let layovers = info?.layovers, !layovers.isEmpty {
             parts.append("via " + layovers.map { layover in
                 layover.airport + (layover.minutes.map { ", \(ItineraryInfo.durationText($0)) layover" } ?? "")

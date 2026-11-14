@@ -1,3 +1,4 @@
+import CheapWingsCore
 import CheapWingsKit
 import SwiftUI
 import UIKit
@@ -50,6 +51,51 @@ struct CarriersLine: View {
             let names = carriers.compactMap(\.name)
             if !names.isEmpty { Text(names.joined(separator: " and ")).font(font) }
         }
+    }
+}
+
+/// Search sources the iPad can use (P5.4). Order is the display order.
+enum Sources {
+    static let all = ["fli", "skiplagged"]
+
+    static func name(_ id: String) -> String {
+        switch id {
+        case "fli": return "Google Flights"
+        case "skiplagged": return "Skiplagged"
+        default: return id
+        }
+    }
+
+    /// Short label for result rows.
+    static func short(_ id: String) -> String { id == "fli" ? "Google" : name(id) }
+}
+
+/// Which source a fare came from: an outlined label, quiet like the carrier plate, never yellow.
+struct SourcePlate: View {
+    let provider: String
+
+    var body: some View {
+        Text(Sources.short(provider))
+            .font(.caption2.weight(.semibold))
+            .padding(.horizontal, 6).padding(.vertical, 2)
+            .foregroundStyle(.secondary)
+            .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(.tertiary, lineWidth: 1))
+            .accessibilityLabel("From \(Sources.name(provider))")
+    }
+}
+
+enum FxText {
+    /// "Converted from US$271 at 18,108.7 (rate of 9 Nov)", "Not converted: Skiplagged sent no IDR rate", or nil.
+    static func note(_ offer: SourceOffer, displayCurrency: String) -> String? {
+        guard offer.currencyOriginal != displayCurrency else { return nil }
+        let original = PriceText.display(offer.priceOriginal, currency: offer.currencyOriginal)
+        guard let fx = offer.fx else {
+            return offer.priceComparable == nil
+                ? "Not converted: \(Sources.name(offer.provider)) sent no \(displayCurrency) rate"
+                : nil
+        }
+        let day = ISO8601DateFormatter().date(from: fx.asOf).map { $0.formatted(.dateTime.day().month(.abbreviated)) }
+        return "Converted from \(original) at \(fx.rate)" + (day.map { " (rate of \($0))" } ?? "")
     }
 }
 

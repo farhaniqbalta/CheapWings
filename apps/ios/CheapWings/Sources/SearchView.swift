@@ -27,6 +27,18 @@ struct SearchView: View {
                     if let note = model.catalogError { Text(note).font(.caption).foregroundStyle(.secondary) }
                 }
             }
+            Section {
+                ForEach(Sources.all, id: \.self) { id in
+                    Toggle(Sources.name(id), isOn: Binding(
+                        get: { model.sources.contains(id) },
+                        set: { on in if on { model.sources.insert(id) } else { model.sources.remove(id) } }))
+                        .disabled(model.session.isRunning)
+                }
+            } header: {
+                Text("Sources")
+            } footer: {
+                Text("Skiplagged prices are in US dollars, converted with Skiplagged's own rate. Hidden-city fares are left out.")
+            }
             Section("Stops") {
                 Picker("Max stops", selection: $model.maxStops) {
                     Text("Any").tag(UInt32?.none)

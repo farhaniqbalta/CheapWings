@@ -17,6 +17,8 @@ final class SearchModel {
     var origin = AirportSelection([.airport("CGK")])
     var destination = AirportSelection([.airport("DPS")])
     var maxStops: UInt32?
+    /// Sources to search (both on by default, like the web).
+    var sources: Set<String> = Set(Sources.all)
     var dateFrom = Calendar.current.date(byAdding: .day, value: 30, to: .now)!
     var dateThrough = Calendar.current.date(byAdding: .day, value: 32, to: .now)!
     var currency = "IDR"
@@ -48,7 +50,7 @@ final class SearchModel {
         }
         catalog = loadedCatalog
         catalogError = catalogProblem
-        let engine = SearchEngine(provider: FliSearchProvider(transport: URLSessionFliTransport()))
+        let engine = SearchEngine(providers: [FliSearchProvider(transport: URLSessionFliTransport()), SkiplaggedSearchProvider()])
         let store: SearchStore?
         let openError: String?
         do {
@@ -69,28 +71,38 @@ final class SearchModel {
     /// Resolves the form (Major selections through the catalog) into a request.
     func makeRequest() throws -> SearchRequest {
         let (from, through) = (Self.ymd(dateFrom), Self.ymd(dateThrough))
-        guard let catalog else {
-            return SearchRequest(origins: Self.codes(originsText), destinations: Self.codes(destinationsText),
-                                 dateFrom: from, dateThrough: through, currency: currency, maxStops: maxStops)
+        var request: SearchRequest
+        if let catalog {
+            request = try SearchRequest.make(origin: origin, destination: destination, dateFrom: from, dateThrough: through,
+                                             currency: currency, maxStops: maxStops, catalog: catalog)
+        } else {
+            request = SearchRequest(origins: Self.codes(originsText), destinations: Self.codes(destinationsText),
+                                    dateFrom: from, dateThrough: through, currency: currency, maxStops: maxStops)
         }
-        return try SearchRequest.make(origin: origin, destination: destination, dateFrom: from, dateThrough: through,
-                                      currency: currency, maxStops: maxStops, catalog: catalog)
+        request.providers = selectedSources
+        return request
     }
+
+    /// Selected sources in a fixed order ("fli", "skiplagged").
+    var selectedSources: [String] { Sources.all.filter(sources.contains) }
 
     /// Re-planned on every edit, so the form shows the count or the reason before any request.
     var plan: Result<[RouteDate], Error> { Result { try makeRequest().plan() } }
 
     var planSummary: String {
         if !network.isOnline && !session.isRunning { return "You're offline. Connect to the internet to search." }
+        if sources.isEmpty { return "Choose at least one source." }
         switch plan {
-        case .success(let combos): return "\(combos.count) route/date searches, up to \(ProviderPacing.fli.maxInFlight) at a time"
+        case .success(let combos):
+            let names = selectedSources.map(Sources.name).joined(separator: " and ")
+            return "\(combos.count) route/date searches on \(names)"
         case .failure(PlanSearchError.Rejected(_, let detail)), .failure(CatalogError.Failed(_, let detail)):
             return detail.prefix(1).uppercased() + detail.dropFirst()
         case .failure(let error): return "\(error)"
         }
     }
 
-    var canSearch: Bool { network.isOnline && !session.isRunning && (try? plan.get()) != nil }
+    var canSearch: Bool { network.isOnline && !session.isRunning && !sources.isEmpty && (try? plan.get()) != nil }
     var canResume: Bool { network.isOnline && session.canResume }
 
     func start() {
@@ -201,6 +213,7 @@ final class SearchModel {
         origin = AirportSelection.restore(codes: request.origins, majorIDs: request.originMajorIDs, catalog: catalog)
         destination = AirportSelection.restore(codes: request.destinations, majorIDs: request.destinationMajorIDs, catalog: catalog)
         maxStops = request.maxStops
+        sources = Set(request.providers)
         currency = request.currency
         if let from = Self.date(request.dateFrom), let through = Self.date(request.dateThrough) {
             dateFrom = from

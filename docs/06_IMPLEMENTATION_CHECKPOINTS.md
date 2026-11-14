@@ -96,6 +96,13 @@ Each phase needs a short current checkpoint (at most five lines) and evidence po
 
 ## P5 — Native SwiftUI iOS
 
+> **As built:** the owner chose a standalone iPad app on a shared Rust core instead of the thin
+> client below ([P5.05](log/p5.05.md), [P5.06](log/p5.06.md)). Delivered in checkpoints P5.1
+> (Rust core), P5.2 (iPad shell), P5.3 (persistence/resume), P5.5 (feature parity), P5.6 (polish
+> and design), P5.8 (parallel Fli pacing, provider-ready engine, app icon). Remaining: P5.4 (more
+> iPad providers), P5.7 (web backend onto the Rust core). Status lives in `WORK_LOG.md`; the task
+> list below is the original design.
+
 **Tasks**
 - [ ] Create Xcode project, deployment target documented, `URLSession` client and typed `Codable` structs matching OpenAPI.
 - [ ] Implement native airport chips/search, date inputs, filter settings, progress/status, itinerary cards/details, alternative sellers and external links.

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Dark appearance: the same sign reversed, sign yellow on black. -->
+  <rect width="1024" height="1024" fill="#000000"/>
+  <path d="M196 452 H592 L500 288 H648 L840 512 L648 736 H500 L592 572 H196 Z" fill="#F5C400"/>
+</svg>

@@ -1,16 +1,22 @@
 //! On-device search store for the iPad app: one SQLite file holding each search's request,
-//! its route/date plan, per-route/date outcome and the exact offers found. One transaction per
-//! finished route/date, so a killed app never loses what was already shown.
+//! its work items (provider × route/date), per-item outcome and the exact offers found. One
+//! transaction per finished item, so a killed app never loses what was already shown.
 
 use cheapwings_core::fli::{FliLeg, FliOffer};
 use cheapwings_core::planning::RouteDate;
+use cheapwings_core::skiplagged::{fli_source_offer, SourceOffer};
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::sync::Mutex;
 
-const SCHEMA_VERSION: i64 = 1;
+/// 1 = P5.3–P5.8 (Fli only); 2 = P5.4 (provider per work item, neutral offers, provider stops).
+const SCHEMA_VERSION: i64 = 2;
 const KEEP_SEARCHES: i64 = 10;
+
+fn default_providers() -> Vec<String> {
+    vec!["fli".into()]
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StoredRequest {
@@ -27,6 +33,9 @@ pub struct StoredRequest {
     pub origin_majors: Vec<String>,
     #[serde(default)]
     pub destination_majors: Vec<String>,
+    /// P5.4: selected sources; searches stored before P5.4 were Fli only.
+    #[serde(default = "default_providers")]
+    pub providers: Vec<String>,
 }
 
 #[cfg(test)]
@@ -38,7 +47,15 @@ mod tests {
         assert_eq!(request.max_stops, None);
         assert!(request.origin_majors.is_empty());
         assert!(request.destination_majors.is_empty());
+        assert_eq!(request.providers, ["fli"]);
     }
+}
+
+/// One unit of work: a provider searching one route/date.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkItem {
+    pub provider: String,
+    pub route_date: RouteDate,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -69,6 +86,7 @@ impl ComboStatus {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StoredCombo {
     pub index: u32,
+    pub provider: String,
     pub route_date: RouteDate,
     pub status: ComboStatus,
     pub code: Option<String>,
@@ -79,7 +97,7 @@ pub struct StoredCombo {
 pub struct StoredOffer {
     pub combo_index: u32,
     pub offer_index: u32,
-    pub offer: FliOffer,
+    pub offer: SourceOffer,
     pub fetched_at_ms: i64,
 }
 
@@ -91,6 +109,8 @@ pub struct StoredSearch {
     pub updated_at_ms: i64,
     /// `finished | cancelled | rate_limited | blocked:<detail> | backgrounded`; None while running.
     pub stop_reason: Option<String>,
+    /// P5.4: providers stopped on their own (e.g. Fli blocked while Skiplagged finished), in order.
+    pub provider_stops: Vec<(String, String)>,
     pub combos: Vec<StoredCombo>,
     pub offers: Vec<StoredOffer>,
     /// Hidden-offer reasons summed over the search, sorted by reason.
@@ -138,7 +158,8 @@ fn from_json<T: for<'de> Deserialize<'de>>(text: &str) -> Result<T, StoreError> 
     serde_json::from_str(text).map_err(|e| StoreError::Sql(format!("corrupt stored JSON: {e}")))
 }
 
-const SCHEMA: &str = "
+/// Version 1 tables (kept so a fresh file and an old file follow the same migration path).
+const SCHEMA_V1: &str = "
 CREATE TABLE IF NOT EXISTS searches (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     request TEXT NOT NULL,
@@ -176,6 +197,14 @@ CREATE TABLE IF NOT EXISTS hidden (
 );
 ";
 
+/// Version 1 → 2: provider per work item (old rows are Fli), neutral offer JSON (old rows keep
+/// price/currency/legs and are read as Fli offers), per-provider stop reasons.
+const MIGRATE_V2: &str = "
+ALTER TABLE combos ADD COLUMN provider TEXT NOT NULL DEFAULT 'fli';
+ALTER TABLE offers ADD COLUMN offer_json TEXT;
+ALTER TABLE searches ADD COLUMN provider_stops TEXT;
+";
+
 /// Thread-safe handle; every method is one short transaction.
 pub struct Store {
     conn: Mutex<Connection>,
@@ -184,11 +213,17 @@ pub struct Store {
 impl Store {
     pub fn open(path: &str) -> Result<Store, StoreError> {
         let open = |e: rusqlite::Error| StoreError::Open(e.to_string());
-        let conn = Connection::open(path).map_err(open)?;
+        let mut conn = Connection::open(path).map_err(open)?;
         conn.pragma_update(None, "foreign_keys", true).map_err(open)?;
         conn.query_row("PRAGMA journal_mode = WAL", [], |_| Ok(())).map_err(open)?;
-        conn.execute_batch(SCHEMA).map_err(open)?;
-        conn.pragma_update(None, "user_version", SCHEMA_VERSION).map_err(open)?;
+        let version: i64 = conn.query_row("PRAGMA user_version", [], |r| r.get(0)).map_err(open)?;
+        let tx = conn.transaction().map_err(open)?;
+        tx.execute_batch(SCHEMA_V1).map_err(open)?;
+        if version < 2 {
+            tx.execute_batch(MIGRATE_V2).map_err(open)?;
+        }
+        tx.pragma_update(None, "user_version", SCHEMA_VERSION).map_err(open)?;
+        tx.commit().map_err(open)?;
         Ok(Store { conn: Mutex::new(conn) })
     }
 
@@ -197,8 +232,8 @@ impl Store {
         self.conn.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
-    /// Records a new search with every route/date pending; keeps only the newest 10 searches.
-    pub fn create_search(&self, request: &StoredRequest, combos: &[RouteDate], now_ms: i64) -> Result<i64, StoreError> {
+    /// Records a new search with every work item pending; keeps only the newest 10 searches.
+    pub fn create_search(&self, request: &StoredRequest, items: &[WorkItem], now_ms: i64) -> Result<i64, StoreError> {
         let mut conn = self.lock();
         let tx = conn.transaction().map_err(sql)?;
         tx.execute(
@@ -209,10 +244,11 @@ impl Store {
         let id = tx.last_insert_rowid();
         {
             let mut insert = tx
-                .prepare("INSERT INTO combos (search_id, idx, origin, destination, date, status) VALUES (?1, ?2, ?3, ?4, ?5, 'pending')")
+                .prepare("INSERT INTO combos (search_id, idx, provider, origin, destination, date, status) VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'pending')")
                 .map_err(sql)?;
-            for (index, combo) in combos.iter().enumerate() {
-                insert.execute(params![id, index as i64, combo.origin, combo.destination, combo.date]).map_err(sql)?;
+            for (index, item) in items.iter().enumerate() {
+                let rd = &item.route_date;
+                insert.execute(params![id, index as i64, item.provider, rd.origin, rd.destination, rd.date]).map_err(sql)?;
             }
         }
         tx.execute(
@@ -224,12 +260,12 @@ impl Store {
         Ok(id)
     }
 
-    /// One transaction per finished route/date. Re-finishing replaces that route/date's data.
+    /// One transaction per finished work item. Re-finishing replaces that item's data.
     pub fn finish_combo(
         &self,
         search_id: i64,
         index: u32,
-        offers: &[FliOffer],
+        offers: &[SourceOffer],
         hidden: &[String],
         failure: Option<&str>,
         now_ms: i64,
@@ -250,11 +286,12 @@ impl Store {
         tx.execute("DELETE FROM hidden WHERE search_id = ?1 AND combo_idx = ?2", params![search_id, index]).map_err(sql)?;
         {
             let mut insert = tx
-                .prepare("INSERT INTO offers (search_id, combo_idx, offer_idx, price, currency, legs, fetched_at_ms) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)")
+                .prepare("INSERT INTO offers (search_id, combo_idx, offer_idx, price, currency, legs, fetched_at_ms, offer_json) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)")
                 .map_err(sql)?;
             for (offer_index, offer) in offers.iter().enumerate() {
                 insert
-                    .execute(params![search_id, index, offer_index as i64, offer.price, offer.currency, json(&offer.legs)?, now_ms])
+                    .execute(params![search_id, index, offer_index as i64, offer.price_original, offer.currency_original,
+                                     json(&offer.legs)?, now_ms, json(offer)?])
                     .map_err(sql)?;
             }
             let mut counts: Vec<(&String, u32)> = Vec::new();
@@ -286,9 +323,37 @@ impl Store {
         if n == 0 { Err(StoreError::NotFound(search_id)) } else { Ok(()) }
     }
 
-    /// Called when a stopped search is resumed.
+    /// Records that one provider stopped on its own (replacing an earlier reason for it).
+    pub fn set_provider_stopped(&self, search_id: i64, provider: &str, reason: &str, now_ms: i64) -> Result<(), StoreError> {
+        let mut conn = self.lock();
+        let tx = conn.transaction().map_err(sql)?;
+        let current: Option<Option<String>> = tx
+            .query_row("SELECT provider_stops FROM searches WHERE id = ?1", params![search_id], |r| r.get(0))
+            .optional()
+            .map_err(sql)?;
+        let Some(current) = current else { return Err(StoreError::NotFound(search_id)) };
+        let mut stops: Vec<(String, String)> = match current {
+            Some(text) => from_json(&text)?,
+            None => Vec::new(),
+        };
+        match stops.iter_mut().find(|(p, _)| p == provider) {
+            Some(entry) => entry.1 = reason.to_owned(),
+            None => stops.push((provider.to_owned(), reason.to_owned())),
+        }
+        tx.execute(
+            "UPDATE searches SET provider_stops = ?2, updated_at_ms = ?3 WHERE id = ?1",
+            params![search_id, json(&stops)?, now_ms],
+        )
+        .map_err(sql)?;
+        tx.commit().map_err(sql)
+    }
+
+    /// Called when a stopped search is resumed: clears the overall and per-provider reasons.
     pub fn clear_stopped(&self, search_id: i64) -> Result<(), StoreError> {
-        let n = self.lock().execute("UPDATE searches SET stop_reason = NULL WHERE id = ?1", params![search_id]).map_err(sql)?;
+        let n = self
+            .lock()
+            .execute("UPDATE searches SET stop_reason = NULL, provider_stops = NULL WHERE id = ?1", params![search_id])
+            .map_err(sql)?;
         if n == 0 { Err(StoreError::NotFound(search_id)) } else { Ok(()) }
     }
 
@@ -306,21 +371,30 @@ impl Store {
         let conn = self.lock();
         let row = conn
             .query_row(
-                "SELECT id, request, created_at_ms, updated_at_ms, stop_reason FROM searches ORDER BY id DESC LIMIT 1",
+                "SELECT id, request, created_at_ms, updated_at_ms, stop_reason, provider_stops FROM searches ORDER BY id DESC LIMIT 1",
                 [],
-                |r| Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?, r.get(2)?, r.get(3)?, r.get(4)?)),
+                |r| {
+                    Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?, r.get(2)?, r.get(3)?, r.get(4)?,
+                        r.get::<_, Option<String>>(5)?))
+                },
             )
             .optional()
             .map_err(sql)?;
-        let Some((id, request, created_at_ms, updated_at_ms, stop_reason)) = row else { return Ok(None) };
+        let Some((id, request, created_at_ms, updated_at_ms, stop_reason, provider_stops)) = row else { return Ok(None) };
+        let request: StoredRequest = from_json(&request)?;
+        let offers = Self::offers(&conn, id, &request.currency)?;
         Ok(Some(StoredSearch {
             id,
-            request: from_json(&request)?,
+            request,
             created_at_ms,
             updated_at_ms,
             stop_reason,
+            provider_stops: match provider_stops {
+                Some(text) => from_json(&text)?,
+                None => Vec::new(),
+            },
             combos: Self::combos(&conn, id)?,
-            offers: Self::offers(&conn, id)?,
+            offers,
             hidden: Self::hidden(&conn, id)?,
         }))
     }
@@ -335,36 +409,45 @@ impl Store {
 
     fn combos(conn: &Connection, search_id: i64) -> Result<Vec<StoredCombo>, StoreError> {
         let mut stmt = conn
-            .prepare("SELECT idx, origin, destination, date, status, code, finished_at_ms FROM combos WHERE search_id = ?1 ORDER BY idx")
+            .prepare("SELECT idx, provider, origin, destination, date, status, code, finished_at_ms FROM combos WHERE search_id = ?1 ORDER BY idx")
             .map_err(sql)?;
         let rows = stmt
             .query_map(params![search_id], |r| {
                 Ok(StoredCombo {
                     index: r.get(0)?,
-                    route_date: RouteDate { origin: r.get(1)?, destination: r.get(2)?, date: r.get(3)? },
-                    status: ComboStatus::parse(&r.get::<_, String>(4)?),
-                    code: r.get(5)?,
-                    finished_at_ms: r.get(6)?,
+                    provider: r.get(1)?,
+                    route_date: RouteDate { origin: r.get(2)?, destination: r.get(3)?, date: r.get(4)? },
+                    status: ComboStatus::parse(&r.get::<_, String>(5)?),
+                    code: r.get(6)?,
+                    finished_at_ms: r.get(7)?,
                 })
             })
             .map_err(sql)?;
         rows.collect::<Result<Vec<_>, _>>().map_err(sql)
     }
 
-    fn offers(conn: &Connection, search_id: i64) -> Result<Vec<StoredOffer>, StoreError> {
+    /// Neutral offers; rows written before P5.4 (no `offer_json`) are read back as Fli offers.
+    fn offers(conn: &Connection, search_id: i64, display_currency: &str) -> Result<Vec<StoredOffer>, StoreError> {
         let mut stmt = conn
-            .prepare("SELECT combo_idx, offer_idx, price, currency, legs, fetched_at_ms FROM offers WHERE search_id = ?1 ORDER BY combo_idx, offer_idx")
+            .prepare("SELECT combo_idx, offer_idx, price, currency, legs, fetched_at_ms, offer_json FROM offers WHERE search_id = ?1 ORDER BY combo_idx, offer_idx")
             .map_err(sql)?;
         let rows = stmt
             .query_map(params![search_id], |r| {
-                Ok((r.get::<_, u32>(0)?, r.get::<_, u32>(1)?, r.get::<_, String>(2)?, r.get::<_, Option<String>>(3)?, r.get::<_, String>(4)?, r.get::<_, i64>(5)?))
+                Ok((r.get::<_, u32>(0)?, r.get::<_, u32>(1)?, r.get::<_, String>(2)?, r.get::<_, Option<String>>(3)?,
+                    r.get::<_, String>(4)?, r.get::<_, i64>(5)?, r.get::<_, Option<String>>(6)?))
             })
             .map_err(sql)?;
         let mut out = Vec::new();
         for row in rows {
-            let (combo_index, offer_index, price, currency, legs, fetched_at_ms) = row.map_err(sql)?;
-            let legs: Vec<FliLeg> = from_json(&legs)?;
-            out.push(StoredOffer { combo_index, offer_index, offer: FliOffer { price, currency, legs }, fetched_at_ms });
+            let (combo_index, offer_index, price, currency, legs, fetched_at_ms, offer_json) = row.map_err(sql)?;
+            let offer = match offer_json {
+                Some(text) => from_json(&text)?,
+                None => {
+                    let legs: Vec<FliLeg> = from_json(&legs)?;
+                    fli_source_offer(&FliOffer { price, currency, legs }, "", display_currency)
+                }
+            };
+            out.push(StoredOffer { combo_index, offer_index, offer, fetched_at_ms });
         }
         Ok(out)
     }

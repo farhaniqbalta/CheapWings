@@ -4,31 +4,30 @@
 
 - Backend: **Python 3.12+**, **FastAPI**, Pydantic v2, Uvicorn, `httpx`, official Python MCP client SDK if compatible, SQLite, SQLAlchemy 2, Alembic; `pytest`, pytest-asyncio, Ruff, static typing.
 - Web: **React + TypeScript + Vite**, accessible responsive CSS. Consume OpenAPI schema or generated TS types; no browser-side provider secrets/requests.
-- iOS: **SwiftUI + URLSession**, genuinely native UI, structured concurrency, native date selection. *Current (owner decision P5.05/P5.06): standalone — the iPad runs the search itself (`apps/ios/CheapWingsKit`: provider-neutral `PacedRunner`, `FliSearchProvider`) over the shared Rust core via UniFFI, with its own SQLite store; no backend contract on iOS.*
-- Shared core (since P5.1): **Rust** `core/` — `cheapwings-core` (money, fingerprint, ranking, Fli decoder, planning, locations), `cheapwings-store` (SQLite, iPad), `cheapwings-ffi` (UniFFI → Swift), `cheapwings-py` (PyO3 → web backend). Pure logic only; no networking or UI.
+- iOS: **SwiftUI + URLSession**, genuinely native UI, structured concurrency, native date selection. *Current (owner decision P5.05/P5.06): standalone — the iPad runs the search itself (`apps/ios/CheapWingsKit`: provider-neutral `PacedRunner`, `FliSearchProvider`, `SkiplaggedSearchProvider`) over the shared Rust core via UniFFI, with its own SQLite store; no backend contract on iOS.*
+- Shared core (since P5.1): **Rust** `core/` — `cheapwings-core` (money, fingerprint, ranking, Fli decoder, Skiplagged parser, planning, locations), `cheapwings-store` (SQLite, iPad), `cheapwings-ffi` (UniFFI → Swift), `cheapwings-py` (PyO3 → web backend). `cheapwings-core` is pure logic; `cheapwings-store` owns iPad SQLite persistence. No Rust networking or UI. The web currently uses only the money bindings; P5.7 migrates the remaining calculations and parsing.
 - Blocking providers (e.g., `swoop`) isolated in a **bounded** executor / `asyncio.to_thread` with concurrency, timeout and cancellation semantics documented; avoid freezing event loop.
 - SQLite + one dedicated scheduler owner for personal deployment. No Redis, Celery, Kafka, Rust services, or microservices before measured need.
 
-**Why Python:** external APIs, throttling and fare semantics are bottlenecks; adding Rust would increase integration friction without improving prices. Do not reopen this decision absent concrete evidence. *Reopened with evidence and decided by the owner on 2026-11-13 ([P5.05](log/p5.05.md), [P5.06](log/p5.06.md)): one engine for web and a standalone iPad needs portable logic, so it lives in a Rust core; the web backend stays Python (FastAPI, scheduler, providers) and moves onto the core step by step in P5.7.*
+**Historical rationale:** Python was initially chosen for external APIs and throttling. *The owner chose a portable Rust core on 2026-11-13 ([P5.05](log/p5.05.md), [P5.06](log/p5.06.md)): one engine for web and a standalone iPad needs portable logic, so it lives in a Rust core; the web backend stays Python (FastAPI, scheduler, providers) and moves onto the core step by step in P5.7.*
 
 ## Ownership diagram
 
 ```text
-apps/web ──────────────────────┐
-                              ├── REST /api/v1 ─── backend/api
-apps/ios (SwiftUI) ────────────┘                        │
-                                            application/search_service
-                                                      │
-               ┌──────────────────────────────────────┼──────────────────────┐
-               ▼                                      ▼                      ▼
-      scheduler + coverage                   canonical domain          SQLite repositories
-               │                        (money, itinerary, fare)       and migrations
-       provider adapter registry                      │
-         ├─ Skiplagged MCP                            ▼
-         ├─ swoop                          matcher → aggregator → ranker
-         └─ future third-party                      ↑
-                                         pricing/repricing service
+React web → REST → Python application + durable worker → native provider clients
+                        ↕ SQLite repositories / migrations
+                        ↕ PyO3: money; more in P5.7
+                  Rust calculation / parsing core
+                        ↕ UniFFI
+SwiftUI iPad → Swift provider lanes / ordered release → URLSession HTTP / MCP
+                        ↕ Rust SQLite store
 ```
+
+P5.7 shares pure scheduling decisions, with explicit web and iPad profiles.
+Python retains transactions, claims, leases and fencing; Swift retains task groups,
+ordered buffering and foreground pause/resume. Rust receives caller-supplied signed
+integer microseconds (monotonic and epoch kept distinct), never reads clocks or
+starts work. [Approved migration and gates](log/p5.7-plan.md).
 
 ### Dependency rule
 
@@ -241,6 +240,7 @@ shortlist size follows the chosen provider (both settled in P7.1–P7.3).
 
 ### Platform note
 
-Web runs discovery in the Python worker today and moves with the rest of the engine in P5.7.
+Discover is not implemented. Its proposed web execution would use the Python worker
+and the shared calculations migrated in P5.7.
 The iPad can run discovery natively only for sources reachable with plain URLSession and no
 server (to be shown in P7.1); otherwise Explore ships web-first and the iPad waits.

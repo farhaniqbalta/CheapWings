@@ -2,9 +2,9 @@
 
 ## Shared contract, separate UI
 
-> **Current state (owner decisions P5.05/P5.06, built P5.1–P5.8):** the web is a client of `/api/v1` as described below; the **iPad app is standalone** — it searches Fli on the device (start-to-start pacing, 0.25 s, up to 6 open) through the shared Rust core, keeps its own SQLite history and needs no server. Shared logic (money, ranking, Fli decoder, location catalog, planning) is one Rust core used by both. See the "Current iPad app" section below; the thin-client text is the original design, kept for the web.
+> **Current state (owner decisions P5.05/P5.06, built P5.1–P5.8 and P5.4):** the web is a client of `/api/v1` as described below; the **iPad app is standalone** — it searches Fli (0.25 s, up to 6 open) and Skiplagged (3 s, up to 3 open) on the device through the shared Rust core, keeps its own SQLite history and needs no server. The iPad uses Rust for money, ranking, parsers, locations and planning; the web currently uses Rust money, with remaining cutovers approved in P5.7. See the "Current iPad app" section below; the thin-client text is the original design, kept for the web.
 
-The product has **one remote search engine**. Web and SwiftUI are thin clients against `/api/v1`. They never connect to MCP, Google Flights, scrape pages or recalculate fare ranking. The backend owns search results, currency/fee policy and provider pacing. The mobile app is native, not React Native, a Rust UI framework or a wrapped website.
+The web is a thin client against `/api/v1`; the Python backend owns its durable jobs, provider transports and storage. The standalone iPad uses Swift networking and lifecycle with shared Rust calculations/parsing and its own SQLite history. The thin-client iOS design below is historical.
 
 ### Shared state machine
 
@@ -60,15 +60,15 @@ All values and provider statuses in mockups are **illustrative, not actual searc
 - Desktop: compact list/table with expandable rows; mobile web: card layout. Test responsive widths ~375 px, 768 px and 1440 px.
 - Accessibility: semantic labels, input feedback, tab order, keyboard focus, button `aria` labels, loading announcements without noisy repeats, contrast, reduced motion.
 
-## Current iPad app (P5.2–P5.8)
+## Current iPad app (P5.2–P5.8 and P5.4)
 
 | Area | What exists ([logs](log/README.md)) |
 |---|---|
-| Engine | `apps/ios/CheapWingsKit`: `SearchEngine` = provider-neutral `PacedRunner` + `SearchProvider` (today `FliSearchProvider`, pacing 0.25 s × 6, replies released in date order); stops on 429/block/offline with no new request after a stop reply. `SearchSession` checkpoints every route/date to SQLite (`cheapwings-store`), Resume, 30-min wait after a Google stop, offline pause. |
-| Shared core | Rust via UniFFI XCFramework (`core/build-ios.sh`): money, ranking, Fli `ds:1` decoder and per-offer checks, planning (120 cap), location catalog with Major airports, airport changes. |
+| Engine | `apps/ios/CheapWingsKit`: `SearchEngine` = provider-neutral `PacedRunner` + `SearchProvider` (`FliSearchProvider`, 0.25 s × 6; `SkiplaggedSearchProvider`, 3 s × 3; replies released in order per lane); Fli stops on 429/block; Skiplagged uses bounded Retry-After retries, then stops its source. Offline/cancellation stop all lanes immediately. `SearchSession` checkpoints every route/date to SQLite (`cheapwings-store`), Resume, 30-min wait after a Google stop, offline pause. |
+| Shared core | Rust via UniFFI XCFramework (`core/build-ios.sh`): money, ranking, Fli `ds:1` decoder, Skiplagged parser and per-offer checks, planning (120 cap), location catalog with Major airports, airport changes. |
 | UI | SwiftUI split view: search (large route codes, Major-airport picker with stacked places, Max stops, dates, currency), results (lowest-fare-per-day date strip, flight rows with airline names, Cheapest tags incl. ties), details timeline, offline/blocked states, VoiceOver, Dynamic Type, dark mode. Airfield-signage design ([P5.6](log/p5.6.md)), app icon ([P5.8](log/p5.8.md)). |
 | Data | Bundled `catalog.json` (same as backend/web) and `contracts/airlines.json` (fli airline table, same names as web). |
-| Not yet | Skiplagged / OctoTrip on iPad (P5.4); background continued processing (iOS 26 registration rejected on the test device). |
+| Not yet | OctoTrip on iPad (deferred); background continued processing (iOS 26 registration rejected on the test device). |
 
 ## Native iOS SwiftUI app (original thin-client design — superseded for the iPad, see above)
 
@@ -108,4 +108,4 @@ All values and provider statuses in mockups are **illustrative, not actual searc
 
 ## Platform priority
 
-**Implement web first, iOS second** after REST/OpenAPI contract passes tests. This is an execution order, not a reduction of native-iOS scope. Maintain Swift models and feature list from the same contract, rather than reimplementing domain rules on iOS.
+Both platforms are implemented. P5.7 preserves REST/OpenAPI for web and the standalone iPad model, sharing portable logic through PyO3 and UniFFI. Platform-specific provider, retry and currency policies remain explicit.

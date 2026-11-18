@@ -8,8 +8,8 @@ Source of truth for **current** phase status, approvals, and the exact next task
 - At phase close: collapse its detail into `docs/log/`, leave one tracker row. Replace (don't append to) "Latest checkpoint" and "Next task".
 
 ## Project basics
-- Repo `farhaniqbalta/CheapWings`, current branch `main`, including P4.11 merge `4c98386`, personal single-owner use. Python 3.12 backend (`backend/src/cheapwings`), React web (`apps/web`), SQLite + Alembic. Native iPad (P5): Xcode 27.1 + Rust 1.100 installed; free Personal Team signing (3-app device limit).
-- Owner merges PRs; never merge/push automatically. Confirm before toolchain installs or live provider probes.
+- Repo `farhaniqbalta/CheapWings`, P5.7 baseline `main` at `bc4f5b2`, personal single-owner use. Python 3.12 backend (`backend/src/cheapwings`), React web (`apps/web`), SQLite + Alembic. Native iPad (P5): Xcode 27.1 + Rust 1.100 installed; free Personal Team signing (3-app device limit).
+- Owner merges PRs; never merge automatically. Publish checkpoint PRs when authorized by the task. Confirm before toolchain installs or live provider probes.
 - Baseline/environment history: [baseline-and-old-summary](docs/log/baseline-and-old-summary.md).
 
 ## Phase tracker
@@ -37,8 +37,8 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | P5.5 iPad feature parity | Done; [PR #14](https://github.com/farhaniqbalta/CheapWings/pull/14) merged `3c38427`; Fli 0.25 s + P7 docs via [PR #15](https://github.com/farhaniqbalta/CheapWings/pull/15) | [P5.5](docs/log/p5.5.md), [plan](docs/log/p5.5-plan.md), [Fli 0.25 s test](docs/log/p5.5-fli-interval.md) |
 | P5.6 iPad polish | Done; [PR #16](https://github.com/farhaniqbalta/CheapWings/pull/16) merged `addc272` | [P5.6](docs/log/p5.6.md), [plan](docs/log/p5.6-plan.md) |
 | P5.8 iPad parallel Fli pacing | Done; [PR #17](https://github.com/farhaniqbalta/CheapWings/pull/17) merged `69f6417` | [P5.8](docs/log/p5.8.md), [plan](docs/log/p5.8-plan.md) |
-| P5.4 Skiplagged on iPad | Implemented on branch `p5.4-ipad-skiplagged`; owner device checks passed; awaiting owner review. OctoTrip on iPad deferred until further notice (owner 2026-11-14) | [P5.4](docs/log/p5.4.md), [plan](docs/log/p5.4-plan.md) |
-| P5.7 Web backend onto the Rust core | Not started (web keeps all four providers in Python until then) | |
+| P5.4 Skiplagged on iPad | Done; [PR #19](https://github.com/farhaniqbalta/CheapWings/pull/19) merged `bc4f5b2`; owner device checks passed. OctoTrip on iPad deferred until further notice (owner 2026-11-14) | [P5.4](docs/log/p5.4.md), [plan](docs/log/p5.4-plan.md) |
+| P5.7 Web backend onto the Rust core | In progress; checkpoint 1 records approved plan; web currently shares money only | [Plan](docs/log/p5.7-plan.md), [execution](docs/log/p5.7.md) |
 | P6 Release acceptance | Not started | |
 | P7 Discover (Explore Anywhere / Surprise Me) | **Proposed / Not started** — separate feature beside Search (user chooses); awaits owner approval to start | [P7 plan](docs/06_IMPLEMENTATION_CHECKPOINTS.md#p7--explore-anywhere-proposed--not-started), [spec](docs/01_PRODUCT_REQUIREMENTS_UX.md#proposed-feature-explore-anywhere-and-surprise-me-p7--proposed--not-started) |
 
@@ -51,13 +51,13 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | Fli | Owner-requested personal-use integration (2026-11-12) | Google Flights public page; indicative quotes/search links; basic-economy exclusion unsupported; same inventory as swoop. |
 
 ## Latest checkpoint
-- P5.4 (branch `p5.4-ipad-skiplagged`): Skiplagged on the iPad next to Fli — Rust parser (exact USD, display-only FX, matches Python), Swift MCP client, one paced lane per source with retry-after, provider-neutral offers, store schema v2 (per-provider work items, migration from v1), Resume per source, Sources switches and source labels. OctoTrip deferred.
-- Owner device checks passed ("yes, it works").
-- Gates: Rust 34, backend 252, Swift Core 13 + Kit 93, iOS Release build.
-- Details and rulings: [P5.4](docs/log/p5.4.md). Open: iOS 26 continued processing; web `providers/fli.py` whole-page currency rule; deferred minors (P6).
+- P5.7 checkpoint 1: verified GitHub merges for P4.13 (#8, `984cfd2`) and P5.4 (#19, `bc4f5b2`); preserve completed iPad milestones.
+- Approved migration: six checkpoint PRs, engine/parsers/scheduling in Rust; networking, storage transactions and lifecycle remain native.
+- Corrected current architecture/setup descriptions; historical thin-client design remains labeled.
+- Plan, gates and execution evidence: [P5.7 plan](docs/log/p5.7-plan.md), [P5.7 execution](docs/log/p5.7.md).
 
 ## Next task
-Owner review of the P5.4 PR. Then P5.7 — the web backend onto the Rust core (plan first). Deferred minors and readable failure wording go to P6. Owner reviews and merges every checkpoint PR.
+P5.7 checkpoint 2: freeze independent engine fixtures, extend PyO3 and replace Python calculations after parity. Owner reviews and merges every checkpoint PR. P6/P7 remain separate.
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

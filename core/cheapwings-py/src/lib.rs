@@ -1,5 +1,5 @@
 //! Thin PyO3 wrappers over the `cheapwings-core` crate. Values cross as text; every error
-//! is a `ValueError` whose message starts with `unknown_currency:` for unknown currencies.
+//! is a `ValueError`; host adapters preserve their public validation and result types.
 
 use engine::money::{self, MoneyError};
 use pyo3::exceptions::PyValueError;
@@ -29,11 +29,95 @@ fn fx_convert(amount: &str, rate: &str, quote_currency: &str) -> PyResult<String
     money::fx_convert(amount, rate, quote_currency).map_err(to_py)
 }
 
+#[pyfunction]
+fn fold(value: &str) -> String {
+    engine::locations::fold(value)
+}
+
+#[pyfunction]
+fn fingerprint(identities: Vec<Vec<String>>) -> String {
+    engine::fingerprint::fingerprint_canonical(&identities.iter().map(|s| s.join(",")).collect::<Vec<_>>().join("|"))
+}
+
+#[pyfunction]
+fn rank_offers(offers: Vec<(String, String, String, Option<String>)>, best: bool) -> Vec<usize> {
+    let groups = vec![offers.into_iter().enumerate().map(|(i, (price_status, hidden_city, comparison_status, amount))| engine::ranking::RankOffer {
+        id: i.to_string(), price_status, hidden_city, comparison_status, amount,
+    }).collect()];
+    let ids = if best { engine::ranking::best_checked_deal(&groups) } else { engine::ranking::lowest_advertised(&groups) };
+    ids.iter().map(|id| id.parse().expect("input position")).collect()
+}
+
+#[pyfunction]
+fn plan_search(origins: Vec<String>, destinations: Vec<String>, start: &str, end: &str, max_combinations: u32) -> PyResult<Vec<(String, String, String)>> {
+    engine::planning::plan_search(&origins, &destinations, start, end, max_combinations)
+        .map(|routes| routes.into_iter().map(|r| (r.origin, r.destination, r.date)).collect())
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
+#[pyfunction]
+fn plan_scope(origins: Vec<String>, destinations: Vec<String>, start: &str, end: &str, providers: Vec<String>) -> PyResult<(u64,u64,u64,u64,u64)> {
+    engine::planning::scope(&origins, &destinations, start, end, &providers).map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
+fn catalog_error(error: engine::locations::CatalogError) -> PyErr {
+    use engine::locations::CatalogError::*;
+    let message = match error {
+        TooLong => "Search text exceeds 100 characters".to_owned(),
+        UnknownLocation(_) => "Unknown location ID; reload the catalog".to_owned(),
+        StaleVersion => "Stale catalog version; reload and review the included airports".to_owned(),
+        TypeMismatch => "Unknown location ID or mismatched location type".to_owned(),
+        NoMajorMapping => "No curated major-airport mapping; use Specific Airports".to_owned(),
+        Invalid(why) => match why.as_str() {
+            "duplicate location ID" => "Duplicate location ID".to_owned(),
+            "duplicate airport code" => "Duplicate airport code".to_owned(),
+            "invalid airport association" => "Invalid airport association".to_owned(),
+            "invalid mapping ID" => "Invalid mapping ID".to_owned(),
+            "invalid major mapping" => "Invalid major mapping".to_owned(),
+            _ => format!("Invalid location catalog: {why}"),
+        },
+    };
+    PyValueError::new_err(message)
+}
+
+#[pyclass(name = "LocationCatalog")]
+struct LocationCatalog { catalog: engine::locations::Catalog }
+
+#[pymethods]
+impl LocationCatalog {
+    #[new]
+    fn new(text: &str) -> PyResult<Self> {
+        Ok(Self { catalog: engine::locations::Catalog::from_json(text).map_err(catalog_error)? })
+    }
+
+    #[pyo3(signature = (text, within=None))]
+    fn search(&self, text: &str, within: Option<&str>) -> PyResult<Vec<String>> {
+        self.catalog.search(text, within).map(|items| items.into_iter().map(|i| i.id).collect()).map_err(catalog_error)
+    }
+
+    fn airports_of(&self, id: &str) -> PyResult<Vec<String>> {
+        self.catalog.airports_of(id).map(|items| items.into_iter().map(|i| i.id).collect()).map_err(catalog_error)
+    }
+
+    fn resolve(&self, kind: &str, id: &str, version: &str) -> PyResult<(Vec<String>,String,String)> {
+        self.catalog.resolve_major(kind, id, version).map(|r| (r.codes,r.rationale,r.definition)).map_err(|e| {
+            // Major resolution historically combines unknown IDs and type mismatch.
+            if matches!(e, engine::locations::CatalogError::UnknownLocation(_)) { catalog_error(engine::locations::CatalogError::TypeMismatch) } else { catalog_error(e) }
+        })
+    }
+}
+
 #[pymodule]
 fn cheapwings_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(minor_unit_exponent, m)?)?;
     m.add_function(wrap_pyfunction!(from_minor_units, m)?)?;
     m.add_function(wrap_pyfunction!(as_minor_units, m)?)?;
     m.add_function(wrap_pyfunction!(fx_convert, m)?)?;
+    m.add_function(wrap_pyfunction!(fold, m)?)?;
+    m.add_function(wrap_pyfunction!(fingerprint, m)?)?;
+    m.add_function(wrap_pyfunction!(rank_offers, m)?)?;
+    m.add_function(wrap_pyfunction!(plan_search, m)?)?;
+    m.add_function(wrap_pyfunction!(plan_scope, m)?)?;
+    m.add_class::<LocationCatalog>()?;
     Ok(())
 }

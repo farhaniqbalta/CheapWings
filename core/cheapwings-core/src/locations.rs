@@ -109,6 +109,17 @@ pub fn fold(text: &str) -> String {
         .flat_map(|c| match c {
             // Python casefold maps these to "ss"; Rust's to_lowercase keeps ß.
             'ß' | 'ẞ' => "ss".chars().collect::<Vec<_>>(),
+            '\u{0345}' => vec!['ι'],
+            'ς' => vec!['σ'],
+            '\u{13a0}'..='\u{13f5}' | '\u{13f8}'..='\u{13fd}' | '\u{ab70}'..='\u{abbf}' => c.to_uppercase().collect(),
+            '\u{1c80}' => vec!['в'],
+            '\u{1c81}' => vec!['д'],
+            '\u{1c82}' => vec!['о'],
+            '\u{1c83}' => vec!['с'],
+            '\u{1c84}' | '\u{1c85}' => vec!['т'],
+            '\u{1c86}' => vec!['ъ'],
+            '\u{1c87}' => vec!['ѣ'],
+            '\u{1c88}' => vec!['ꙋ'],
             other => other.to_lowercase().collect(),
         })
         // Python `unicodedata.combining`: drop only combining class != 0 (keeps Mc spacing marks).
@@ -210,7 +221,7 @@ impl Catalog {
         if text.chars().count() > 100 {
             return Err(CatalogError::TooLong);
         }
-        let term = fold(text.trim());
+        let term = fold(crate::python_strip(text));
         let allowed: Option<HashSet<String>> = match within {
             None => None,
             Some(id) => Some(self.airports_of(id)?.into_iter().map(|l| l.id).collect()),

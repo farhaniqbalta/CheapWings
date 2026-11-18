@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-import hashlib
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from itertools import pairwise
+
+import cheapwings_core as _core
 
 from cheapwings.domain.segments import FlightSegment
 
@@ -113,7 +114,4 @@ def compute_fingerprint(segments: tuple[FlightSegment, ...]) -> str:
     missing/ambiguous identity must use IdentityConfidence.INSUFFICIENT_IDENTITY
     and skip fingerprinting rather than forcing a match.
     """
-    canonical = "|".join(
-        ",".join(str(part) for part in segment.identity_key) for segment in segments
-    )
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    return _core.fingerprint([[str(part) for part in segment.identity_key] for segment in segments])

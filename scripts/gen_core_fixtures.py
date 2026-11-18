@@ -6,15 +6,19 @@ produces. The Rust core, its PyO3 module and its Swift package must all match th
 
 Money answers come from the pure-Decimal reference below, NOT from cheapwings.domain.money:
 since P5.1 that module delegates to the Rust core, so using it would gate Rust against itself.
+Engine answers use the pre-P5.7 Python implementations frozen in backend/tests/references/.
 """
 
 import json
 import random
 import subprocess
+import sys
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 rng = random.Random(20261113)
 
@@ -95,8 +99,9 @@ def instant():
 
 
 def fingerprint_cases(n):
-    from cheapwings.domain.itinerary import compute_fingerprint
     from cheapwings.domain.segments import FlightSegment
+
+    from backend.tests.references.fingerprint import compute_fingerprint
 
     cases = []
     for _ in range(n):
@@ -118,7 +123,13 @@ def fingerprint_cases(n):
 def offer(quote_id):
     # Money here only carries amounts into Offer; ranking compares them, no money arithmetic.
     from cheapwings.domain.money import Money
-    from cheapwings.domain.offer import ComparisonStatus, LinkScope, Offer, PriceStatus, ThreeValued
+    from cheapwings.domain.offer import (
+        ComparisonStatus,
+        LinkScope,
+        Offer,
+        PriceStatus,
+        ThreeValued,
+    )
 
     status = rng.choice(list(PriceStatus))
     hidden = ThreeValued.NO if status == PriceStatus.REPRICED_EXACT else rng.choice(list(ThreeValued))
@@ -132,7 +143,7 @@ def offer(quote_id):
 
 
 def ranking_cases(n):
-    from cheapwings.engine.ranking import best_checked_deal, lowest_advertised
+    from backend.tests.references.ranking import best_checked_deal, lowest_advertised
 
     cases = []
     for c in range(n):
@@ -257,8 +268,8 @@ PLAN_ERRORS = {  # QueryValidationError message fragment -> core PlanError code
 def planning_case(origins, destinations, start, end, max_combinations=120):
     from datetime import date
 
-    from cheapwings.domain.query import SearchQuery
-    from cheapwings.engine.expansion import expand_routes_and_dates
+    from backend.tests.references.expansion import expand_routes_and_dates
+    from backend.tests.references.query import SearchQuery
 
     case = {"origins": origins, "destinations": destinations, "from": start, "through": end,
             "max": max_combinations}
@@ -314,7 +325,7 @@ LOCATION_QUERIES = ["CGK", "cgk", "tokyo", "Tokyo", "jakarta", "sao paulo", "Sã
 
 
 def location_search_cases():
-    from cheapwings.locations.catalog import catalog
+    from backend.tests.references.catalog import catalog
 
     cat = catalog()
     cases = []
@@ -340,7 +351,7 @@ def location_search_cases():
 
 
 def location_major_cases():
-    from cheapwings.locations.catalog import MajorSelection, catalog
+    from backend.tests.references.catalog import MajorSelection, catalog
 
     cat = catalog()
 

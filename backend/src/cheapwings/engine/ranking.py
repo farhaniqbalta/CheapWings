@@ -10,15 +10,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from cheapwings.domain.offer import ComparisonStatus, Offer, PriceStatus, ThreeValued
-from cheapwings.engine.matching import ItineraryGroup
+import cheapwings_core as _core
 
-_TIER_ORDER = {
-    PriceStatus.REPRICED_EXACT: 0,
-    PriceStatus.RECENT_SEARCH: 1,
-    PriceStatus.INDICATIVE: 2,
-    PriceStatus.CHANGED_OR_UNAVAILABLE: 3,
-}
+from cheapwings.domain.offer import Offer
+from cheapwings.engine.matching import ItineraryGroup
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,46 +22,30 @@ class RankedOffer:
     offer: Offer
 
 
-def _is_safe_for_default_ranking(offer: Offer) -> bool:
-    if offer.hidden_city != ThreeValued.NO:
-        return False
-    if offer.comparison_status != ComparisonStatus.ELIGIBLE_TOTAL_KNOWN:
-        return False
-    if offer.comparable_amount is None:
-        return False
-    return True
+def _rank(groups: list[ItineraryGroup], *, best: bool) -> list[RankedOffer]:
+    candidates = [RankedOffer(g, o) for g in groups for o in g.offers]
+    positions = _core.rank_offers(
+        [
+            (
+                r.offer.price_status.value,
+                r.offer.hidden_city.value,
+                r.offer.comparison_status.value,
+                str(r.offer.comparable_amount.amount)
+                if r.offer.comparable_amount is not None
+                else None,
+            )
+            for r in candidates
+        ],
+        best,
+    )
+    return [candidates[i] for i in positions]
 
 
 def best_checked_deal(groups: list[ItineraryGroup]) -> list[RankedOffer]:
     """Default view: safe, comparable offers only, tiered by price confidence."""
-    candidates = [
-        RankedOffer(group=g, offer=o)
-        for g in groups
-        for o in g.offers
-        if _is_safe_for_default_ranking(o)
-    ]
-
-    def sort_key(ranked: RankedOffer):
-        offer = ranked.offer
-        assert offer.comparable_amount is not None
-        return (
-            _TIER_ORDER[offer.price_status],
-            offer.comparable_amount.amount,
-        )
-
-    return sorted(candidates, key=sort_key)
+    return _rank(groups, best=True)
 
 
 def lowest_advertised(groups: list[ItineraryGroup]) -> list[RankedOffer]:
-    """Alternate view: cheapest number including unknown-cost/indicative candidates.
-
-    Still excludes confirmed hidden_city == yes, since that is never a normal-
-    ticket result; unknown hidden-city risk is surfaced but labeled, not hidden.
-    """
-    candidates = [
-        RankedOffer(group=g, offer=o)
-        for g in groups
-        for o in g.offers
-        if o.hidden_city != ThreeValued.YES and o.comparable_amount is not None
-    ]
-    return sorted(candidates, key=lambda r: r.offer.comparable_amount.amount)
+    """Lowest comparable advertised price, excluding confirmed hidden-city fares."""
+    return _rank(groups, best=False)

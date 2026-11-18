@@ -64,5 +64,10 @@ pub fn fingerprint(segments: &[Segment]) -> String {
         })
         .collect::<Vec<_>>()
         .join("|");
+    fingerprint_canonical(&canonical)
+}
+
+/// Host adapters may supply lossless identity strings, including subsecond UTC offsets.
+pub fn fingerprint_canonical(canonical: &str) -> String {
     Sha256::digest(canonical.as_bytes()).iter().map(|b| format!("{b:02x}")).collect()
 }

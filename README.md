@@ -15,7 +15,7 @@ Provider observations are in
 ## Local setup
 
 Run from the repository root. Existing `.venv/` is the backend environment.
-Money arithmetic lives in the shared Rust core (`core/`), so a Rust toolchain
+Money, fingerprinting, ranking, planning and catalog calculations live in the shared Rust core (`core/`), so a Rust toolchain
 (`rustup`, stable) is required; rebuild the module after any change under `core/`.
 
 ```sh

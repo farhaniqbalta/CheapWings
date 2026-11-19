@@ -46,6 +46,18 @@ The API does not execute provider work. Both commands reject missing/outdated
 migrations; neither silently creates tables. Use a local disk database, not a
 network filesystem. Relative database URLs resolve from the working directory.
 
+### Shared core revision
+
+Both bindings embed a deterministic SHA-256 revision over sorted Rust source
+paths and contents, Cargo manifests, and the lockfile. Python checks it at
+extension import and Swift checks it before the first UniFFI call. The source
+tree carries the expected revisions so the check also works in installed apps.
+After editing or formatting Rust sources, run `sh core/update-expected-revision.sh`
+and commit the two generated source constants with the change. Rebuild from
+the same checkout with `maturin develop --release -m core/cheapwings-py/Cargo.toml`
+and `core/build-ios.sh`. The revision script uses local `shasum` and needs no
+network access.
+
 ## Run the web client
 
 With the API and worker running, open a third terminal. Node 22.18+ is required

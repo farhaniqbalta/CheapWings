@@ -11,7 +11,9 @@ import pytest
 from cheapwings.domain import money
 from cheapwings.domain.money import FXSnapshot, Money, UnknownCurrencyError
 
-FIXTURES = Path(__file__).resolve().parents[3] / "contracts" / "fixtures" / "core" / "core_fixtures.json"
+FIXTURES = (
+    Path(__file__).resolve().parents[3] / "contracts" / "fixtures" / "core" / "core_fixtures.json"
+)
 
 
 def _python_api_result(case):
@@ -42,16 +44,16 @@ def test_unknown_currency_raises_unknown_currency_error():
 
 def test_beyond_28_digits_is_exact():
     # Behaviour change in P5.1: Python's 28-digit context used to round this; Rust is exact.
-    amount = Money(Decimal("79228162514264337593543950335"), "IDR")
+    amount = Money(Decimal(79228162514264337593543950335), "IDR")
     assert amount.as_minor_units() == 79228162514264337593543950335
 
 
 def test_beyond_96_bit_raises_instead_of_rounding():
     # Rust decimals hold at most a 96-bit mantissa (~7.9e28). Old Python rounded silently.
     with pytest.raises(ValueError):
-        Money(Decimal("123456789012345678901234567890"), "JPY").as_minor_units()
+        Money(Decimal(123456789012345678901234567890), "JPY").as_minor_units()
     with pytest.raises(ValueError):
-        Money(Decimal("79228162514264337593543950335"), "USD").as_minor_units()
+        Money(Decimal(79228162514264337593543950335), "USD").as_minor_units()
     with pytest.raises(ValueError):
         Money.from_minor_units(10**30, "USD")
 
@@ -67,6 +69,22 @@ def test_core_module_is_rust():
 
 def test_missing_core_module_names_the_fix():
     code = "import sys; sys.modules['cheapwings_core'] = None; import cheapwings.domain.money"
-    result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
+    result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=False)
     assert result.returncode != 0
     assert "maturin develop" in result.stderr
+
+
+def test_core_loader_rejects_missing_export(monkeypatch):
+    from cheapwings import _core
+
+    monkeypatch.setattr(_core, "import_module", lambda _: object())
+    with pytest.raises(ImportError, match="missing export fingerprint.*maturin develop"):
+        _core._load()
+
+
+def test_core_loader_rejects_revision_mismatch(monkeypatch):
+    from cheapwings import _core
+
+    monkeypatch.setattr(_core, "EXPECTED_REVISION", "stale")
+    with pytest.raises(ImportError, match="revision mismatch.*maturin develop"):
+        _core._load()

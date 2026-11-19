@@ -21,7 +21,13 @@ cargo run -q --release -p cheapwings-ffi --bin uniffi-bindgen -- generate \
 mkdir -p "build/headers/$module" "$pkg/Sources/CheapWingsCore"
 cp "build/bindings/$module.h" "build/headers/$module/"
 cp "build/bindings/$module.modulemap" "build/headers/$module/module.modulemap"
-cp build/bindings/cheapwings_ffi.swift "$pkg/Sources/CheapWingsCore/Generated.swift"
+printf '\nconst char * _Nonnull cheapwings_core_build_revision(void);\n' >> "build/headers/$module/$module.h"
+init='private let initializationResult: InitializationResult = {'
+test "$(grep -Fc "$init" build/bindings/cheapwings_ffi.swift)" -eq 1
+sed '/^private let initializationResult: InitializationResult = {/a\
+    verifyCoreRevision()
+s/try cleaning and rebuilding your project/run core\/build-ios.sh/
+' build/bindings/cheapwings_ffi.swift > "$pkg/Sources/CheapWingsCore/Generated.swift"
 
 xcodebuild -create-xcframework \
     -library target/aarch64-apple-ios/release/libcheapwings_ffi.a -headers build/headers \

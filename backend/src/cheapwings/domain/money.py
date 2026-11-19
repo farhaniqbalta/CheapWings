@@ -10,13 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 
-try:
-    import cheapwings_core as _core
-except ImportError as exc:
-    raise ImportError(
-        "cheapwings_core is not built; run: "
-        ".venv/bin/maturin develop --release -m core/cheapwings-py/Cargo.toml"
-    ) from exc
+from cheapwings._core import core as _core
 
 
 class UnknownCurrencyError(ValueError):

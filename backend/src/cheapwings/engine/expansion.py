@@ -5,8 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
-import cheapwings_core as _core
-
+from cheapwings._core import core as _core
 from cheapwings.domain.query import SearchQuery
 
 

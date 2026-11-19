@@ -10,8 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-import cheapwings_core as _core
-
+from cheapwings._core import core as _core
 from cheapwings.domain.offer import Offer
 from cheapwings.engine.matching import ItineraryGroup
 

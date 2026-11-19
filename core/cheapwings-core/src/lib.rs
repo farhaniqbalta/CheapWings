@@ -12,3 +12,6 @@ pub mod skiplagged;
 pub fn python_strip(text: &str) -> &str {
     text.trim_matches(|c: char| c.is_whitespace() || ('\u{1c}'..='\u{1f}').contains(&c))
 }
+
+pub const BUILD_REVISION: &str = env!("CHEAPWINGS_CORE_REVISION");
+pub const BUILD_REVISION_C: &str = concat!(env!("CHEAPWINGS_CORE_REVISION"), "\0");

@@ -32,22 +32,35 @@ fn varint_field(field: u64, value: u64) -> Vec<u8> {
 }
 
 fn length_delimited(field: u64, bytes: &[u8]) -> Vec<u8> {
-    [varint(field << 3 | 2), varint(bytes.len() as u64), bytes.to_vec()].concat()
+    [
+        varint(field << 3 | 2),
+        varint(bytes.len() as u64),
+        bytes.to_vec(),
+    ]
+    .concat()
 }
 
 /// `tfs` for CheapWings' only query: one-way, one adult, economy, any stops.
 pub fn tfs(origin: &str, destination: &str, date: &str) -> String {
     let airport = |field, code: &str| {
-        length_delimited(field, &[varint_field(1, 1), length_delimited(2, code.as_bytes())].concat())
+        length_delimited(
+            field,
+            &[varint_field(1, 1), length_delimited(2, code.as_bytes())].concat(),
+        )
     };
     // Field order matters for byte equality with fli: date, origin (13), destination (14).
-    let segment = [length_delimited(2, date.as_bytes()), airport(13, origin), airport(14, destination)].concat();
+    let segment = [
+        length_delimited(2, date.as_bytes()),
+        airport(13, origin),
+        airport(14, destination),
+    ]
+    .concat();
     let payload = [
         varint_field(1, 28),
         varint_field(2, 2),
         length_delimited(3, &segment),
-        varint_field(8, 1),  // one adult
-        varint_field(9, 1),  // economy
+        varint_field(8, 1), // one adult
+        varint_field(9, 1), // economy
         varint_field(14, 1),
         varint_field(19, 2), // one-way
     ]
@@ -55,7 +68,13 @@ pub fn tfs(origin: &str, destination: &str, date: &str) -> String {
     URL_SAFE_NO_PAD.encode(payload)
 }
 
-pub fn search_url(origin: &str, destination: &str, date: &str, currency: &str, country: &str) -> String {
+pub fn search_url(
+    origin: &str,
+    destination: &str,
+    date: &str,
+    currency: &str,
+    country: &str,
+) -> String {
     format!(
         "https://www.google.com/travel/flights?tfs={}&hl=en&gl={country}&curr={currency}",
         tfs(origin, destination, date)
@@ -154,11 +173,16 @@ fn extract_ds1(html: &str) -> Option<Value> {
 /// Decodes a Google Flights search page into priced offers.
 pub fn decode_page(html: &str) -> Result<FliPage, FliError> {
     let lower = html.to_lowercase();
-    if lower.contains("our systems have detected unusual traffic") || lower.contains("unusual traffic from your computer") {
+    if lower.contains("our systems have detected unusual traffic")
+        || lower.contains("unusual traffic from your computer")
+    {
         return Err(FliError::AuthDenied);
     }
     let payload = extract_ds1(html).ok_or_else(|| schema("no ds:1 payload"))?;
-    let data = payload.as_array().filter(|d| d.len() >= 4).ok_or_else(|| schema("payload shape"))?;
+    let data = payload
+        .as_array()
+        .filter(|d| d.len() >= 4)
+        .ok_or_else(|| schema("payload shape"))?;
 
     let mut rows: Vec<&Value> = Vec::new();
     let mut saw_group = false;
@@ -166,7 +190,10 @@ pub fn decode_page(html: &str) -> Result<FliPage, FliError> {
         match group {
             Value::Null => continue,
             Value::Array(g) => {
-                let first = g.first().and_then(Value::as_array).ok_or_else(|| schema("row group"))?;
+                let first = g
+                    .first()
+                    .and_then(Value::as_array)
+                    .ok_or_else(|| schema("row group"))?;
                 saw_group = true;
                 rows.extend(first);
             }
@@ -184,8 +211,14 @@ pub fn decode_page(html: &str) -> Result<FliPage, FliError> {
     let mut unpriced = 0;
     for row in rows {
         let row = row.as_array().ok_or_else(|| schema("row"))?;
-        let price_block = row.get(1).and_then(Value::as_array).ok_or_else(|| schema("price block"))?;
-        let head = price_block.first().and_then(Value::as_array).ok_or_else(|| schema("price head"))?;
+        let price_block = row
+            .get(1)
+            .and_then(Value::as_array)
+            .ok_or_else(|| schema("price block"))?;
+        let head = price_block
+            .first()
+            .and_then(Value::as_array)
+            .ok_or_else(|| schema("price head"))?;
         if head.is_empty() {
             unpriced += 1;
             continue;
@@ -194,14 +227,24 @@ pub fn decode_page(html: &str) -> Result<FliPage, FliError> {
             Some(Value::Number(n)) => n.to_string(),
             _ => return Err(schema("price")),
         };
-        let currency = price_block.get(1).and_then(Value::as_str).and_then(currency_from_token);
-        let detail = row.first().and_then(Value::as_array).ok_or_else(|| schema("detail"))?;
+        let currency = price_block
+            .get(1)
+            .and_then(Value::as_str)
+            .and_then(currency_from_token);
+        let detail = row
+            .first()
+            .and_then(Value::as_array)
+            .ok_or_else(|| schema("detail"))?;
         let legs = match detail.get(2) {
             Some(Value::Array(legs)) => legs.iter().map(leg).collect::<Result<Vec<_>, _>>()?,
             Some(Value::Null) => Vec::new(),
             _ => return Err(schema("legs")),
         };
-        offers.push(FliOffer { price, currency, legs });
+        offers.push(FliOffer {
+            price,
+            currency,
+            legs,
+        });
     }
     Ok(FliPage { offers, unpriced })
 }
@@ -215,11 +258,20 @@ fn text(value: Option<&Value>) -> Option<String> {
 }
 
 fn leg(value: &Value) -> Result<FliLeg, FliError> {
-    let fl = value.as_array().filter(|fl| fl.len() > 22).ok_or_else(|| schema("leg shape"))?;
+    let fl = value
+        .as_array()
+        .filter(|fl| fl.len() > 22)
+        .ok_or_else(|| schema("leg shape"))?;
     let airline = fl[22].as_array();
     Ok(FliLeg {
-        origin: fl[3].as_str().ok_or_else(|| schema("leg origin"))?.to_owned(),
-        destination: fl[6].as_str().ok_or_else(|| schema("leg destination"))?.to_owned(),
+        origin: fl[3]
+            .as_str()
+            .ok_or_else(|| schema("leg origin"))?
+            .to_owned(),
+        destination: fl[6]
+            .as_str()
+            .ok_or_else(|| schema("leg destination"))?
+            .to_owned(),
         airline: airline.and_then(|a| text(a.first())).unwrap_or_default(),
         flight_number: airline.and_then(|a| text(a.get(1))).unwrap_or_default(),
         depart_local: local_time(&fl[20], &fl[8])?,
@@ -230,7 +282,10 @@ fn leg(value: &Value) -> Result<FliLeg, FliError> {
 /// `[y, m, d]` + `[h, m]` with nulls as 0 (fli `_parse_datetime`).
 fn local_time(date: &Value, time: &Value) -> Result<String, FliError> {
     let parts = |v: &Value, n: usize| {
-        let mut out: Vec<u64> = v.as_array().map(|a| a.iter().map(|x| x.as_u64().unwrap_or(0)).collect()).unwrap_or_default();
+        let mut out: Vec<u64> = v
+            .as_array()
+            .map(|a| a.iter().map(|x| x.as_u64().unwrap_or(0)).collect())
+            .unwrap_or_default();
         out.resize(n.max(out.len()), 0);
         out
     };
@@ -238,14 +293,21 @@ fn local_time(date: &Value, time: &Value) -> Result<String, FliError> {
     if d[0] == 0 {
         return Err(schema("leg date"));
     }
-    Ok(format!("{:04}-{:02}-{:02}T{:02}:{:02}", d[0], d[1], d[2], t[0], t[1]))
+    Ok(format!(
+        "{:04}-{:02}-{:02}T{:02}:{:02}",
+        d[0], d[1], d[2], t[0], t[1]
+    ))
 }
 
 /// fli `core/currency.py`: base64url protobuf, field 3 → nested field 3 = ISO code.
 fn currency_from_token(token: &str) -> Option<String> {
     let bytes = URL_SAFE_NO_PAD.decode(token.trim_end_matches('=')).ok()?;
     let nested = length_field(3, &bytes)?;
-    Some(String::from_utf8(length_field(3, nested)?.to_vec()).ok()?.to_uppercase())
+    Some(
+        String::from_utf8(length_field(3, nested)?.to_vec())
+            .ok()?
+            .to_uppercase(),
+    )
 }
 
 /// First length-delimited field `number`, skipping other fields. None on malformed input.
@@ -286,8 +348,16 @@ fn length_field(number: u64, bytes: &[u8]) -> Option<&[u8]> {
 }
 
 /// None when every priced offer matches the query; otherwise the first mismatch.
-pub fn cross_check(page: &FliPage, origin: &str, destination: &str, date: &str, currency: &str) -> Option<String> {
-    page.offers.iter().find_map(|o| offer_mismatch(o, origin, destination, date, currency))
+pub fn cross_check(
+    page: &FliPage,
+    origin: &str,
+    destination: &str,
+    date: &str,
+    currency: &str,
+) -> Option<String> {
+    page.offers
+        .iter()
+        .find_map(|o| offer_mismatch(o, origin, destination, date, currency))
 }
 
 /// Offers that match the query, and one reason per offer that does not.
@@ -311,7 +381,11 @@ pub fn filter_offers(
     currency: &str,
     max_stops: Option<u32>,
 ) -> CheckedOffers {
-    let mut checked = CheckedOffers { offers: Vec::new(), rejected: Vec::new(), excluded_by_stops: 0 };
+    let mut checked = CheckedOffers {
+        offers: Vec::new(),
+        rejected: Vec::new(),
+        excluded_by_stops: 0,
+    };
     for offer in &page.offers {
         let stops = offer.legs.len().saturating_sub(1) as u32;
         if let Some(reason) = offer_mismatch(offer, origin, destination, date, currency) {
@@ -335,7 +409,13 @@ pub fn airport_changes(offer: &FliOffer) -> Vec<(String, String)> {
         .collect()
 }
 
-fn offer_mismatch(offer: &FliOffer, origin: &str, destination: &str, date: &str, currency: &str) -> Option<String> {
+fn offer_mismatch(
+    offer: &FliOffer,
+    origin: &str,
+    destination: &str,
+    date: &str,
+    currency: &str,
+) -> Option<String> {
     let (Some(first), Some(last)) = (offer.legs.first(), offer.legs.last()) else {
         return Some("offer without legs".into());
     };
@@ -348,11 +428,19 @@ fn offer_mismatch(offer: &FliOffer, origin: &str, destination: &str, date: &str,
     if offer.currency.as_deref() != Some(currency) {
         return Some(format!("currency {:?}", offer.currency));
     }
-    let positive = offer.price.parse::<rust_decimal::Decimal>().map(|p| p > rust_decimal::Decimal::ZERO).unwrap_or(false);
+    let positive = offer
+        .price
+        .parse::<rust_decimal::Decimal>()
+        .map(|p| p > rust_decimal::Decimal::ZERO)
+        .unwrap_or(false);
     if !positive {
         return Some(format!("price {}", offer.price));
     }
-    if offer.legs.iter().any(|l| l.airline.is_empty() || l.flight_number.is_empty()) {
+    if offer
+        .legs
+        .iter()
+        .any(|l| l.airline.is_empty() || l.flight_number.is_empty())
+    {
         return Some("missing flight number".into());
     }
     None

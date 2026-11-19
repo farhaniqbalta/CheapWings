@@ -5,8 +5,9 @@ from functools import lru_cache
 from importlib.resources import files
 from typing import Literal
 
-import cheapwings_core as _core
 from pydantic import BaseModel, ConfigDict, Field
+
+from cheapwings._core import core as _core
 
 
 class MajorSelection(BaseModel):

@@ -3,7 +3,7 @@
 from collections.abc import Sequence
 from datetime import date
 
-import cheapwings_core as _core
+from cheapwings._core import core as _core
 
 
 def plan_scope(

@@ -23,10 +23,15 @@ def test_engine_bindings_exist():
         assert hasattr(core, name), name
 
 
-@pytest.mark.parametrize("offset", [20700, -12600, 30])
+@pytest.mark.parametrize("offset", [20700, -12600, 30, -0.25, 30.125])
 def test_fingerprint_matches_frozen_reference(offset):
     at = datetime(2027, 1, 1, 10, 30, 15, 123456, timezone(timedelta(seconds=offset)))
-    segments = (FlightSegment("QF", "AA", "123", "MEL", "DPS", at, at + timedelta(hours=3), 0),)
+    segments = (
+        FlightSegment("QF", "AA", "123", "MEL", "SIN", at, at + timedelta(hours=3), 0),
+        FlightSegment(
+            "QF", "QF", "124", "SIN", "DPS", at + timedelta(hours=4), at + timedelta(hours=6), 1
+        ),
+    )
     assert compute_fingerprint(segments) == fingerprint.compute_fingerprint(segments)
 
 
@@ -193,7 +198,15 @@ def test_frozen_cross_language_engine_fixtures():
     for case in fixtures["planning"]:
         args = (case["origins"], case["destinations"], case["from"], case["through"], case["max"])
         if isinstance(case["expect"], dict):
-            with pytest.raises(ValueError):
+            message = {
+                "invalid_airport": "invalid IATA code",
+                "no_airports": "at least one airport code",
+                "dates_reversed": "end date is before start date",
+                "invalid_date": "invalid date",
+                "same_airport": "origin and destination cannot both be",
+                "too_many": "combinations exceeds the maximum",
+            }[case["expect"]["error"]]
+            with pytest.raises(ValueError, match=message):
                 core.plan_search(*args)
         else:
             assert [
@@ -221,3 +234,22 @@ def test_python_whitespace_semantics_for_catalog_and_scope():
     assert plan_scope(["\x1cMEL\x1f"], ["MEL"], start, start) == scope.plan_scope(
         ["\x1cMEL\x1f"], ["MEL"], start, start
     )
+
+
+@pytest.mark.parametrize(
+    "amount", ["NaN", "broken", "1e999999999999999999999", "0.1e-9223372036854775808"]
+)
+def test_invalid_ranking_amount_raises(amount):
+    with pytest.raises(ValueError, match="Invalid ranking amount"):
+        core.rank_offers([("recent_search", "no", "eligible_total_known", amount)], True)
+
+
+def test_fold_matches_assigned_python_unicode():
+    import unicodedata
+
+    from backend.tests.references.catalog import fold
+
+    for point in range(0x110000):
+        char = chr(point)
+        if unicodedata.category(char) not in {"Cn", "Cs"}:
+            assert core.fold(char) == fold(char), f"U+{point:04X}"

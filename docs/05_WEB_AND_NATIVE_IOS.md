@@ -2,7 +2,7 @@
 
 ## Shared contract, separate UI
 
-> **Current state (owner decisions P5.05/P5.06, built P5.1–P5.8 and P5.4):** the web is a client of `/api/v1` as described below; the **iPad app is standalone** — it searches Fli (0.25 s, up to 6 open) and Skiplagged (3 s, up to 3 open) on the device through the shared Rust core, keeps its own SQLite history and needs no server. The iPad uses Rust for money, ranking, parsers, locations and planning; the web uses Rust money and engine rules after P5.7 checkpoint 2, with parser and scheduling cutovers still pending. See the "Current iPad app" section below; the thin-client text is the original design, kept for the web.
+> **Current state (owner decisions P5.05/P5.06, built P5.1–P5.8 and P5.4):** the web is a client of `/api/v1` as described below; the **iPad app is standalone** — it searches Fli (0.25 s, up to 6 open) and Skiplagged (3 s, up to 3 open) on the device through the shared Rust core, keeps its own SQLite history and needs no server. The iPad uses Rust for money, ranking, parsers, locations and planning; the web uses Rust money and engine rules after P5.7 checkpoint 2, with Fli/Skiplagged parsing still pending. See the "Current iPad app" section below; the thin-client text is the original design, kept for the web.
 
 The web is a thin client against `/api/v1`; the Python backend owns its durable jobs, provider transports and storage. The standalone iPad uses Swift networking and lifecycle with shared Rust calculations/parsing and its own SQLite history. The thin-client iOS design below is historical.
 

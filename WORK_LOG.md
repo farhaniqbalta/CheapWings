@@ -53,7 +53,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 ## Latest checkpoint
 - P5.7 closed with checkpoint 3 merged at `648d104`. OctoTrip/swoop parsing and scheduler migration remain deferred.
 - P6 offline acceptance passed on clean merged main. Fresh install, both binding builds, worker restart, web UI submit/reload, and unsigned iPad Release build passed.
-- The scoped live check returned 20 indicative Skiplagged offers. Web Fli failed during TLS. Neither source was retried.
+- The scoped live check returned 20 indicative Skiplagged offers. Web Fli failed during TLS on the initial check and one owner-approved retry.
 - The iPad results use plain-language failure messages. See the [P6 execution log](docs/log/p6.md) for evidence and open items, including the 4 MB Fli cap.
 
 ## Next task

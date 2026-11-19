@@ -60,7 +60,11 @@ Add provider-specific regression fixtures as live schemas evolve. Do not store a
 
 ## Local install and dev runbook — worker must implement and verify
 
-The following are **target commands to make work**, not claims they are already functional:
+The current runbook is [README](../README.md#local-setup). The original target
+commands below are historical; notably they predate the required Rust extension
+build. For current Python setup, run `maturin develop --release -m
+core/cheapwings-py/Cargo.toml` in the activated backend environment. Rebuild
+`core/build-ios.sh` for iPad; both bindings must come from the same core revision.
 
 ```bash
 # From repository root
@@ -110,7 +114,7 @@ Use `fake` provider by default in development and tests. Enabled real sources re
 ## Operational safety
 
 - **Deployment:** local-first, API behind HTTPS/private tunnel if accessed by mobile; SQLite backed up; one scheduler owner. Local-only API bound to loopback cannot be reached by physical iPhone until configured on LAN or secure hosted endpoint.
-- **iOS physical device:** configure actual reachable HTTPS endpoint; respect Apple ATS requirements, avoid shipping insecure ATS exemptions just for convenience.
+- **iPad physical device:** the standalone app talks directly to Fli and Skiplagged over HTTPS; no backend endpoint is required. Build/sign/install with full Xcode as documented in README.
 - **Restart recovery:** worker scans expired leases at startup, reclaims only eligible items, preserves completed offers and idempotent keys. Test crash during DB commit.
 - **Data retention:** define job, quote, FX and provider raw evidence TTL; redact signed URLs, selectors and credentials from logs and fixtures; avoid violating source caching terms.
 - **Rate limits:** per-provider concurrency/cooldowns globally across search jobs. Respect throttling; never evade identity-based restrictions.

@@ -1,20 +1,20 @@
 # CheapWings — Worker Implementation Handoff
 
-**Original handoff:** 2026-11-09 · **Current status:** P5.8 merged (standalone iPad app with parallel Fli pacing); next P5.4, plan first. Read [WORK_LOG.md](../WORK_LOG.md) for current decisions and the next task.
+**Original handoff:** 2026-11-09 · **Current status:** P5.4 merged (standalone iPad with Fli and Skiplagged); P5.7 migration approved. Read [WORK_LOG.md](../WORK_LOG.md) for current decisions and the next task.
 
 > Read the short current work log first, then only the specifications and evidence relevant to the authorized task. These numbered documents describe the approved design and original phase gates; their unchecked tasks are not a current progress tracker. The generated [OpenAPI contract](../contracts/openapi.yaml) and [runbook](../README.md) describe implemented interfaces. `reference/` is historical context and does not override current owner decisions.
 
 ## Mission
 
-Build a small, trustworthy service that finds the **cheapest eligible one-way flight found among the searched sources** across an inclusive range of departure dates and one or more IATA airport pairs. Slow searches are fine; accuracy, transparent coverage, and low running cost are more important. No booking/checkout. Two frontends eventually: responsive web and **genuinely native iOS**.
+Build a small, trustworthy service that finds the **cheapest eligible one-way flight found among the searched sources** across an inclusive range of departure dates and one or more IATA airport pairs. Slow searches are fine; accuracy, transparent coverage, and low running cost are more important. No booking/checkout. Two implemented frontends: responsive web and a **standalone native iPad app**.
 
 **Example only:** MEL → CGK, DPS, SUB; 2026-12-12 through 2026-12-20; 1 adult, economy, IDR. These are test fixtures, **not live fare claims**.
 
 ## Approved non-negotiables
 
 1. **Python backend:** Python 3.12+, FastAPI, Pydantic v2, `httpx`, SQLite, SQLAlchemy/Alembic, `asyncio` and bounded long-running job worker. ~~No Rust.~~ *Superseded by owner decision 2026-11-13 ([P5.06](log/p5.06.md)): a shared Rust core (`core/`) holds portable logic — PyO3 for the web backend, UniFFI for the iPad; networking and UI stay native.*
-2. **Web:** React + TypeScript + Vite, a client of the versioned REST/OpenAPI contract. **iOS:** SwiftUI, native UI. *Superseded for iOS by owner decision ([P5.05](log/p5.05.md), [P5.06](log/p5.06.md)): the iPad app is standalone — it searches providers on the device through the shared Rust core, with no hosted server (Fli only for now; more providers in P5.4).* Python scrapers are never embedded in a frontend.
-3. **Modular provider adapters:** Skiplagged MCP, `swoop` and OctoTrip are integrated for the owner-approved personal scope. Future sources need feasibility and permission checks before enablement; source parsing stays outside core orchestration, ranking and clients.
+2. **Web:** React + TypeScript + Vite, a client of the versioned REST/OpenAPI contract. **iOS:** SwiftUI, native UI. *Superseded for iOS by owner decision ([P5.05](log/p5.05.md), [P5.06](log/p5.06.md)): the iPad app is standalone — it searches providers on the device through the shared Rust core, with no hosted server (Fli and Skiplagged since P5.4).* Python scrapers are never embedded in a frontend.
+3. **Modular provider adapters:** Skiplagged MCP, `swoop` and OctoTrip are integrated for the owner-approved personal scope. Future sources need feasibility and permission checks before enablement; source parsing stays separate from orchestration, ranking and UI; portable parsing moves into Rust in P5.7.
 4. **Exhaustive *combination* coverage:** schedule every eligible origin × destination × departure-date for the enabled detailed-search providers. Calendar prices **only prioritize**, never prune the matrix. Do not claim exhaustive airline inventory. (Applies to **Search**; the separate proposed Discover feature has its own bounded-shortlist rules — [01](01_PRODUCT_REQUIREMENTS_UX.md#relationship-to-search-owner-decision-2026-11-14).)
 5. **Preserve itinerary and offers separately:** one itinerary can have many seller/provider/fare offers. Deduplicate cautiously; retain provenance and fare restrictions.
 6. **Price accuracy:** store original quoted currency, seller, checked time, fare details and price status; reprice strongest candidates when possible. Never call a cached quote "verified". UI must distinguish `repriced`, `recent_search`, `indicative`, `changed`, and errors.
@@ -49,31 +49,30 @@ Build a small, trustworthy service that finds the **cheapest eligible one-way fl
 - Do not hard-code source-specific fields into API, web/iOS clients, ranking, matching, or core domain.
 - All example prices/fixtures must be visibly labeled synthetic; do not invent provider outcomes.
 
-## Target high-level implementation
+## Current implementation and approved migration
 
 ```text
-React web (Vite) ─┐
-                  ├── HTTPS /api/v1 (FastAPI) ── Search service ── SQLite job/offer store
-SwiftUI iOS ──────┘                                  │
-                                                     ├── Scheduler / coverage ledger
-                                                     ├── Provider registry
-                                                     │    ├── Skiplagged MCP adapter
-                                                     │    ├── swoop adapter
-                                                     │    ├── OctoTrip adapter
-                                                     │    └── future adapters
-                                                     ├── Canonical normalizer & matching
-                                                     └── Pricing/verification/ranking
+React web → REST /api/v1 → Python API + worker → Python provider transports
+                                ↕ SQLite
+                                ↕ PyO3 (money today; engine and Fli/Skiplagged parsers in P5.7)
+                         Shared Rust core
+                                ↕ UniFFI
+Standalone SwiftUI iPad → Swift provider lanes → Fli + Skiplagged transports
+                                ↕ Rust SQLite store
 ```
+
+Python and Swift retain networking, execution and lifecycle. Rust owns portable
+calculations and parsing. Web and iPad keep their native scheduling policies. See the [approved checkpoints and gates](log/p5.7-plan.md).
 
 ## Final delivery expected
 
-- Working local backend, web app, and eventually native iOS project (P5).
+- Working local backend, web app, and standalone native iPad project (P5).
 - Configurable provider registry with at least one **validated usable** source; a second source **only if validated and permitted**.
 - End-to-end tests using fake providers and sanitized contract fixtures; manual live canary evidence separate.
 - API OpenAPI contract, migrations, `.env.example`, setup commands, and reproducible UX screenshots.
 - A short current checkpoint and evidence pointer in `WORK_LOG.md`; completion details, validation and known risks belong in the corresponding `docs/log/` entry.
 
-**Definition of success:** a valid request produces an honest ranked set of fares (or an honest empty/partial state), with the exact coverage and price evidence behind each displayed result, and the same results are consumable from web and native iOS.
+**Definition of success:** a valid request produces an honest ranked set of fares (or an honest empty/partial state), with the exact coverage and price evidence behind each displayed result, with shared calculation/parsing semantics across web and native iPad; provider selections and platform policies remain explicit.
 
 ## P4.5 web refinement
 

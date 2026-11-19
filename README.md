@@ -4,7 +4,8 @@ Personal-use, flexible-date, one-way flight comparison with a Python 3.12+
 backend and React/TypeScript web client. Durable SQLite jobs, a separate worker,
 REST v1, and Skiplagged/swoop/OctoTrip/Fli adapters are implemented. Development defaults to
 **synthetic fake fares**; live providers are opt-in for accepted personal use.
-Native SwiftUI iOS remains planned and requires full Xcode.
+A standalone SwiftUI iPad app searches Fli and Skiplagged through the shared Rust
+core; it requires full Xcode and needs no backend.
 
 [WORK_LOG.md](WORK_LOG.md) holds current status, approvals and the next task.
 Detailed evidence is indexed in [docs/log/README.md](docs/log/README.md).
@@ -104,7 +105,8 @@ xcrun devicectl device install app --device <DEVICE_UDID> build/Build/Products/R
 Free Apple accounts allow three self-signed apps per device and need the developer
 profile trusted once (Settings › General › VPN & Device Management). Prices shown are
 indicative; a search stops on any Google rate-limit or block (no new request starts after
-the stop reply) and never retries. Losing the connection pauses instead; Resume continues.
+the stop reply); Fli does not retry. Skiplagged retains its bounded Retry-After
+retries within its own lane. Losing the connection pauses instead; Resume continues.
 Data files the app bundles: `backend/src/cheapwings/locations/catalog.json` (same as backend
 and web) and `contracts/airlines.json` (from `scripts/gen_airlines.py`). App icon sources:
 `docs/design/app-icon/`.
@@ -223,7 +225,7 @@ view does not prove no flights: inspect coverage and the advertised view.
   from one shared global pool (default nine physical operations, 1..100). There
   is no per-provider concurrency ceiling: any provider may use idle global
   capacity. Start-to-start intervals decide when a provider may begin a request
-  (defaults: Skiplagged 3s, swoop 0.1s, OctoTrip 5s, Fli 1s); cooldowns and
+  (defaults: Skiplagged 3s, swoop 0.1s, OctoTrip 5s, Fli 0.25s); cooldowns and
   Retry-After still apply. Providers have priority tiers (`<PROVIDER>_PRIORITY`,
   0 = highest; OctoTrip defaults to 1): a lower tier only gets a slot when no
   higher tier has eligible work, and cannot take the last `LOW_PRIORITY_HEADROOM`
@@ -359,7 +361,7 @@ The owner accepted the integrated web design, which is merged into main.
 validation; [WORK_LOG.md](WORK_LOG.md) holds the current next task.
 Integrated synthetic screenshots remain in
 [docs/design/p45-qa](docs/design/p45-qa/); completed handoff prompts are retired.
-Native SwiftUI P5 remains a separate requirement and needs full Xcode.
+The standalone SwiftUI iPad app is implemented; building it needs full Xcode.
 
 ## Observation cache and optional OctoTrip source
 

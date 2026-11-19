@@ -1,6 +1,6 @@
 # 04 — Data, Persistence, and REST API Contracts
 
-**Contract-first rule:** define stable versioned canonical JSON in OpenAPI. Both React and native SwiftUI consume the same models and statuses. These examples are **normative design direction**, not claims of an already deployed API; worker may refine field names once, in documented ADR before backend + clients ship.
+**Contract-first rule:** define stable versioned canonical JSON in OpenAPI. React consumes these REST models and statuses. The standalone iPad uses native models over UniFFI; it does not consume this REST contract. These examples are **normative design direction**, not claims of an already deployed API; worker may refine field names once, in documented ADR before backend + clients ship.
 
 ## Request schema
 

@@ -99,8 +99,8 @@ Each phase needs a short current checkpoint (at most five lines) and evidence po
 > **As built:** the owner chose a standalone iPad app on a shared Rust core instead of the thin
 > client below ([P5.05](log/p5.05.md), [P5.06](log/p5.06.md)). Delivered in checkpoints P5.1
 > (Rust core), P5.2 (iPad shell), P5.3 (persistence/resume), P5.5 (feature parity), P5.6 (polish
-> and design), P5.8 (parallel Fli pacing, provider-ready engine, app icon). Remaining: P5.4 (more
-> iPad providers), P5.7 (web backend onto the Rust core). Status lives in `WORK_LOG.md`; the task
+> and design), P5.8 (parallel Fli pacing, provider-ready engine, app icon), P5.4 (Skiplagged).
+> Remaining: P5.7 (web backend onto the Rust core; approved three-checkpoint migration). Status lives in `WORK_LOG.md`; the task
 > list below is the original design.
 
 **Tasks**
@@ -111,6 +111,14 @@ Each phase needs a short current checkpoint (at most five lines) and evidence po
 - [ ] Add URLProtocol mock tests/model decoding tests and run manual simulator checks for all P4 state fixtures.
 
 **Gate:** iOS displays same result order, prices, caveats and coverage as web for the same job id; UI is truly SwiftUI native, with no embedded scraper or checkout.
+
+## P5.7 — Web backend onto the shared Rust core
+
+Approved [design, checklist and completion gates](log/p5.7-plan.md); execution
+evidence in [P5.7](log/p5.7.md). One PR per checkpoint, owner-controlled merges:
+documentation → engine/PyO3 → Fli/Skiplagged and close. OctoTrip/swoop parsing
+and scheduler migration are deferred. No database migration, runtime migration
+flags, new provider defaults, or P6/P7 product work.
 
 ## P6 — Release and owner acceptance
 
@@ -138,7 +146,7 @@ before release, it can become P6.x by explicit decision; nothing is renumbered h
 check a bounded shortlist with the existing detailed search, and rank destinations by honest
 fare evidence; Surprise Me picks from those results. One engine, web and iPad.
 
-**Dependencies:** P5.5 location catalog in Rust (done, in review); the shared Rust core and
+**Dependencies:** P5.5 location catalog in Rust (done, merged); the shared Rust core and
 its PyO3/UniFFI bindings (P5.1); the existing scheduler, pacing, cache and persistence; P5.7
 (web on the Rust core) preferred before web integration, so selection logic is written once.
 Scope: Discover is a separate feature beside Search (owner 2026-11-14), so Search's rules are

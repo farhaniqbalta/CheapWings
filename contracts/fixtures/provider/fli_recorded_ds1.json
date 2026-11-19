@@ -1,0 +1,1387 @@
+{
+  "provenance": "Owner-approved URLSession capture. Only decoder-read positions retained; currency tokens reduced to ISO currency protobuf; other request metadata and opaque tokens removed.",
+  "origin": "CGK",
+  "destination": "DPS",
+  "date": "2026-12-19",
+  "currency": "IDR",
+  "data_json": "[null,null,null,[[[[null,null,[[null,null,null,\"CGK\",null,null,\"DPS\",null,[20,25],null,[23,15],110,null,null,null,null,null,null,null,null,[2026,12,19],[2026,12,19],[\"IP\",\"116\",null]]],null,null,null,null,null,null,110],[[null,1678651],\"GgUaA0lEUg\"]],[[null,null,[[null,null,null,\"CGK\",null,null,\"DPS\",null,[17,40],null,[20,35],115,null,null,null,null,null,null,null,null,[2026,12,19],[2026,12,19],[\"QZ\",\"818\",null]]],null,null,null,null,null,null,115],[[null,1772550],\"GgUaA0lEUg\"]],[[null,null,[[null,null,null,\"CGK\",null,null,\"DPS\",null,[17,40],null,[20,35],115,null,null,null,null,null,null,null,null,[2026,12,19],[2026,12,19],[\"JT\",\"12\",null]]],null,null,null,null,null,null,115],[[null,1781409],\"GgUaA0lEUg\"]],[[null,null,[[null,null,null,\"CGK\",null,null,\"DPS\",null,[15,10],null,[18],110,null,null,null,null,null,null,null,null,[2026,12,19],[2026,12,19],[\"IP\",\"104\",null]]],null,null,null,null,null,null,110],[[null,1798651],\"GgUaA0lEUg\"]],[[null,null,[[null,null,null,\"CGK\",null,null,\"DPS\",null,[17,5],null,[20],115,null,null,null,null,null,null,null,null,[2026,12,19],[2026,12,19],[\"IP\",\"112\",null]]],null,null,null,null,null,null,115],[[null,1798651],\"GgUaA0lEUg\"]],[[null,null,[[null,null,null,\"CGK\",null,null,\"DPS\",null,[15,30],null,[18,30],120,null,null,null,null,null,null,null,null,[2026,12,19],[2026,12,19],[\"QZ\",\"820\",null]]],null,null,null,null,null,null,120],[[null,1862549],\"GgUaA0lEUg\"]],[[null,null,[[null,null,null,\"CGK\",null,null,\"DPS\",null,[4,30],null,[7,25],115,null,null,null,null,null,null,null,null,[2026,12,19],[2026,12,19],[\"JT\",\"20\",null]]],null,null,null,null,null,null,115],[[null,1915709],\"GgUaA0lEUg\"]],[[null,null,[[null,null,null,\"CGK\",null,null,\"DPS\",null,[8,35],null,[11,30],115,null,null,null,null,null,null,null,null,[2026,12,19],[2026,12,19],[\"JT\",\"30\",null]]],null,null,null,null,null,null,115],[[null,1915709],\"GgUaA0lEUg\"]],[[null,null,[[null,null,null,\"CGK\",null,null,\"DPS\",null,[9,40],null,[12,35],115,null,null,null,null,null,null,null,null,[2026,12,19],[2026,12,19],[\"JT\",\"34\",null]]],null,null,null,null,null,null,115],[[null,1915709],\"GgUaA0lEUg\"]],[[null,null,[[null,null,null,\"CGK\",null,null,\"DPS\",null,[11,10],null,[14,5],115,null,null,null,null,null,null,null,null,[2026,12,19],[2026,12,19],[\"JT\",\"24\",null]]],null,null,null,null,null,null,115],[[null,1915709],\"GgUaA0lEUg\"]],[[null,null,[[null,null,null,\"CGK\",null,null,\"DPS\",null,[13,45],null,[16,40],115,null,null,null,null,null,null,null,null,[2026,12,19],[2026,12,19],[\"JT\",\"22\",null]]],null,null,null,null,null,null,115],[[null,1915709],\"GgUaA0lEUg\"]],[[null,null,[[null,null,null,\"CGK\",null,null,\"DPS\",null,[6],null,[9],120,null,null,null,null,null,null,null,null,[2026,12,19],[2026,12,19],[\"QZ\",\"806\",null]]],null,null,null,null,null,null,120],[[null,1930550],\"GgUaA0lEUg\"]],[[null,null,[[null,null,null,\"CGK\",null,null,\"DPS\",null,[9,20],null,[12,15],115,null,null,null,null,null,null,null,null,[2026,12,19],[2026,12,19],[\"QZ\",\"804\",null]]],null,null,null,null,null,null,115],[[null,1946650],\"GgUaA0lEUg\"]],[[null,null,[[null,null,null,\"CGK\",null,null,\"DPS\",null,[10,10],null,[13],110,null,null,null,null,null,null,null,null,[2026,12,19],[2026,12,19],[\"QZ\",\"802\",null]]],null,null,null,null,null,null,110],[[null,1946650],\"GgUaA0lEUg\"]],[[null,null,[[null,null,null,\"CGK\",null,null,\"DPS\",null,[14,5],null,[16,55],110,null,null,null,null,null,null,null,null,[2026,12,19],[2026,12,19],[\"IP\",\"106\",null]]],null,null,null,null,null,null,110],[[null,2018651],\"GgUaA0lEUg\"]],[[null,null,[[null,null,null,\"CGK\",null,null,\"DPS\",null,[14,35],null,[17,30],115,null,null,null,null,null,null,null,null,[2026,12,19],[2026,12,19],[\"ID\",\"6508\",null]]],null,null,null,null,null,null,115],[[null,2031280],\"GgUaA0lEUg\"]],[[null,null,[[null,null,null,\"CGK\",null,null,\"DPS\",null,[8,25],null,[11,20],115,null,null,null,null,null,null,null,null,[2026,12,19],[2026,12,19],[\"QZ\",\"808\",null]]],null,null,null,null,null,null,115],[[null,2031738],\"GgUaA0lEUg\"]],[[null,null,[[null,null,null,\"CGK\",null,null,\"DPS\",null,[12,50],null,[15,40],110,null,null,null,null,null,null,null,null,[2026,12,19],[2026,12,19],[\"QZ\",\"814\",null]]],null,null,null,null,null,null,110],[[null,2031738],\"GgUaA0lEUg\"]],[[null,null,[[null,null,null,\"CGK\",null,null,\"DPS\",null,[10,40],null,[13,35],115,null,null,null,null,null,null,null,null,[2026,12,19],[2026,12,19],[\"ID\",\"6050\",null]]],null,null,null,null,null,null,115],[[null,2189980],\"GgUaA0lEUg\"]],[null,[[],null]],[null,[[],null]],[null,[[],null]],[null,[[],null]],[null,[[],null]],[null,[[],null]],[null,[[],null]],[null,[[],null]],[null,[[],null]],[null,[[],null]],[null,[[],null]],[null,[[],null]],[null,[[],null]],[null,[[],null]],[null,[[],null]],[null,[[],null]],[null,[[],null]],[null,[[],null]],[null,[[],null]],[null,[[],null]],[null,[[],null]],[null,[[],null]],[null,[[],null]],[null,[[],null]],[null,[[],null]]]]]",
+  "ipad": {
+    "offers": [
+      {
+        "price": "1678651",
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "CGK",
+            "destination": "DPS",
+            "airline": "IP",
+            "flight_number": "116",
+            "depart_local": "2026-12-19T20:25",
+            "arrive_local": "2026-12-19T23:15"
+          }
+        ]
+      },
+      {
+        "price": "1772550",
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "CGK",
+            "destination": "DPS",
+            "airline": "QZ",
+            "flight_number": "818",
+            "depart_local": "2026-12-19T17:40",
+            "arrive_local": "2026-12-19T20:35"
+          }
+        ]
+      },
+      {
+        "price": "1781409",
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "CGK",
+            "destination": "DPS",
+            "airline": "JT",
+            "flight_number": "12",
+            "depart_local": "2026-12-19T17:40",
+            "arrive_local": "2026-12-19T20:35"
+          }
+        ]
+      },
+      {
+        "price": "1798651",
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "CGK",
+            "destination": "DPS",
+            "airline": "IP",
+            "flight_number": "104",
+            "depart_local": "2026-12-19T15:10",
+            "arrive_local": "2026-12-19T18:00"
+          }
+        ]
+      },
+      {
+        "price": "1798651",
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "CGK",
+            "destination": "DPS",
+            "airline": "IP",
+            "flight_number": "112",
+            "depart_local": "2026-12-19T17:05",
+            "arrive_local": "2026-12-19T20:00"
+          }
+        ]
+      },
+      {
+        "price": "1862549",
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "CGK",
+            "destination": "DPS",
+            "airline": "QZ",
+            "flight_number": "820",
+            "depart_local": "2026-12-19T15:30",
+            "arrive_local": "2026-12-19T18:30"
+          }
+        ]
+      },
+      {
+        "price": "1915709",
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "CGK",
+            "destination": "DPS",
+            "airline": "JT",
+            "flight_number": "20",
+            "depart_local": "2026-12-19T04:30",
+            "arrive_local": "2026-12-19T07:25"
+          }
+        ]
+      },
+      {
+        "price": "1915709",
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "CGK",
+            "destination": "DPS",
+            "airline": "JT",
+            "flight_number": "30",
+            "depart_local": "2026-12-19T08:35",
+            "arrive_local": "2026-12-19T11:30"
+          }
+        ]
+      },
+      {
+        "price": "1915709",
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "CGK",
+            "destination": "DPS",
+            "airline": "JT",
+            "flight_number": "34",
+            "depart_local": "2026-12-19T09:40",
+            "arrive_local": "2026-12-19T12:35"
+          }
+        ]
+      },
+      {
+        "price": "1915709",
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "CGK",
+            "destination": "DPS",
+            "airline": "JT",
+            "flight_number": "24",
+            "depart_local": "2026-12-19T11:10",
+            "arrive_local": "2026-12-19T14:05"
+          }
+        ]
+      },
+      {
+        "price": "1915709",
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "CGK",
+            "destination": "DPS",
+            "airline": "JT",
+            "flight_number": "22",
+            "depart_local": "2026-12-19T13:45",
+            "arrive_local": "2026-12-19T16:40"
+          }
+        ]
+      },
+      {
+        "price": "1930550",
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "CGK",
+            "destination": "DPS",
+            "airline": "QZ",
+            "flight_number": "806",
+            "depart_local": "2026-12-19T06:00",
+            "arrive_local": "2026-12-19T09:00"
+          }
+        ]
+      },
+      {
+        "price": "1946650",
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "CGK",
+            "destination": "DPS",
+            "airline": "QZ",
+            "flight_number": "804",
+            "depart_local": "2026-12-19T09:20",
+            "arrive_local": "2026-12-19T12:15"
+          }
+        ]
+      },
+      {
+        "price": "1946650",
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "CGK",
+            "destination": "DPS",
+            "airline": "QZ",
+            "flight_number": "802",
+            "depart_local": "2026-12-19T10:10",
+            "arrive_local": "2026-12-19T13:00"
+          }
+        ]
+      },
+      {
+        "price": "2018651",
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "CGK",
+            "destination": "DPS",
+            "airline": "IP",
+            "flight_number": "106",
+            "depart_local": "2026-12-19T14:05",
+            "arrive_local": "2026-12-19T16:55"
+          }
+        ]
+      },
+      {
+        "price": "2031280",
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "CGK",
+            "destination": "DPS",
+            "airline": "ID",
+            "flight_number": "6508",
+            "depart_local": "2026-12-19T14:35",
+            "arrive_local": "2026-12-19T17:30"
+          }
+        ]
+      },
+      {
+        "price": "2031738",
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "CGK",
+            "destination": "DPS",
+            "airline": "QZ",
+            "flight_number": "808",
+            "depart_local": "2026-12-19T08:25",
+            "arrive_local": "2026-12-19T11:20"
+          }
+        ]
+      },
+      {
+        "price": "2031738",
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "CGK",
+            "destination": "DPS",
+            "airline": "QZ",
+            "flight_number": "814",
+            "depart_local": "2026-12-19T12:50",
+            "arrive_local": "2026-12-19T15:40"
+          }
+        ]
+      },
+      {
+        "price": "2189980",
+        "currency": "IDR",
+        "legs": [
+          {
+            "origin": "CGK",
+            "destination": "DPS",
+            "airline": "ID",
+            "flight_number": "6050",
+            "depart_local": "2026-12-19T10:40",
+            "arrive_local": "2026-12-19T13:35"
+          }
+        ]
+      }
+    ],
+    "unpriced": 25
+  },
+  "web": {
+    "provider_id": "fli",
+    "requested": {
+      "origin": "CGK",
+      "destination": "DPS",
+      "departure_date": "2026-12-19",
+      "include_basic_economy": true,
+      "include_hidden_city": false,
+      "display_currency": "IDR",
+      "point_of_sale_country": null
+    },
+    "status": "succeeded_results",
+    "retrieved_at": "2026-11-19 00:00:00+00:00",
+    "provider_complete": false,
+    "error_code": null,
+    "error_detail_sanitized": null,
+    "itineraries": [
+      [
+        {
+          "marketing_carrier": "IP",
+          "operating_carrier": "IP",
+          "flight_number": "116",
+          "origin": "CGK",
+          "destination": "DPS",
+          "depart_at": "2026-12-19 20:25:00+07:00",
+          "arrive_at": "2026-12-19 23:15:00+08:00",
+          "ordinal": 0,
+          "marketing_carrier_name": "Iberworld Airlines",
+          "operating_carrier_name": "Iberworld Airlines"
+        }
+      ],
+      [
+        {
+          "marketing_carrier": "QZ",
+          "operating_carrier": "QZ",
+          "flight_number": "818",
+          "origin": "CGK",
+          "destination": "DPS",
+          "depart_at": "2026-12-19 17:40:00+07:00",
+          "arrive_at": "2026-12-19 20:35:00+08:00",
+          "ordinal": 0,
+          "marketing_carrier_name": "Indonesia AirAsia",
+          "operating_carrier_name": "Indonesia AirAsia"
+        }
+      ],
+      [
+        {
+          "marketing_carrier": "JT",
+          "operating_carrier": "JT",
+          "flight_number": "12",
+          "origin": "CGK",
+          "destination": "DPS",
+          "depart_at": "2026-12-19 17:40:00+07:00",
+          "arrive_at": "2026-12-19 20:35:00+08:00",
+          "ordinal": 0,
+          "marketing_carrier_name": "Lion Air",
+          "operating_carrier_name": "Lion Air"
+        }
+      ],
+      [
+        {
+          "marketing_carrier": "IP",
+          "operating_carrier": "IP",
+          "flight_number": "104",
+          "origin": "CGK",
+          "destination": "DPS",
+          "depart_at": "2026-12-19 15:10:00+07:00",
+          "arrive_at": "2026-12-19 18:00:00+08:00",
+          "ordinal": 0,
+          "marketing_carrier_name": "Iberworld Airlines",
+          "operating_carrier_name": "Iberworld Airlines"
+        }
+      ],
+      [
+        {
+          "marketing_carrier": "IP",
+          "operating_carrier": "IP",
+          "flight_number": "112",
+          "origin": "CGK",
+          "destination": "DPS",
+          "depart_at": "2026-12-19 17:05:00+07:00",
+          "arrive_at": "2026-12-19 20:00:00+08:00",
+          "ordinal": 0,
+          "marketing_carrier_name": "Iberworld Airlines",
+          "operating_carrier_name": "Iberworld Airlines"
+        }
+      ],
+      [
+        {
+          "marketing_carrier": "QZ",
+          "operating_carrier": "QZ",
+          "flight_number": "820",
+          "origin": "CGK",
+          "destination": "DPS",
+          "depart_at": "2026-12-19 15:30:00+07:00",
+          "arrive_at": "2026-12-19 18:30:00+08:00",
+          "ordinal": 0,
+          "marketing_carrier_name": "Indonesia AirAsia",
+          "operating_carrier_name": "Indonesia AirAsia"
+        }
+      ],
+      [
+        {
+          "marketing_carrier": "JT",
+          "operating_carrier": "JT",
+          "flight_number": "20",
+          "origin": "CGK",
+          "destination": "DPS",
+          "depart_at": "2026-12-19 04:30:00+07:00",
+          "arrive_at": "2026-12-19 07:25:00+08:00",
+          "ordinal": 0,
+          "marketing_carrier_name": "Lion Air",
+          "operating_carrier_name": "Lion Air"
+        }
+      ],
+      [
+        {
+          "marketing_carrier": "JT",
+          "operating_carrier": "JT",
+          "flight_number": "30",
+          "origin": "CGK",
+          "destination": "DPS",
+          "depart_at": "2026-12-19 08:35:00+07:00",
+          "arrive_at": "2026-12-19 11:30:00+08:00",
+          "ordinal": 0,
+          "marketing_carrier_name": "Lion Air",
+          "operating_carrier_name": "Lion Air"
+        }
+      ],
+      [
+        {
+          "marketing_carrier": "JT",
+          "operating_carrier": "JT",
+          "flight_number": "34",
+          "origin": "CGK",
+          "destination": "DPS",
+          "depart_at": "2026-12-19 09:40:00+07:00",
+          "arrive_at": "2026-12-19 12:35:00+08:00",
+          "ordinal": 0,
+          "marketing_carrier_name": "Lion Air",
+          "operating_carrier_name": "Lion Air"
+        }
+      ],
+      [
+        {
+          "marketing_carrier": "JT",
+          "operating_carrier": "JT",
+          "flight_number": "24",
+          "origin": "CGK",
+          "destination": "DPS",
+          "depart_at": "2026-12-19 11:10:00+07:00",
+          "arrive_at": "2026-12-19 14:05:00+08:00",
+          "ordinal": 0,
+          "marketing_carrier_name": "Lion Air",
+          "operating_carrier_name": "Lion Air"
+        }
+      ],
+      [
+        {
+          "marketing_carrier": "JT",
+          "operating_carrier": "JT",
+          "flight_number": "22",
+          "origin": "CGK",
+          "destination": "DPS",
+          "depart_at": "2026-12-19 13:45:00+07:00",
+          "arrive_at": "2026-12-19 16:40:00+08:00",
+          "ordinal": 0,
+          "marketing_carrier_name": "Lion Air",
+          "operating_carrier_name": "Lion Air"
+        }
+      ],
+      [
+        {
+          "marketing_carrier": "QZ",
+          "operating_carrier": "QZ",
+          "flight_number": "806",
+          "origin": "CGK",
+          "destination": "DPS",
+          "depart_at": "2026-12-19 06:00:00+07:00",
+          "arrive_at": "2026-12-19 09:00:00+08:00",
+          "ordinal": 0,
+          "marketing_carrier_name": "Indonesia AirAsia",
+          "operating_carrier_name": "Indonesia AirAsia"
+        }
+      ],
+      [
+        {
+          "marketing_carrier": "QZ",
+          "operating_carrier": "QZ",
+          "flight_number": "804",
+          "origin": "CGK",
+          "destination": "DPS",
+          "depart_at": "2026-12-19 09:20:00+07:00",
+          "arrive_at": "2026-12-19 12:15:00+08:00",
+          "ordinal": 0,
+          "marketing_carrier_name": "Indonesia AirAsia",
+          "operating_carrier_name": "Indonesia AirAsia"
+        }
+      ],
+      [
+        {
+          "marketing_carrier": "QZ",
+          "operating_carrier": "QZ",
+          "flight_number": "802",
+          "origin": "CGK",
+          "destination": "DPS",
+          "depart_at": "2026-12-19 10:10:00+07:00",
+          "arrive_at": "2026-12-19 13:00:00+08:00",
+          "ordinal": 0,
+          "marketing_carrier_name": "Indonesia AirAsia",
+          "operating_carrier_name": "Indonesia AirAsia"
+        }
+      ],
+      [
+        {
+          "marketing_carrier": "IP",
+          "operating_carrier": "IP",
+          "flight_number": "106",
+          "origin": "CGK",
+          "destination": "DPS",
+          "depart_at": "2026-12-19 14:05:00+07:00",
+          "arrive_at": "2026-12-19 16:55:00+08:00",
+          "ordinal": 0,
+          "marketing_carrier_name": "Iberworld Airlines",
+          "operating_carrier_name": "Iberworld Airlines"
+        }
+      ],
+      [
+        {
+          "marketing_carrier": "ID",
+          "operating_carrier": "ID",
+          "flight_number": "6508",
+          "origin": "CGK",
+          "destination": "DPS",
+          "depart_at": "2026-12-19 14:35:00+07:00",
+          "arrive_at": "2026-12-19 17:30:00+08:00",
+          "ordinal": 0,
+          "marketing_carrier_name": "Batik Air",
+          "operating_carrier_name": "Batik Air"
+        }
+      ],
+      [
+        {
+          "marketing_carrier": "QZ",
+          "operating_carrier": "QZ",
+          "flight_number": "808",
+          "origin": "CGK",
+          "destination": "DPS",
+          "depart_at": "2026-12-19 08:25:00+07:00",
+          "arrive_at": "2026-12-19 11:20:00+08:00",
+          "ordinal": 0,
+          "marketing_carrier_name": "Indonesia AirAsia",
+          "operating_carrier_name": "Indonesia AirAsia"
+        }
+      ],
+      [
+        {
+          "marketing_carrier": "QZ",
+          "operating_carrier": "QZ",
+          "flight_number": "814",
+          "origin": "CGK",
+          "destination": "DPS",
+          "depart_at": "2026-12-19 12:50:00+07:00",
+          "arrive_at": "2026-12-19 15:40:00+08:00",
+          "ordinal": 0,
+          "marketing_carrier_name": "Indonesia AirAsia",
+          "operating_carrier_name": "Indonesia AirAsia"
+        }
+      ],
+      [
+        {
+          "marketing_carrier": "ID",
+          "operating_carrier": "ID",
+          "flight_number": "6050",
+          "origin": "CGK",
+          "destination": "DPS",
+          "depart_at": "2026-12-19 10:40:00+07:00",
+          "arrive_at": "2026-12-19 13:35:00+08:00",
+          "ordinal": 0,
+          "marketing_carrier_name": "Batik Air",
+          "operating_carrier_name": "Batik Air"
+        }
+      ]
+    ],
+    "offers_by_itinerary_index": [
+      [
+        {
+          "quote_id": "31d090560fcc8c997ba2b428d067c30c44a181e89bdc9df92bc12fea9808ba1b",
+          "itinerary_id": "",
+          "provider_id": "fli",
+          "seller": null,
+          "fare_family": null,
+          "cabin": "economy",
+          "basic_economy": null,
+          "amount_original": {
+            "amount": "1678651",
+            "currency": "IDR"
+          },
+          "comparable_amount": {
+            "amount": "1678651",
+            "currency": "IDR"
+          },
+          "comparison_status": "extra_cost_unknown",
+          "checked_bag": "unknown",
+          "hidden_city": "unknown",
+          "self_transfer": "unknown",
+          "price_status": "indicative",
+          "is_estimate": true,
+          "retrieved_at": "2026-11-19 00:00:00+00:00",
+          "repriced_at": null,
+          "link": null,
+          "link_scope": "unavailable",
+          "provider_quote_handle": null,
+          "warnings": [
+            "Public-page shortlist; complete flight inventory is unknown.",
+            "Baggage, fees, hidden-city and self-transfer risk are unconfirmed.",
+            "Fli and swoop both use Google Flights; they are not independent inventories."
+          ],
+          "evidence": {
+            "source_checked_at": "2026-11-19 00:00:00+00:00",
+            "fx_snapshot": null,
+            "fee_completeness": "unknown",
+            "point_of_sale_country": "ID",
+            "attribution": "Google Flights via Fli"
+          }
+        }
+      ],
+      [
+        {
+          "quote_id": "473c3bd81f047799143a7d24747a40510b7b41e8c35def7bddf0ee452c29d454",
+          "itinerary_id": "",
+          "provider_id": "fli",
+          "seller": null,
+          "fare_family": null,
+          "cabin": "economy",
+          "basic_economy": null,
+          "amount_original": {
+            "amount": "1772550",
+            "currency": "IDR"
+          },
+          "comparable_amount": {
+            "amount": "1772550",
+            "currency": "IDR"
+          },
+          "comparison_status": "extra_cost_unknown",
+          "checked_bag": "unknown",
+          "hidden_city": "unknown",
+          "self_transfer": "unknown",
+          "price_status": "indicative",
+          "is_estimate": true,
+          "retrieved_at": "2026-11-19 00:00:00+00:00",
+          "repriced_at": null,
+          "link": null,
+          "link_scope": "unavailable",
+          "provider_quote_handle": null,
+          "warnings": [
+            "Public-page shortlist; complete flight inventory is unknown.",
+            "Baggage, fees, hidden-city and self-transfer risk are unconfirmed.",
+            "Fli and swoop both use Google Flights; they are not independent inventories."
+          ],
+          "evidence": {
+            "source_checked_at": "2026-11-19 00:00:00+00:00",
+            "fx_snapshot": null,
+            "fee_completeness": "unknown",
+            "point_of_sale_country": "ID",
+            "attribution": "Google Flights via Fli"
+          }
+        }
+      ],
+      [
+        {
+          "quote_id": "faa3871319bda0040911de5678a780c74bc66294c7c072f63e229f72dbd07456",
+          "itinerary_id": "",
+          "provider_id": "fli",
+          "seller": null,
+          "fare_family": null,
+          "cabin": "economy",
+          "basic_economy": null,
+          "amount_original": {
+            "amount": "1781409",
+            "currency": "IDR"
+          },
+          "comparable_amount": {
+            "amount": "1781409",
+            "currency": "IDR"
+          },
+          "comparison_status": "extra_cost_unknown",
+          "checked_bag": "unknown",
+          "hidden_city": "unknown",
+          "self_transfer": "unknown",
+          "price_status": "indicative",
+          "is_estimate": true,
+          "retrieved_at": "2026-11-19 00:00:00+00:00",
+          "repriced_at": null,
+          "link": null,
+          "link_scope": "unavailable",
+          "provider_quote_handle": null,
+          "warnings": [
+            "Public-page shortlist; complete flight inventory is unknown.",
+            "Baggage, fees, hidden-city and self-transfer risk are unconfirmed.",
+            "Fli and swoop both use Google Flights; they are not independent inventories."
+          ],
+          "evidence": {
+            "source_checked_at": "2026-11-19 00:00:00+00:00",
+            "fx_snapshot": null,
+            "fee_completeness": "unknown",
+            "point_of_sale_country": "ID",
+            "attribution": "Google Flights via Fli"
+          }
+        }
+      ],
+      [
+        {
+          "quote_id": "fdda6f6691db8ec7c29fe8cc877583dc940afb891af341ff7cee66b400d3c28c",
+          "itinerary_id": "",
+          "provider_id": "fli",
+          "seller": null,
+          "fare_family": null,
+          "cabin": "economy",
+          "basic_economy": null,
+          "amount_original": {
+            "amount": "1798651",
+            "currency": "IDR"
+          },
+          "comparable_amount": {
+            "amount": "1798651",
+            "currency": "IDR"
+          },
+          "comparison_status": "extra_cost_unknown",
+          "checked_bag": "unknown",
+          "hidden_city": "unknown",
+          "self_transfer": "unknown",
+          "price_status": "indicative",
+          "is_estimate": true,
+          "retrieved_at": "2026-11-19 00:00:00+00:00",
+          "repriced_at": null,
+          "link": null,
+          "link_scope": "unavailable",
+          "provider_quote_handle": null,
+          "warnings": [
+            "Public-page shortlist; complete flight inventory is unknown.",
+            "Baggage, fees, hidden-city and self-transfer risk are unconfirmed.",
+            "Fli and swoop both use Google Flights; they are not independent inventories."
+          ],
+          "evidence": {
+            "source_checked_at": "2026-11-19 00:00:00+00:00",
+            "fx_snapshot": null,
+            "fee_completeness": "unknown",
+            "point_of_sale_country": "ID",
+            "attribution": "Google Flights via Fli"
+          }
+        }
+      ],
+      [
+        {
+          "quote_id": "e631bfac959ffe81acfa8ca57261c676f94e38bc907e25b658daf2de8529a714",
+          "itinerary_id": "",
+          "provider_id": "fli",
+          "seller": null,
+          "fare_family": null,
+          "cabin": "economy",
+          "basic_economy": null,
+          "amount_original": {
+            "amount": "1798651",
+            "currency": "IDR"
+          },
+          "comparable_amount": {
+            "amount": "1798651",
+            "currency": "IDR"
+          },
+          "comparison_status": "extra_cost_unknown",
+          "checked_bag": "unknown",
+          "hidden_city": "unknown",
+          "self_transfer": "unknown",
+          "price_status": "indicative",
+          "is_estimate": true,
+          "retrieved_at": "2026-11-19 00:00:00+00:00",
+          "repriced_at": null,
+          "link": null,
+          "link_scope": "unavailable",
+          "provider_quote_handle": null,
+          "warnings": [
+            "Public-page shortlist; complete flight inventory is unknown.",
+            "Baggage, fees, hidden-city and self-transfer risk are unconfirmed.",
+            "Fli and swoop both use Google Flights; they are not independent inventories."
+          ],
+          "evidence": {
+            "source_checked_at": "2026-11-19 00:00:00+00:00",
+            "fx_snapshot": null,
+            "fee_completeness": "unknown",
+            "point_of_sale_country": "ID",
+            "attribution": "Google Flights via Fli"
+          }
+        }
+      ],
+      [
+        {
+          "quote_id": "03c0172ceb2c40710d0cf23e6d9e005265f95f270dd24245c7549d7d0cb282f9",
+          "itinerary_id": "",
+          "provider_id": "fli",
+          "seller": null,
+          "fare_family": null,
+          "cabin": "economy",
+          "basic_economy": null,
+          "amount_original": {
+            "amount": "1862549",
+            "currency": "IDR"
+          },
+          "comparable_amount": {
+            "amount": "1862549",
+            "currency": "IDR"
+          },
+          "comparison_status": "extra_cost_unknown",
+          "checked_bag": "unknown",
+          "hidden_city": "unknown",
+          "self_transfer": "unknown",
+          "price_status": "indicative",
+          "is_estimate": true,
+          "retrieved_at": "2026-11-19 00:00:00+00:00",
+          "repriced_at": null,
+          "link": null,
+          "link_scope": "unavailable",
+          "provider_quote_handle": null,
+          "warnings": [
+            "Public-page shortlist; complete flight inventory is unknown.",
+            "Baggage, fees, hidden-city and self-transfer risk are unconfirmed.",
+            "Fli and swoop both use Google Flights; they are not independent inventories."
+          ],
+          "evidence": {
+            "source_checked_at": "2026-11-19 00:00:00+00:00",
+            "fx_snapshot": null,
+            "fee_completeness": "unknown",
+            "point_of_sale_country": "ID",
+            "attribution": "Google Flights via Fli"
+          }
+        }
+      ],
+      [
+        {
+          "quote_id": "ec6da8a02a8dddd3b3ae4d474d4dcfcf5bf8d21c512defaba8b28a49ff0214b9",
+          "itinerary_id": "",
+          "provider_id": "fli",
+          "seller": null,
+          "fare_family": null,
+          "cabin": "economy",
+          "basic_economy": null,
+          "amount_original": {
+            "amount": "1915709",
+            "currency": "IDR"
+          },
+          "comparable_amount": {
+            "amount": "1915709",
+            "currency": "IDR"
+          },
+          "comparison_status": "extra_cost_unknown",
+          "checked_bag": "unknown",
+          "hidden_city": "unknown",
+          "self_transfer": "unknown",
+          "price_status": "indicative",
+          "is_estimate": true,
+          "retrieved_at": "2026-11-19 00:00:00+00:00",
+          "repriced_at": null,
+          "link": null,
+          "link_scope": "unavailable",
+          "provider_quote_handle": null,
+          "warnings": [
+            "Public-page shortlist; complete flight inventory is unknown.",
+            "Baggage, fees, hidden-city and self-transfer risk are unconfirmed.",
+            "Fli and swoop both use Google Flights; they are not independent inventories."
+          ],
+          "evidence": {
+            "source_checked_at": "2026-11-19 00:00:00+00:00",
+            "fx_snapshot": null,
+            "fee_completeness": "unknown",
+            "point_of_sale_country": "ID",
+            "attribution": "Google Flights via Fli"
+          }
+        }
+      ],
+      [
+        {
+          "quote_id": "b507d2953c48c4a8ef5a87865d5e2a566a2ecac12a45477023efa34ea5f2bc8c",
+          "itinerary_id": "",
+          "provider_id": "fli",
+          "seller": null,
+          "fare_family": null,
+          "cabin": "economy",
+          "basic_economy": null,
+          "amount_original": {
+            "amount": "1915709",
+            "currency": "IDR"
+          },
+          "comparable_amount": {
+            "amount": "1915709",
+            "currency": "IDR"
+          },
+          "comparison_status": "extra_cost_unknown",
+          "checked_bag": "unknown",
+          "hidden_city": "unknown",
+          "self_transfer": "unknown",
+          "price_status": "indicative",
+          "is_estimate": true,
+          "retrieved_at": "2026-11-19 00:00:00+00:00",
+          "repriced_at": null,
+          "link": null,
+          "link_scope": "unavailable",
+          "provider_quote_handle": null,
+          "warnings": [
+            "Public-page shortlist; complete flight inventory is unknown.",
+            "Baggage, fees, hidden-city and self-transfer risk are unconfirmed.",
+            "Fli and swoop both use Google Flights; they are not independent inventories."
+          ],
+          "evidence": {
+            "source_checked_at": "2026-11-19 00:00:00+00:00",
+            "fx_snapshot": null,
+            "fee_completeness": "unknown",
+            "point_of_sale_country": "ID",
+            "attribution": "Google Flights via Fli"
+          }
+        }
+      ],
+      [
+        {
+          "quote_id": "50152993321f72823c3de3f0f81cb2885ce74b135addc6faf38b5a92b285f052",
+          "itinerary_id": "",
+          "provider_id": "fli",
+          "seller": null,
+          "fare_family": null,
+          "cabin": "economy",
+          "basic_economy": null,
+          "amount_original": {
+            "amount": "1915709",
+            "currency": "IDR"
+          },
+          "comparable_amount": {
+            "amount": "1915709",
+            "currency": "IDR"
+          },
+          "comparison_status": "extra_cost_unknown",
+          "checked_bag": "unknown",
+          "hidden_city": "unknown",
+          "self_transfer": "unknown",
+          "price_status": "indicative",
+          "is_estimate": true,
+          "retrieved_at": "2026-11-19 00:00:00+00:00",
+          "repriced_at": null,
+          "link": null,
+          "link_scope": "unavailable",
+          "provider_quote_handle": null,
+          "warnings": [
+            "Public-page shortlist; complete flight inventory is unknown.",
+            "Baggage, fees, hidden-city and self-transfer risk are unconfirmed.",
+            "Fli and swoop both use Google Flights; they are not independent inventories."
+          ],
+          "evidence": {
+            "source_checked_at": "2026-11-19 00:00:00+00:00",
+            "fx_snapshot": null,
+            "fee_completeness": "unknown",
+            "point_of_sale_country": "ID",
+            "attribution": "Google Flights via Fli"
+          }
+        }
+      ],
+      [
+        {
+          "quote_id": "e3a33c106bb3ca81e03776cb92c71e1090e0c9858e91e841d63a019e5c10aee2",
+          "itinerary_id": "",
+          "provider_id": "fli",
+          "seller": null,
+          "fare_family": null,
+          "cabin": "economy",
+          "basic_economy": null,
+          "amount_original": {
+            "amount": "1915709",
+            "currency": "IDR"
+          },
+          "comparable_amount": {
+            "amount": "1915709",
+            "currency": "IDR"
+          },
+          "comparison_status": "extra_cost_unknown",
+          "checked_bag": "unknown",
+          "hidden_city": "unknown",
+          "self_transfer": "unknown",
+          "price_status": "indicative",
+          "is_estimate": true,
+          "retrieved_at": "2026-11-19 00:00:00+00:00",
+          "repriced_at": null,
+          "link": null,
+          "link_scope": "unavailable",
+          "provider_quote_handle": null,
+          "warnings": [
+            "Public-page shortlist; complete flight inventory is unknown.",
+            "Baggage, fees, hidden-city and self-transfer risk are unconfirmed.",
+            "Fli and swoop both use Google Flights; they are not independent inventories."
+          ],
+          "evidence": {
+            "source_checked_at": "2026-11-19 00:00:00+00:00",
+            "fx_snapshot": null,
+            "fee_completeness": "unknown",
+            "point_of_sale_country": "ID",
+            "attribution": "Google Flights via Fli"
+          }
+        }
+      ],
+      [
+        {
+          "quote_id": "a31de3c6b64d4c268ed1843db928e23fcf2e58e8f3eae38f247faf930d42fc39",
+          "itinerary_id": "",
+          "provider_id": "fli",
+          "seller": null,
+          "fare_family": null,
+          "cabin": "economy",
+          "basic_economy": null,
+          "amount_original": {
+            "amount": "1915709",
+            "currency": "IDR"
+          },
+          "comparable_amount": {
+            "amount": "1915709",
+            "currency": "IDR"
+          },
+          "comparison_status": "extra_cost_unknown",
+          "checked_bag": "unknown",
+          "hidden_city": "unknown",
+          "self_transfer": "unknown",
+          "price_status": "indicative",
+          "is_estimate": true,
+          "retrieved_at": "2026-11-19 00:00:00+00:00",
+          "repriced_at": null,
+          "link": null,
+          "link_scope": "unavailable",
+          "provider_quote_handle": null,
+          "warnings": [
+            "Public-page shortlist; complete flight inventory is unknown.",
+            "Baggage, fees, hidden-city and self-transfer risk are unconfirmed.",
+            "Fli and swoop both use Google Flights; they are not independent inventories."
+          ],
+          "evidence": {
+            "source_checked_at": "2026-11-19 00:00:00+00:00",
+            "fx_snapshot": null,
+            "fee_completeness": "unknown",
+            "point_of_sale_country": "ID",
+            "attribution": "Google Flights via Fli"
+          }
+        }
+      ],
+      [
+        {
+          "quote_id": "87c386bc65ba1613358c9fa4880a28a76a0fad42db3ab1da7db1ec11f9c9bd1b",
+          "itinerary_id": "",
+          "provider_id": "fli",
+          "seller": null,
+          "fare_family": null,
+          "cabin": "economy",
+          "basic_economy": null,
+          "amount_original": {
+            "amount": "1930550",
+            "currency": "IDR"
+          },
+          "comparable_amount": {
+            "amount": "1930550",
+            "currency": "IDR"
+          },
+          "comparison_status": "extra_cost_unknown",
+          "checked_bag": "unknown",
+          "hidden_city": "unknown",
+          "self_transfer": "unknown",
+          "price_status": "indicative",
+          "is_estimate": true,
+          "retrieved_at": "2026-11-19 00:00:00+00:00",
+          "repriced_at": null,
+          "link": null,
+          "link_scope": "unavailable",
+          "provider_quote_handle": null,
+          "warnings": [
+            "Public-page shortlist; complete flight inventory is unknown.",
+            "Baggage, fees, hidden-city and self-transfer risk are unconfirmed.",
+            "Fli and swoop both use Google Flights; they are not independent inventories."
+          ],
+          "evidence": {
+            "source_checked_at": "2026-11-19 00:00:00+00:00",
+            "fx_snapshot": null,
+            "fee_completeness": "unknown",
+            "point_of_sale_country": "ID",
+            "attribution": "Google Flights via Fli"
+          }
+        }
+      ],
+      [
+        {
+          "quote_id": "876f264d0af099c73f5955dcaf0efbaf4fd76ed0663a375c1194c71b4b667ccd",
+          "itinerary_id": "",
+          "provider_id": "fli",
+          "seller": null,
+          "fare_family": null,
+          "cabin": "economy",
+          "basic_economy": null,
+          "amount_original": {
+            "amount": "1946650",
+            "currency": "IDR"
+          },
+          "comparable_amount": {
+            "amount": "1946650",
+            "currency": "IDR"
+          },
+          "comparison_status": "extra_cost_unknown",
+          "checked_bag": "unknown",
+          "hidden_city": "unknown",
+          "self_transfer": "unknown",
+          "price_status": "indicative",
+          "is_estimate": true,
+          "retrieved_at": "2026-11-19 00:00:00+00:00",
+          "repriced_at": null,
+          "link": null,
+          "link_scope": "unavailable",
+          "provider_quote_handle": null,
+          "warnings": [
+            "Public-page shortlist; complete flight inventory is unknown.",
+            "Baggage, fees, hidden-city and self-transfer risk are unconfirmed.",
+            "Fli and swoop both use Google Flights; they are not independent inventories."
+          ],
+          "evidence": {
+            "source_checked_at": "2026-11-19 00:00:00+00:00",
+            "fx_snapshot": null,
+            "fee_completeness": "unknown",
+            "point_of_sale_country": "ID",
+            "attribution": "Google Flights via Fli"
+          }
+        }
+      ],
+      [
+        {
+          "quote_id": "0e414aa9257ffcfe638310772604528de8038c9bd0f2b4339c4c88a4219feb1c",
+          "itinerary_id": "",
+          "provider_id": "fli",
+          "seller": null,
+          "fare_family": null,
+          "cabin": "economy",
+          "basic_economy": null,
+          "amount_original": {
+            "amount": "1946650",
+            "currency": "IDR"
+          },
+          "comparable_amount": {
+            "amount": "1946650",
+            "currency": "IDR"
+          },
+          "comparison_status": "extra_cost_unknown",
+          "checked_bag": "unknown",
+          "hidden_city": "unknown",
+          "self_transfer": "unknown",
+          "price_status": "indicative",
+          "is_estimate": true,
+          "retrieved_at": "2026-11-19 00:00:00+00:00",
+          "repriced_at": null,
+          "link": null,
+          "link_scope": "unavailable",
+          "provider_quote_handle": null,
+          "warnings": [
+            "Public-page shortlist; complete flight inventory is unknown.",
+            "Baggage, fees, hidden-city and self-transfer risk are unconfirmed.",
+            "Fli and swoop both use Google Flights; they are not independent inventories."
+          ],
+          "evidence": {
+            "source_checked_at": "2026-11-19 00:00:00+00:00",
+            "fx_snapshot": null,
+            "fee_completeness": "unknown",
+            "point_of_sale_country": "ID",
+            "attribution": "Google Flights via Fli"
+          }
+        }
+      ],
+      [
+        {
+          "quote_id": "2a828e5f55fac9f9c3ea8d96c0c10a967d28210c2f940836ffee6148cb25f67c",
+          "itinerary_id": "",
+          "provider_id": "fli",
+          "seller": null,
+          "fare_family": null,
+          "cabin": "economy",
+          "basic_economy": null,
+          "amount_original": {
+            "amount": "2018651",
+            "currency": "IDR"
+          },
+          "comparable_amount": {
+            "amount": "2018651",
+            "currency": "IDR"
+          },
+          "comparison_status": "extra_cost_unknown",
+          "checked_bag": "unknown",
+          "hidden_city": "unknown",
+          "self_transfer": "unknown",
+          "price_status": "indicative",
+          "is_estimate": true,
+          "retrieved_at": "2026-11-19 00:00:00+00:00",
+          "repriced_at": null,
+          "link": null,
+          "link_scope": "unavailable",
+          "provider_quote_handle": null,
+          "warnings": [
+            "Public-page shortlist; complete flight inventory is unknown.",
+            "Baggage, fees, hidden-city and self-transfer risk are unconfirmed.",
+            "Fli and swoop both use Google Flights; they are not independent inventories."
+          ],
+          "evidence": {
+            "source_checked_at": "2026-11-19 00:00:00+00:00",
+            "fx_snapshot": null,
+            "fee_completeness": "unknown",
+            "point_of_sale_country": "ID",
+            "attribution": "Google Flights via Fli"
+          }
+        }
+      ],
+      [
+        {
+          "quote_id": "89d394dbb1b99dfd6ea635736848254471e317000733171b4ea8e2ca7c62ecfa",
+          "itinerary_id": "",
+          "provider_id": "fli",
+          "seller": null,
+          "fare_family": null,
+          "cabin": "economy",
+          "basic_economy": null,
+          "amount_original": {
+            "amount": "2031280",
+            "currency": "IDR"
+          },
+          "comparable_amount": {
+            "amount": "2031280",
+            "currency": "IDR"
+          },
+          "comparison_status": "extra_cost_unknown",
+          "checked_bag": "unknown",
+          "hidden_city": "unknown",
+          "self_transfer": "unknown",
+          "price_status": "indicative",
+          "is_estimate": true,
+          "retrieved_at": "2026-11-19 00:00:00+00:00",
+          "repriced_at": null,
+          "link": null,
+          "link_scope": "unavailable",
+          "provider_quote_handle": null,
+          "warnings": [
+            "Public-page shortlist; complete flight inventory is unknown.",
+            "Baggage, fees, hidden-city and self-transfer risk are unconfirmed.",
+            "Fli and swoop both use Google Flights; they are not independent inventories."
+          ],
+          "evidence": {
+            "source_checked_at": "2026-11-19 00:00:00+00:00",
+            "fx_snapshot": null,
+            "fee_completeness": "unknown",
+            "point_of_sale_country": "ID",
+            "attribution": "Google Flights via Fli"
+          }
+        }
+      ],
+      [
+        {
+          "quote_id": "06614712105a2c95c16f731776d27ed33ca53b1fae74f7c681afa04f9e173260",
+          "itinerary_id": "",
+          "provider_id": "fli",
+          "seller": null,
+          "fare_family": null,
+          "cabin": "economy",
+          "basic_economy": null,
+          "amount_original": {
+            "amount": "2031738",
+            "currency": "IDR"
+          },
+          "comparable_amount": {
+            "amount": "2031738",
+            "currency": "IDR"
+          },
+          "comparison_status": "extra_cost_unknown",
+          "checked_bag": "unknown",
+          "hidden_city": "unknown",
+          "self_transfer": "unknown",
+          "price_status": "indicative",
+          "is_estimate": true,
+          "retrieved_at": "2026-11-19 00:00:00+00:00",
+          "repriced_at": null,
+          "link": null,
+          "link_scope": "unavailable",
+          "provider_quote_handle": null,
+          "warnings": [
+            "Public-page shortlist; complete flight inventory is unknown.",
+            "Baggage, fees, hidden-city and self-transfer risk are unconfirmed.",
+            "Fli and swoop both use Google Flights; they are not independent inventories."
+          ],
+          "evidence": {
+            "source_checked_at": "2026-11-19 00:00:00+00:00",
+            "fx_snapshot": null,
+            "fee_completeness": "unknown",
+            "point_of_sale_country": "ID",
+            "attribution": "Google Flights via Fli"
+          }
+        }
+      ],
+      [
+        {
+          "quote_id": "adf4177931b3b22e02e7814ffc9726551e4f769afa85560278aa41160dc6207e",
+          "itinerary_id": "",
+          "provider_id": "fli",
+          "seller": null,
+          "fare_family": null,
+          "cabin": "economy",
+          "basic_economy": null,
+          "amount_original": {
+            "amount": "2031738",
+            "currency": "IDR"
+          },
+          "comparable_amount": {
+            "amount": "2031738",
+            "currency": "IDR"
+          },
+          "comparison_status": "extra_cost_unknown",
+          "checked_bag": "unknown",
+          "hidden_city": "unknown",
+          "self_transfer": "unknown",
+          "price_status": "indicative",
+          "is_estimate": true,
+          "retrieved_at": "2026-11-19 00:00:00+00:00",
+          "repriced_at": null,
+          "link": null,
+          "link_scope": "unavailable",
+          "provider_quote_handle": null,
+          "warnings": [
+            "Public-page shortlist; complete flight inventory is unknown.",
+            "Baggage, fees, hidden-city and self-transfer risk are unconfirmed.",
+            "Fli and swoop both use Google Flights; they are not independent inventories."
+          ],
+          "evidence": {
+            "source_checked_at": "2026-11-19 00:00:00+00:00",
+            "fx_snapshot": null,
+            "fee_completeness": "unknown",
+            "point_of_sale_country": "ID",
+            "attribution": "Google Flights via Fli"
+          }
+        }
+      ],
+      [
+        {
+          "quote_id": "f5a30e16a4080e0a84552719cb4c51d03d235feb7faed602f2094c760fe5a1d7",
+          "itinerary_id": "",
+          "provider_id": "fli",
+          "seller": null,
+          "fare_family": null,
+          "cabin": "economy",
+          "basic_economy": null,
+          "amount_original": {
+            "amount": "2189980",
+            "currency": "IDR"
+          },
+          "comparable_amount": {
+            "amount": "2189980",
+            "currency": "IDR"
+          },
+          "comparison_status": "extra_cost_unknown",
+          "checked_bag": "unknown",
+          "hidden_city": "unknown",
+          "self_transfer": "unknown",
+          "price_status": "indicative",
+          "is_estimate": true,
+          "retrieved_at": "2026-11-19 00:00:00+00:00",
+          "repriced_at": null,
+          "link": null,
+          "link_scope": "unavailable",
+          "provider_quote_handle": null,
+          "warnings": [
+            "Public-page shortlist; complete flight inventory is unknown.",
+            "Baggage, fees, hidden-city and self-transfer risk are unconfirmed.",
+            "Fli and swoop both use Google Flights; they are not independent inventories."
+          ],
+          "evidence": {
+            "source_checked_at": "2026-11-19 00:00:00+00:00",
+            "fx_snapshot": null,
+            "fee_completeness": "unknown",
+            "point_of_sale_country": "ID",
+            "attribution": "Google Flights via Fli"
+          }
+        }
+      ]
+    ],
+    "itinerary_summaries": [],
+    "unpriced_candidate_count": 25,
+    "airport_transfers_by_itinerary_index": [
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      [],
+      []
+    ]
+  }
+}

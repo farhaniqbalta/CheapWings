@@ -147,19 +147,35 @@ fn decimal_text(value: &Value) -> Result<String, SkiplaggedError> {
 /// `aware_iso` for "YYYY-MM-DDTHH:MM[:SS[.f]]±HH:MM|Z": (naive local minute text, seconds since epoch UTC).
 fn zoned(value: &Value) -> Result<(String, i64), SkiplaggedError> {
     let text = value.as_str().ok_or(SchemaChanged)?;
-    let (local, offset_min) = if let Some(base) = text.strip_suffix('Z') {
+    let (local, offset_seconds) = if let Some(base) = text.strip_suffix('Z') {
         (base, 0)
-    } else if text.len() > 6
-        && matches!(text.as_bytes()[text.len() - 6], b'+' | b'-')
-        && text.as_bytes()[text.len() - 3] == b':'
+    } else if let Some(index) = text
+        .get(10..)
+        .and_then(|tail| tail.find(['+', '-']))
+        .map(|i| i + 10)
     {
-        let (base, off) = text.split_at(text.len() - 6);
+        let (base, off) = text.split_at(index);
         let sign = if off.starts_with('-') { -1 } else { 1 };
-        let hours: i64 = off[1..3].parse().map_err(|_| SchemaChanged)?;
-        let mins: i64 = off[4..6].parse().map_err(|_| SchemaChanged)?;
-        (base, sign * (hours * 60 + mins))
+        let whole = off[1..]
+            .split(['.', ','])
+            .next()
+            .unwrap_or_default()
+            .replace(':', "");
+        if !matches!(whole.len(), 2 | 4 | 6) || !whole.bytes().all(|b| b.is_ascii_digit()) {
+            return Err(SchemaChanged);
+        }
+        let part = |i| {
+            whole
+                .get(i..i + 2)
+                .and_then(|part| part.parse::<i64>().ok())
+                .unwrap_or(0)
+        };
+        let seconds = part(0) * 3600 + part(2) * 60 + part(4);
+        if seconds >= 86400 {
+            return Err(SchemaChanged);
+        }
+        (base, sign * seconds)
     } else {
-        // Python parses a naive time fine, then rejects it for having no offset.
         return if naive_parts(text).is_some() {
             Err(MissingSegments)
         } else {
@@ -175,7 +191,7 @@ fn zoned(value: &Value) -> Result<(String, i64), SkiplaggedError> {
     } else {
         0
     };
-    let utc = (days_from_civil(y, mo, d) * 1440 + h * 60 + mi - offset_min) * 60 + sec;
+    let utc = (days_from_civil(y, mo, d) * 1440 + h * 60 + mi) * 60 + sec - offset_seconds;
     Ok((format!("{y:04}-{mo:02}-{d:02}T{h:02}:{mi:02}"), utc))
 }
 
@@ -225,10 +241,14 @@ fn stable_id(id: &Value) -> String {
 /// `urlsplit(link)`: keep only https links whose host is exactly skiplagged.com.
 fn skiplagged_link(value: Option<&Value>) -> Option<String> {
     let link = value?.as_str()?;
-    let rest = link.strip_prefix("https://").or_else(|| {
-        link.get(..8)
+    let cleaned = link
+        .trim_start_matches(|c: char| c <= ' ')
+        .replace(['\t', '\n', '\r'], "");
+    let rest = cleaned.strip_prefix("https://").or_else(|| {
+        cleaned
+            .get(..8)
             .filter(|s| s.eq_ignore_ascii_case("https://"))
-            .map(|_| &link[8..])
+            .map(|_| &cleaned[8..])
     })?;
     let authority = rest.split(['/', '?', '#']).next().unwrap_or("");
     let host = authority
@@ -242,50 +262,90 @@ fn skiplagged_link(value: Option<&Value>) -> Option<String> {
         .then(|| link.to_owned())
 }
 
-/// Lossless card fields for hosts that construct their own itinerary and evidence.
-pub fn web_cards(payload: &Value) -> Result<(&[Value], Option<bool>), SkiplaggedError> {
-    let cards = payload
-        .get("flights")
-        .and_then(Value::as_array)
-        .ok_or(SchemaChanged)?;
-    Ok((cards, completeness(payload)))
+#[derive(Serialize)]
+struct Card<'a> {
+    id: &'a Value,
+    depart: &'a Value,
+    arrive: &'a Value,
+    usd: String,
+    stops: u64,
+    carrier: Option<&'a str>,
+    link: Option<String>,
+    #[serde(skip)]
+    depart_local: String,
+    #[serde(skip)]
+    arrive_local: String,
+    #[serde(skip)]
+    minutes: i64,
 }
 
-/// Extract the web fields without reducing timestamps to local minutes.
-pub fn web_payload(json: &str) -> Result<String, SkiplaggedError> {
+fn cards(payload: &Value) -> Result<&[Value], SkiplaggedError> {
+    payload
+        .get("flights")
+        .and_then(Value::as_array)
+        .map(Vec::as_slice)
+        .ok_or(SchemaChanged)
+}
+
+fn decode_card<'a>(
+    card: &'a Value,
+    origin: &str,
+    destination: &str,
+    date: &str,
+) -> Result<Card<'a>, SkiplaggedError> {
+    let field = |path| card.pointer(path).ok_or(SchemaChanged);
+    let depart = field("/departure/dateTime")?;
+    let arrive = field("/arrival/dateTime")?;
+    let (depart_local, depart_utc) = zoned(depart)?;
+    let (arrive_local, arrive_utc) = zoned(arrive)?;
+    if field("/departure/airport")?.as_str() != Some(origin)
+        || field("/arrival/airport")?.as_str() != Some(destination)
+        || &depart_local[..10] != date
+    {
+        return Err(SchemaChanged);
+    }
+    let usd = decimal_text(field("/price/usdAmount")?)?;
+    let stops = field("/layovers")?
+        .as_number()
+        .filter(|n| !n.to_string().contains(['.', 'e', 'E']))
+        .and_then(|n| n.as_u64())
+        .ok_or(SchemaChanged)?;
+    Ok(Card {
+        id: field("/id")?,
+        depart,
+        arrive,
+        usd,
+        stops,
+        carrier: card
+            .get("airlines")
+            .and_then(Value::as_str)
+            .map(crate::python_strip)
+            .filter(|name| !name.is_empty()),
+        link: skiplagged_link(card.get("deepLink")),
+        depart_local,
+        arrive_local,
+        minutes: (arrive_utc - depart_utc).div_euclid(60),
+    })
+}
+
+pub fn web_payload(
+    json: &str,
+    origin: &str,
+    destination: &str,
+    date: &str,
+) -> Result<String, SkiplaggedError> {
     let payload: Value = serde_json::from_str(json).map_err(|_| SchemaChanged)?;
-    let (cards, _) = web_cards(&payload)?;
-    let cards: Vec<Value> = cards
+    let flights: Vec<Value> = cards(&payload)?
         .iter()
-        .map(|card| {
-            let mut result = serde_json::Map::new();
-            for (key, path) in [
-                ("id", "/id"),
-                ("depart", "/departure/dateTime"),
-                ("arrive", "/arrival/dateTime"),
-                ("origin", "/departure/airport"),
-                ("destination", "/arrival/airport"),
-                ("usd", "/price/usdAmount"),
-                ("stops", "/layovers"),
-                ("link", "/deepLink"),
-            ] {
-                if let Some(value) = card.pointer(path) {
-                    result.insert(key.to_owned(), value.clone());
-                }
-            }
-            let carrier = card
-                .get("airlines")
-                .and_then(Value::as_str)
-                .map(crate::python_strip)
-                .filter(|name| !name.is_empty());
-            result.insert("carrier".into(), serde_json::json!(carrier));
-            Value::Object(result)
+        .map(|card| match decode_card(card, origin, destination, date) {
+            Ok(record) => serde_json::json!(record),
+            Err(err) => serde_json::json!({"error": err.code()}),
         })
         .collect();
     Ok(serde_json::json!({
-        "flights": cards,
+        "flights": flights,
         "pricing": payload.get("pricing").cloned().unwrap_or_else(|| serde_json::json!({})),
-        "pagination": payload.get("pagination").cloned().unwrap_or_else(|| serde_json::json!({})),
+        "complete": completeness(&payload),
     })
     .to_string())
 }
@@ -306,37 +366,12 @@ pub fn skiplagged_parse(
     display_currency: &str,
 ) -> Result<SkiplaggedPage, SkiplaggedError> {
     let payload: Value = serde_json::from_str(json).map_err(|_| SchemaChanged)?;
-    let (cards, complete) = web_cards(&payload)?;
+    let complete = completeness(&payload);
     let pricing = payload.get("pricing");
     let mut offers = Vec::new();
-    for card in cards {
-        let (depart_local, depart_utc) = zoned(
-            card.get("departure")
-                .and_then(|d| d.get("dateTime"))
-                .ok_or(SchemaChanged)?,
-        )?;
-        let (arrive_local, arrive_utc) = zoned(
-            card.get("arrival")
-                .and_then(|a| a.get("dateTime"))
-                .ok_or(SchemaChanged)?,
-        )?;
-        let airport = |side: &str| {
-            card.get(side)
-                .and_then(|s| s.get("airport"))
-                .and_then(Value::as_str)
-        };
-        if airport("departure") != Some(origin)
-            || airport("arrival") != Some(destination)
-            || &depart_local[..10] != date
-        {
-            return Err(SchemaChanged);
-        }
-        let usd = decimal_text(
-            card.get("price")
-                .ok_or(SchemaChanged)?
-                .get("usdAmount")
-                .ok_or(SchemaChanged)?,
-        )?;
+    for card in cards(&payload)? {
+        let card = decode_card(card, origin, destination, date)?;
+        let usd = card.usd;
         let (comparable, fx) = if display_currency == "USD" {
             (Some(usd.clone()), None)
         } else {
@@ -367,36 +402,22 @@ pub fn skiplagged_parse(
                 _ => (None, None),
             }
         };
-        let stops = match card.get("layovers") {
-            Some(Value::Number(n)) if n.is_u64() && !n.to_string().contains(['.', 'e', 'E']) => {
-                n.as_u64().unwrap() as u32
-            }
-            _ => return Err(SchemaChanged),
-        };
-        let carriers = card
-            .get("airlines")
-            .and_then(Value::as_str)
-            .map(str::trim)
-            .filter(|s| !s.is_empty())
-            .map(|s| vec![s.to_owned()])
-            .unwrap_or_default();
         offers.push(SourceOffer {
             provider: "skiplagged".into(),
-            id: stable_id(card.get("id").ok_or(SchemaChanged)?),
+            id: stable_id(card.id),
             origin: origin.into(),
             destination: destination.into(),
-            depart_local,
-            arrive_local,
-            // Python: int((arrive - depart).total_seconds() // 60).
-            minutes: Some((arrive_utc - depart_utc).div_euclid(60)),
-            stops,
-            carriers,
+            depart_local: card.depart_local,
+            arrive_local: card.arrive_local,
+            minutes: Some(card.minutes),
+            stops: card.stops as u32,
+            carriers: card.carrier.into_iter().map(str::to_owned).collect(),
             legs: Vec::new(),
             price_original: usd,
             currency_original: "USD".into(),
             price_comparable: comparable,
             fx,
-            link: skiplagged_link(card.get("deepLink")),
+            link: card.link,
             hidden_city: "no".into(),
         });
     }

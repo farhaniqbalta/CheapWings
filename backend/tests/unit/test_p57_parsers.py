@@ -90,7 +90,7 @@ def outcome(provider, payload, q):
     ],
 )
 def test_fli_complete_result_parity(mutation):
-    pytest.importorskip("fli")
+    require_fli()
     payload = fli_payload()
     row = payload["data"][2][0][0]
     leg = row[0][2][0]
@@ -151,6 +151,8 @@ def test_fli_complete_result_parity(mutation):
         "normal",
         "fractional",
         "offset",
+        "compact_offset",
+        "offset_seconds",
         "negative",
         "string_price",
         "wrong_route",
@@ -176,6 +178,10 @@ def test_skiplagged_complete_result_parity(mutation):
         card["arrival"]["dateTime"] = "2026-12-16T12:00:00.000001+08:00"
     if mutation == "offset":
         card["departure"]["dateTime"] = "2026-12-16T07:00:00+05:45"
+    if mutation == "compact_offset":
+        card["departure"]["dateTime"] = "2026-12-16T07:00:00+0545"
+    if mutation == "offset_seconds":
+        card["departure"]["dateTime"] = "2026-12-16T07:00:00+05:45:30.25"
     if mutation == "negative":
         card["price"]["usdAmount"] = -1
     if mutation == "string_price":
@@ -206,3 +212,42 @@ def test_skiplagged_complete_result_parity(mutation):
         assert outcome(SkiplaggedProvider(), payload, q) == outcome(
             ReferenceSkiplagged(), payload, q
         )
+
+
+def require_fli():
+    try:
+        from fli.search import _decoders
+    except ImportError:
+        pytest.fail('Fli parity requires pip install -e "backend[live]"', pytrace=False)
+    assert callable(_decoders.parse_flight_row)
+
+
+def test_recorded_fli_page():
+    require_fli()
+    import json
+
+    path = Path(__file__).resolve().parents[3] / "contracts/fixtures/provider/fli_recorded_ds1.json"
+    fixture = json.loads(path.read_text())
+    payload = {"data": json_payload(fixture["data_json"])}
+    q = SingleDateRouteQuery(
+        fixture["origin"],
+        fixture["destination"],
+        date.fromisoformat(fixture["date"]),
+        True,
+        False,
+        fixture["currency"],
+    )
+    providers = [FliProvider(), ReferenceFli()]
+    try:
+        with (
+            patch("cheapwings.providers.fli.datetime", Clock),
+            patch("backend.tests.references.fli.datetime", Clock),
+        ):
+            for provider in providers:
+                normalized = json.loads(
+                    json.dumps(asdict(provider.normalize(payload, q)), default=str)
+                )
+                assert normalized == fixture["web"]
+    finally:
+        for provider in providers:
+            provider.blocking.close()

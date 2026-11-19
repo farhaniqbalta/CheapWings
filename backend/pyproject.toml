@@ -39,3 +39,4 @@ target-version = "py312"
 
 [tool.setuptools.package-data]
 "cheapwings.locations" = ["catalog.json", "LICENSE.txt"]
+"cheapwings.providers" = ["fli_codes.json"]

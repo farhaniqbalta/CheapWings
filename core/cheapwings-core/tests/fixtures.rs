@@ -693,3 +693,20 @@ fn skiplagged_tool_payload_prefers_exact_structured_content() {
         "schema_changed"
     );
 }
+
+#[test]
+fn recorded_fli_page_matches_reference() {
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../contracts/fixtures/provider/fli_recorded_ds1.json"
+    ))
+    .unwrap();
+    let html = format!(
+        "AF_initDataCallback({{key: 'ds:1',data:{}, sideChannel: {{}}}});",
+        fixture["data_json"].as_str().unwrap()
+    );
+    let page = decode_page(&html).unwrap();
+    assert_eq!(
+        serde_json::json!({"offers":page.offers,"unpriced":page.unpriced}),
+        fixture["ipad"]
+    );
+}

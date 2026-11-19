@@ -18,6 +18,7 @@ _REQUIRED = (
     "fx_convert",
     "BUILD_REVISION",
     "fli_parse",
+    "fli_extract_ds1",
     "skiplagged_parse",
 )
 

@@ -1,1 +1,1 @@
-let expectedCoreRevision = "c30021e456d6efcdd69155627b53eff523adf9b2d06273a1f2dc22968e76fee3"
+let expectedCoreRevision = "7c03522694e5d0f51903654719827f984841e96d4ad7e8087c69919f96c6bee7"

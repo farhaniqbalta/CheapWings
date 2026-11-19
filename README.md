@@ -47,6 +47,19 @@ The API does not execute provider work. Both commands reject missing/outdated
 migrations; neither silently creates tables. Use a local disk database, not a
 network filesystem. Relative database URLs resolve from the working directory.
 
+### P5.7 parser parity gate
+
+Run from the repository root with the backend environment active. The Fli
+parity tests require the pinned SDK as their independent reference. They
+fail if it is missing. The tests read saved fixtures and make no live requests.
+
+```sh
+pip install -e "backend[live]"
+sh core/update-expected-revision.sh
+maturin develop --release -m core/cheapwings-py/Cargo.toml
+python -m pytest backend/tests/unit/test_p57_parsers.py -ra
+```
+
 ### Shared core revision
 
 Both bindings embed a deterministic SHA-256 revision over sorted Rust source

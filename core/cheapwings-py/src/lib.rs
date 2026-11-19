@@ -215,13 +215,26 @@ impl LocationCatalog {
 }
 
 #[pyfunction]
-fn skiplagged_parse(payload: &str) -> PyResult<String> {
-    engine::skiplagged::web_payload(payload).map_err(|error| PyValueError::new_err(error.code()))
+fn skiplagged_parse(
+    payload: &str,
+    origin: &str,
+    destination: &str,
+    date: &str,
+) -> PyResult<String> {
+    engine::skiplagged::web_payload(payload, origin, destination, date)
+        .map_err(|error| PyValueError::new_err(error.code()))
 }
 
 #[pyfunction]
 fn fli_parse(payload: &str) -> PyResult<String> {
     engine::fli::web_payload(payload).map_err(|error| PyValueError::new_err(error.code()))
+}
+
+#[pyfunction]
+fn fli_extract_ds1(html: &str) -> PyResult<String> {
+    engine::fli::extract_ds1(html)
+        .map(|data| data.to_string())
+        .ok_or_else(|| PyValueError::new_err("schema_changed"))
 }
 
 #[pymodule]
@@ -238,6 +251,7 @@ fn cheapwings_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(plan_scope, m)?)?;
     m.add_class::<LocationCatalog>()?;
     m.add_function(wrap_pyfunction!(fli_parse, m)?)?;
+    m.add_function(wrap_pyfunction!(fli_extract_ds1, m)?)?;
     m.add_function(wrap_pyfunction!(skiplagged_parse, m)?)?;
     Ok(())
 }

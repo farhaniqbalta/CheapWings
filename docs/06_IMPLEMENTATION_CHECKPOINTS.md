@@ -100,7 +100,7 @@ Each phase needs a short current checkpoint (at most five lines) and evidence po
 > client below ([P5.05](log/p5.05.md), [P5.06](log/p5.06.md)). Delivered in checkpoints P5.1
 > (Rust core), P5.2 (iPad shell), P5.3 (persistence/resume), P5.5 (feature parity), P5.6 (polish
 > and design), P5.8 (parallel Fli pacing, provider-ready engine, app icon), P5.4 (Skiplagged).
-> Remaining: P5.7 (web backend onto the Rust core; approved six-checkpoint migration). Status lives in `WORK_LOG.md`; the task
+> Remaining: P5.7 (web backend onto the Rust core; approved three-checkpoint migration). Status lives in `WORK_LOG.md`; the task
 > list below is the original design.
 
 **Tasks**
@@ -116,8 +116,8 @@ Each phase needs a short current checkpoint (at most five lines) and evidence po
 
 Approved [design, checklist and completion gates](log/p5.7-plan.md); execution
 evidence in [P5.7](log/p5.7.md). One PR per checkpoint, owner-controlled merges:
-documentation → engine/PyO3 → Fli/Skiplagged → OctoTrip/swoop → web scheduling
-policy → iPad scheduling and close. No database migration, runtime migration
+documentation → engine/PyO3 → Fli/Skiplagged and close. OctoTrip/swoop parsing
+and scheduler migration are deferred. No database migration, runtime migration
 flags, new provider defaults, or P6/P7 product work.
 
 ## P6 — Release and owner acceptance

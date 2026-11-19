@@ -30,7 +30,7 @@ their original sessions; they are not current instructions or deployment state.
 | [P5.8 iPad parallel Fli pacing](p5.8.md) | Start-to-start pacing (0.25 s, up to 6 open) with in-order release, provider-neutral runner for later providers, app icon. [Plan](p5.8-plan.md) |
 | [P5.4 Skiplagged on iPad](p5.4.md) | Rust Skiplagged parser, Swift MCP client, one lane per source with retry-after, store v2 per-provider work items, Resume per source, Sources switches. [Plan](p5.4-plan.md) |
 
-| [P5.7 web onto Rust](p5.7.md) | Approved six-checkpoint migration, merge verification, execution and parity gates. [Plan](p5.7-plan.md) |
+| [P5.7 web onto Rust](p5.7.md) | Approved three-checkpoint migration, merge verification, execution and parity gates. [Plan](p5.7-plan.md) |
 
 ## Reporting convention
 

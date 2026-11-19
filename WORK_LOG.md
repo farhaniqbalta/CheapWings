@@ -9,7 +9,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 
 ## Project basics
 - Repo `farhaniqbalta/CheapWings`, P5.7 baseline `main` at `bc4f5b2`, personal single-owner use. Python 3.12 backend (`backend/src/cheapwings`), React web (`apps/web`), SQLite + Alembic. Native iPad (P5): Xcode 27.1 + Rust 1.100 installed; free Personal Team signing (3-app device limit).
-- Owner merges PRs; never merge automatically. Publish checkpoint PRs when authorized by the task. Confirm before toolchain installs or live provider probes.
+- Owner merges PRs; never merge/push automatically. Confirm before toolchain installs or live provider probes.
 - Baseline/environment history: [baseline-and-old-summary](docs/log/baseline-and-old-summary.md).
 
 ## Phase tracker
@@ -52,7 +52,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 
 ## Latest checkpoint
 - P5.7 checkpoint 1: verified GitHub merges for P4.13 (#8, `984cfd2`) and P5.4 (#19, `bc4f5b2`); preserve completed iPad milestones.
-- Approved migration: six checkpoint PRs, engine/parsers/scheduling in Rust; networking, storage transactions and lifecycle remain native.
+- Approved migration: three checkpoint PRs covering docs, engine rules and Fli/Skiplagged parsing. OctoTrip/swoop parsing and scheduler migration are deferred.
 - Corrected current architecture/setup descriptions; historical thin-client design remains labeled.
 - Plan, gates and execution evidence: [P5.7 plan](docs/log/p5.7-plan.md), [P5.7 execution](docs/log/p5.7.md).
 

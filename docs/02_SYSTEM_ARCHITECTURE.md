@@ -5,7 +5,7 @@
 - Backend: **Python 3.12+**, **FastAPI**, Pydantic v2, Uvicorn, `httpx`, official Python MCP client SDK if compatible, SQLite, SQLAlchemy 2, Alembic; `pytest`, pytest-asyncio, Ruff, static typing.
 - Web: **React + TypeScript + Vite**, accessible responsive CSS. Consume OpenAPI schema or generated TS types; no browser-side provider secrets/requests.
 - iOS: **SwiftUI + URLSession**, genuinely native UI, structured concurrency, native date selection. *Current (owner decision P5.05/P5.06): standalone — the iPad runs the search itself (`apps/ios/CheapWingsKit`: provider-neutral `PacedRunner`, `FliSearchProvider`, `SkiplaggedSearchProvider`) over the shared Rust core via UniFFI, with its own SQLite store; no backend contract on iOS.*
-- Shared core (since P5.1): **Rust** `core/` — `cheapwings-core` (money, fingerprint, ranking, Fli decoder, Skiplagged parser, planning, locations), `cheapwings-store` (SQLite, iPad), `cheapwings-ffi` (UniFFI → Swift), `cheapwings-py` (PyO3 → web backend). `cheapwings-core` is pure logic; `cheapwings-store` owns iPad SQLite persistence. No Rust networking or UI. The web currently uses only the money bindings; P5.7 migrates the remaining calculations and parsing.
+- Shared core (since P5.1): **Rust** `core/` — `cheapwings-core` (money, fingerprint, ranking, Fli decoder, Skiplagged parser, planning, locations), `cheapwings-store` (SQLite, iPad), `cheapwings-ffi` (UniFFI → Swift), `cheapwings-py` (PyO3 → web backend). `cheapwings-core` is pure logic; `cheapwings-store` owns iPad SQLite persistence. No Rust networking or UI. The web currently uses only the money bindings; P5.7 migrates shared engine calculations and Fli/Skiplagged parsing.
 - Blocking providers (e.g., `swoop`) isolated in a **bounded** executor / `asyncio.to_thread` with concurrency, timeout and cancellation semantics documented; avoid freezing event loop.
 - SQLite + one dedicated scheduler owner for personal deployment. No Redis, Celery, Kafka, Rust services, or microservices before measured need.
 
@@ -23,11 +23,10 @@ SwiftUI iPad → Swift provider lanes / ordered release → URLSession HTTP / MC
                         ↕ Rust SQLite store
 ```
 
-P5.7 shares pure scheduling decisions, with explicit web and iPad profiles.
-Python retains transactions, claims, leases and fencing; Swift retains task groups,
-ordered buffering and foreground pause/resume. Rust receives caller-supplied signed
-integer microseconds (monotonic and epoch kept distinct), never reads clocks or
-starts work. [Approved migration and gates](log/p5.7-plan.md).
+Python retains web scheduling, transactions, claims, leases and fencing. Swift
+retains iPad provider lanes, task groups, ordered buffering and foreground
+pause/resume. P5.7 shares engine rules and Fli/Skiplagged parsing.
+[Approved migration and gates](log/p5.7-plan.md).
 
 ### Dependency rule
 

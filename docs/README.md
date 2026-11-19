@@ -54,7 +54,7 @@ Build a small, trustworthy service that finds the **cheapest eligible one-way fl
 ```text
 React web → REST /api/v1 → Python API + worker → Python provider transports
                                 ↕ SQLite
-                                ↕ PyO3 (money today; engine/parsers/policy in P5.7)
+                                ↕ PyO3 (money today; engine and Fli/Skiplagged parsers in P5.7)
                          Shared Rust core
                                 ↕ UniFFI
 Standalone SwiftUI iPad → Swift provider lanes → Fli + Skiplagged transports
@@ -62,8 +62,7 @@ Standalone SwiftUI iPad → Swift provider lanes → Fli + Skiplagged transports
 ```
 
 Python and Swift retain networking, execution and lifecycle. Rust owns portable
-calculations and parsing; P5.7 adds pure scheduling policy with separate web/iPad
-profiles. See the [approved checkpoints and gates](log/p5.7-plan.md).
+calculations and parsing. Web and iPad keep their native scheduling policies. See the [approved checkpoints and gates](log/p5.7-plan.md).
 
 ## Final delivery expected
 

@@ -89,7 +89,7 @@ struct ResultsView: View {
             if !session.failures.isEmpty {
                 Section("Days that could not be searched") {
                     ForEach(Array(session.failures.enumerated()), id: \.offset) { _, failure in
-                        Text("\(Sources.name(failure.provider)): \(failure.routeDate.origin) to \(failure.routeDate.destination), \(Self.day(failure.routeDate.date)): \(failure.code)")
+                        Text("\(Sources.name(failure.provider)): \(failure.routeDate.origin) to \(failure.routeDate.destination), \(Self.day(failure.routeDate.date)): \(Self.failureMessage(failure.code))")
                             .font(.footnote).foregroundStyle(.secondary)
                     }
                 }
@@ -129,6 +129,23 @@ struct ResultsView: View {
         case .searchesFailed(let count):
             Label("No results: \(count) searches failed. Check the connection and see the list below.",
                   systemImage: "wifi.exclamationmark").foregroundStyle(Theme.hold)
+        }
+    }
+
+    private static func failureMessage(_ code: String) -> String {
+        switch code {
+        case "network":
+            return "Could not reach the provider."
+        case "http_rate_limited", "http_429":
+            return "The provider is limiting requests. Try again later."
+        case "partial_payload":
+            return "The provider response was incomplete."
+        case "schema_changed", "decode", "invalid_price", "missing_segments":
+            return "The provider response could not be read."
+        case let code where code.hasPrefix("cross_check:"):
+            return "The provider response did not match the search."
+        default:
+            return "The provider could not complete this search."
         }
     }
 

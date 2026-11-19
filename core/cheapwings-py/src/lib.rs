@@ -214,6 +214,16 @@ impl LocationCatalog {
     }
 }
 
+#[pyfunction]
+fn skiplagged_parse(payload: &str) -> PyResult<String> {
+    engine::skiplagged::web_payload(payload).map_err(|error| PyValueError::new_err(error.code()))
+}
+
+#[pyfunction]
+fn fli_parse(payload: &str) -> PyResult<String> {
+    engine::fli::web_payload(payload).map_err(|error| PyValueError::new_err(error.code()))
+}
+
 #[pymodule]
 fn cheapwings_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("BUILD_REVISION", engine::BUILD_REVISION)?;
@@ -227,5 +237,7 @@ fn cheapwings_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(plan_search, m)?)?;
     m.add_function(wrap_pyfunction!(plan_scope, m)?)?;
     m.add_class::<LocationCatalog>()?;
+    m.add_function(wrap_pyfunction!(fli_parse, m)?)?;
+    m.add_function(wrap_pyfunction!(skiplagged_parse, m)?)?;
     Ok(())
 }

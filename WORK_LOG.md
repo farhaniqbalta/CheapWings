@@ -38,7 +38,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | P5.6 iPad polish | Done; [PR #16](https://github.com/farhaniqbalta/CheapWings/pull/16) merged `addc272` | [P5.6](docs/log/p5.6.md), [plan](docs/log/p5.6-plan.md) |
 | P5.8 iPad parallel Fli pacing | Done; [PR #17](https://github.com/farhaniqbalta/CheapWings/pull/17) merged `69f6417` | [P5.8](docs/log/p5.8.md), [plan](docs/log/p5.8-plan.md) |
 | P5.4 Skiplagged on iPad | Done; [PR #19](https://github.com/farhaniqbalta/CheapWings/pull/19) merged `bc4f5b2`; owner device checks passed. OctoTrip on iPad deferred until further notice (owner 2026-11-14) | [P5.4](docs/log/p5.4.md), [plan](docs/log/p5.4-plan.md) |
-| P5.7 Web backend onto the Rust core | In progress; checkpoint 2 shares engine rules through PyO3 | [Plan](docs/log/p5.7-plan.md), [execution](docs/log/p5.7.md) |
+| P5.7 Web backend onto the Rust core | Checkpoint 3 ready for owner review | [Plan](docs/log/p5.7-plan.md), [execution](docs/log/p5.7.md) |
 | P6 Release acceptance | Not started | |
 | P7 Discover (Explore Anywhere / Surprise Me) | **Proposed / Not started** — separate feature beside Search (user chooses); awaits owner approval to start | [P7 plan](docs/06_IMPLEMENTATION_CHECKPOINTS.md#p7--explore-anywhere-proposed--not-started), [spec](docs/01_PRODUCT_REQUIREMENTS_UX.md#proposed-feature-explore-anywhere-and-surprise-me-p7--proposed--not-started) |
 
@@ -51,13 +51,13 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | Fli | Owner-requested personal-use integration (2026-11-12) | Google Flights public page; indicative quotes/search links; basic-economy exclusion unsupported; same inventory as swoop. |
 
 ## Latest checkpoint
-- P5.7 checkpoint 1: verified GitHub merges for P4.13 (#8, `984cfd2`) and P5.4 (#19, `bc4f5b2`); preserve completed iPad milestones.
-- Approved migration: three checkpoint PRs covering docs, engine rules and Fli/Skiplagged parsing. OctoTrip/swoop parsing and scheduler migration are deferred.
-- Corrected current architecture/setup descriptions; historical thin-client design remains labeled.
-- Plan, gates and execution evidence: [P5.7 plan](docs/log/p5.7-plan.md), [P5.7 execution](docs/log/p5.7.md).
+- P5.7 checkpoints 1 and 2 merged. Checkpoint 3 connects web Fli and Skiplagged decoding to Rust through PyO3.
+- Frozen provider references preserve full results and errors. Web Fli rejects mismatched currencies across the entire page. iPad filters candidates.
+- Both host bindings were rebuilt and verified. [P5.7 evidence](docs/log/p5.7.md#offline-verification).
+- OctoTrip/swoop parsing and scheduler migration remain deferred.
 
 ## Next task
-P5.7 checkpoint 3: connect Fli and Skiplagged parsers, verify both bindings, and close P5.7. Owner reviews and merges every checkpoint PR. P6/P7 remain separate.
+Owner reviews and merges the checkpoint 3 PR to close P5.7. P6 release acceptance and the proposed P7 Discover work remain separate.
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

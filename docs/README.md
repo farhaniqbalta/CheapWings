@@ -54,7 +54,7 @@ Build a small, trustworthy service that finds the **cheapest eligible one-way fl
 ```text
 React web → REST /api/v1 → Python API + worker → Python provider transports
                                 ↕ SQLite
-                                ↕ PyO3 (money and engine; Fli/Skiplagged parsers in checkpoint 3)
+                                ↕ PyO3 (money, engine and Fli/Skiplagged parsers)
                          Shared Rust core
                                 ↕ UniFFI
 Standalone SwiftUI iPad → Swift provider lanes → Fli + Skiplagged transports

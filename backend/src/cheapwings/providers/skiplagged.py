@@ -4,13 +4,21 @@ from datetime import UTC, datetime
 from typing import ClassVar
 from urllib.parse import urlsplit
 
+from cheapwings._core import core as _core
 from cheapwings.domain.coverage import WorkStatus
 from cheapwings.domain.evidence import ProviderFailure, SourceEvidence
 from cheapwings.domain.itinerary import ItinerarySummary
 from cheapwings.domain.money import FXSnapshot
 from cheapwings.domain.offer import ComparisonStatus, LinkScope, Offer, PriceStatus, ThreeValued
 from cheapwings.providers.base import ProviderCapabilities, ProviderSearchResult
-from cheapwings.providers.common import aware_iso, decimal_value, json_payload, money, stable_id
+from cheapwings.providers.common import (
+    aware_iso,
+    decimal_value,
+    exact_payload_json,
+    json_payload,
+    money,
+    stable_id,
+)
 
 ENDPOINT = "https://mcp.skiplagged.com/mcp"
 
@@ -92,6 +100,10 @@ class SkiplaggedProvider:
             raise ProviderFailure("schema_changed") from None
 
     def normalize(self, payload, query):
+        try:
+            payload = json_payload(_core.skiplagged_parse(exact_payload_json(payload)))
+        except ValueError:
+            raise ProviderFailure("schema_changed") from None
         now = datetime.now(UTC)
         cards = payload["flights"]
         if not isinstance(cards, list):
@@ -99,15 +111,15 @@ class SkiplaggedProvider:
         pricing = payload.get("pricing", {})
         itineraries, offers, summaries = [], [], []
         for card in cards:
-            depart = aware_iso(card["departure"]["dateTime"])
-            arrive = aware_iso(card["arrival"]["dateTime"])
+            depart = aware_iso(card["depart"])
+            arrive = aware_iso(card["arrive"])
             if (
-                card["departure"]["airport"] != query.origin
-                or card["arrival"]["airport"] != query.destination
+                card["origin"] != query.origin
+                or card["destination"] != query.destination
                 or depart.date() != query.departure_date
             ):
                 raise ProviderFailure("schema_changed")
-            original = money(card["price"]["usdAmount"], "USD")
+            original = money(card["usd"], "USD")
             fx = None
             if query.display_currency == "USD":
                 compared = original
@@ -124,7 +136,7 @@ class SkiplaggedProvider:
                 compared = None
             # No per-segment operating carrier exists, including nonstop cards. Preserve
             # observed route/times/stops as summary, never force a cross-source fingerprint.
-            stops = card["layovers"]
+            stops = card["stops"]
             if type(stops) is not int or stops < 0:
                 raise ProviderFailure("schema_changed")
             duration = int((arrive - depart).total_seconds() // 60)
@@ -136,11 +148,9 @@ class SkiplaggedProvider:
                 duration,
                 stops,
                 ("Full segment identity unavailable.",),
-                carrier_names=(card["airlines"].strip(),)
-                if isinstance(card.get("airlines"), str) and card["airlines"].strip()
-                else (),
+                carrier_names=(card["carrier"],) if card["carrier"] else (),
             )
-            link = card.get("deepLink")
+            link = card.get("link")
             parsed = urlsplit(link or "")
             if parsed.scheme != "https" or parsed.hostname != "skiplagged.com":
                 link = None

@@ -1,11 +1,10 @@
 """Fli public-page adapter: bounded blocking I/O, exact prices, no fare verification.
 
-Pinned Fli builders/row decoder are used without global patches. Its generic
-retry/client layer is replaced by one synchronous request path so the durable
+The pinned Fli SDK builds requests. Rust decodes result rows.
+The synchronous request path lets the durable
 worker owns retries and physical capacity until the network call truly ends.
 """
 
-import copy
 import logging
 import re
 import threading
@@ -14,13 +13,14 @@ from time import monotonic
 from typing import ClassVar
 from urllib.parse import urljoin, urlsplit
 
+from cheapwings._core import core as _core
 from cheapwings.domain.coverage import WorkStatus
 from cheapwings.domain.evidence import ProviderFailure, SourceEvidence
 from cheapwings.domain.itinerary import airport_transfers
 from cheapwings.domain.offer import ComparisonStatus, LinkScope, Offer, PriceStatus, ThreeValued
 from cheapwings.domain.segments import FlightSegment
 from cheapwings.providers.base import ProviderCapabilities, ProviderSearchResult
-from cheapwings.providers.common import json_payload, money, stable_id
+from cheapwings.providers.common import exact_payload_json, json_payload, money, stable_id
 from cheapwings.providers.rate_limit import retry_after
 from cheapwings.providers.swoop import BoundedCall, airport_zone, local_instant
 
@@ -176,6 +176,35 @@ class FliProvider:
         except (KeyError, ValueError, TypeError, IndexError, AttributeError):
             raise ProviderFailure("schema_changed") from None
 
+    @staticmethod
+    def _flight(record):
+        from fli.models import Airline, Airport, FlightLeg, FlightResult
+
+        def airline(code):
+            if code and code[0].isdigit():
+                code = "_" + code
+            return Airline.__members__.get(code)
+
+        legs = [
+            FlightLeg(
+                airline=airline(leg["airline"]),
+                operating_airline=airline(leg["operator"]),
+                flight_number=leg["flight_number"],
+                departure_airport=Airport[leg["origin"]],
+                arrival_airport=Airport[leg["destination"]],
+                departure_datetime=datetime(*(value or 0 for value in leg["depart"])),
+                arrival_datetime=datetime(*(value or 0 for value in leg["arrive"])),
+                duration=leg["duration"],
+            )
+            for leg in record["legs"]
+        ]
+        return FlightResult(
+            legs=legs,
+            duration=record["duration"],
+            currency=record["currency"],
+            stops=max(0, len(legs) - 1),
+        )
+
     def _segments(self, flight):
         result = []
         for i, leg in enumerate(flight.legs):
@@ -218,44 +247,20 @@ class FliProvider:
         return tuple(result)
 
     def normalize(self, payload, query):
-        from fli.search._decoders import parse_flight_row
-
-        data = payload["data"]
-        if not isinstance(data, list) or len(data) < 4:
-            raise ProviderFailure("schema_changed")
-        rows = []
-        saw_group = False
-        for index in (2, 3):
-            group = data[index]
-            if group is None:
-                continue
-            if not isinstance(group, list) or not group or not isinstance(group[0], list):
-                raise ProviderFailure("schema_changed")
-            saw_group = True
-            rows.extend(group[0])
-        if len(rows) > 500:
-            raise ProviderFailure("partial_payload")
-        if not saw_group:
-            raise ProviderFailure("schema_changed")
+        try:
+            page = json_payload(_core.fli_parse(exact_payload_json(payload["data"])))
+        except ValueError as exc:
+            raise ProviderFailure(str(exc)) from None
         now = datetime.now(UTC)
         itineraries, offers, transfers = [], [], []
-        unpriced = 0
-        for row in rows:
-            head = row[1][0]
-            if not isinstance(head, list):
+        unpriced = page["unpriced"]
+        for record in page["offers"]:
+            if record is None:
                 raise ProviderFailure("schema_changed")
-            if not head:
-                unpriced += 1
-                continue
-            amount = head[-1]
-            # Decode identity/currency with the SDK, using a constant price
-            # placeholder. The real monetary value never enters float math.
-            identity_row = copy.deepcopy(row)
-            identity_row[1][0][-1] = 0
-            flight = parse_flight_row(identity_row)
+            flight = self._flight(record)
             if flight.currency != query.display_currency:
                 raise ProviderFailure("invalid_currency")
-            original = money(amount, flight.currency)
+            original = money(record["price"], flight.currency)
             if original.amount <= 0:
                 raise ProviderFailure("invalid_price")
             if (

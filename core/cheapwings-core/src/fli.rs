@@ -179,34 +179,7 @@ pub fn decode_page(html: &str) -> Result<FliPage, FliError> {
         return Err(FliError::AuthDenied);
     }
     let payload = extract_ds1(html).ok_or_else(|| schema("no ds:1 payload"))?;
-    let data = payload
-        .as_array()
-        .filter(|d| d.len() >= 4)
-        .ok_or_else(|| schema("payload shape"))?;
-
-    let mut rows: Vec<&Value> = Vec::new();
-    let mut saw_group = false;
-    for group in &data[2..4] {
-        match group {
-            Value::Null => continue,
-            Value::Array(g) => {
-                let first = g
-                    .first()
-                    .and_then(Value::as_array)
-                    .ok_or_else(|| schema("row group"))?;
-                saw_group = true;
-                rows.extend(first);
-            }
-            _ => return Err(schema("row group")),
-        }
-    }
-    if rows.len() > MAX_ROWS {
-        return Err(FliError::PartialPayload);
-    }
-    if !saw_group {
-        return Err(schema("no row groups"));
-    }
-
+    let rows = page_rows(&payload)?;
     let mut offers = Vec::new();
     let mut unpriced = 0;
     for row in rows {
@@ -247,6 +220,119 @@ pub fn decode_page(html: &str) -> Result<FliPage, FliError> {
         });
     }
     Ok(FliPage { offers, unpriced })
+}
+
+fn page_rows(payload: &Value) -> Result<Vec<&Value>, FliError> {
+    let data = payload
+        .as_array()
+        .filter(|d| d.len() >= 4)
+        .ok_or_else(|| schema("payload shape"))?;
+
+    let mut rows: Vec<&Value> = Vec::new();
+    let mut saw_group = false;
+    for group in &data[2..4] {
+        match group {
+            Value::Null => continue,
+            Value::Array(g) => {
+                let first = g
+                    .first()
+                    .and_then(Value::as_array)
+                    .ok_or_else(|| schema("row group"))?;
+                saw_group = true;
+                rows.extend(first);
+            }
+            _ => return Err(schema("row group")),
+        }
+    }
+    if rows.len() > MAX_ROWS {
+        return Err(FliError::PartialPayload);
+    }
+    if !saw_group {
+        return Err(schema("no row groups"));
+    }
+
+    Ok(rows)
+}
+
+#[derive(Serialize)]
+struct WebLeg {
+    origin: String,
+    destination: String,
+    airline: Option<String>,
+    operator: Option<String>,
+    flight_number: String,
+    duration: Value,
+    depart: Vec<Value>,
+    arrive: Vec<Value>,
+}
+
+#[derive(Serialize)]
+struct WebOffer {
+    duration: Value,
+    price: Option<String>,
+    currency: Option<String>,
+    legs: Vec<WebLeg>,
+}
+
+pub fn web_payload(json: &str) -> Result<String, FliError> {
+    let payload = serde_json::from_str(json).map_err(|_| schema("payload JSON"))?;
+    let mut offers = Vec::new();
+    let mut unpriced = 0;
+    for row in page_rows(&payload)? {
+        match web_offer(row) {
+            Ok(Some(offer)) => offers.push(Some(offer)),
+            Ok(None) => unpriced += 1,
+            Err(_) => {
+                // Earlier candidates must still report their host validation failures first.
+                offers.push(None);
+                break;
+            }
+        }
+    }
+    Ok(serde_json::json!({"offers": offers, "unpriced": unpriced}).to_string())
+}
+
+fn web_offer(row: &Value) -> Result<Option<WebOffer>, FliError> {
+    let head = row[1][0].as_array().ok_or_else(|| schema("price head"))?;
+    if head.is_empty() {
+        return Ok(None);
+    }
+    let detail = row[0]
+        .as_array()
+        .filter(|d| d.len() > 9)
+        .ok_or_else(|| schema("detail"))?;
+    let mut legs = Vec::new();
+    if !detail[2].is_null() {
+        for leg in detail[2].as_array().ok_or_else(|| schema("legs"))? {
+            let origin = leg[3].as_str().ok_or_else(|| schema("leg origin"))?;
+            let destination = leg[6].as_str().ok_or_else(|| schema("leg destination"))?;
+            let parts = |day: usize, time: usize| -> Result<Vec<Value>, FliError> {
+                let part = |index: usize| {
+                    leg[index]
+                        .as_array()
+                        .filter(|values| values.iter().any(|value| !value.is_null()))
+                        .ok_or_else(|| schema("leg time"))
+                };
+                Ok(part(day)?.iter().chain(part(time)?).cloned().collect())
+            };
+            legs.push(WebLeg {
+                origin: origin.to_owned(),
+                destination: destination.to_owned(),
+                airline: leg[22][0].as_str().map(str::to_owned),
+                operator: leg[22][2].as_str().map(str::to_owned),
+                flight_number: leg[22][1].as_str().unwrap_or_default().to_owned(),
+                duration: leg[11].clone(),
+                depart: parts(20, 8)?,
+                arrive: parts(21, 10)?,
+            });
+        }
+    }
+    Ok(Some(WebOffer {
+        duration: detail[9].clone(),
+        price: text(head.last()),
+        currency: row[1][1].as_str().and_then(currency_from_token),
+        legs,
+    }))
 }
 
 fn text(value: Option<&Value>) -> Option<String> {

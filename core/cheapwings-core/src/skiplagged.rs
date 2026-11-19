@@ -242,6 +242,62 @@ fn skiplagged_link(value: Option<&Value>) -> Option<String> {
         .then(|| link.to_owned())
 }
 
+/// Lossless card fields for hosts that construct their own itinerary and evidence.
+pub fn web_cards(payload: &Value) -> Result<(&[Value], Option<bool>), SkiplaggedError> {
+    let cards = payload
+        .get("flights")
+        .and_then(Value::as_array)
+        .ok_or(SchemaChanged)?;
+    Ok((cards, completeness(payload)))
+}
+
+/// Extract the web fields without reducing timestamps to local minutes.
+pub fn web_payload(json: &str) -> Result<String, SkiplaggedError> {
+    let payload: Value = serde_json::from_str(json).map_err(|_| SchemaChanged)?;
+    let (cards, _) = web_cards(&payload)?;
+    let cards: Vec<Value> = cards
+        .iter()
+        .map(|card| {
+            let mut result = serde_json::Map::new();
+            for (key, path) in [
+                ("id", "/id"),
+                ("depart", "/departure/dateTime"),
+                ("arrive", "/arrival/dateTime"),
+                ("origin", "/departure/airport"),
+                ("destination", "/arrival/airport"),
+                ("usd", "/price/usdAmount"),
+                ("stops", "/layovers"),
+                ("link", "/deepLink"),
+            ] {
+                if let Some(value) = card.pointer(path) {
+                    result.insert(key.to_owned(), value.clone());
+                }
+            }
+            let carrier = card
+                .get("airlines")
+                .and_then(Value::as_str)
+                .map(crate::python_strip)
+                .filter(|name| !name.is_empty());
+            result.insert("carrier".into(), serde_json::json!(carrier));
+            Value::Object(result)
+        })
+        .collect();
+    Ok(serde_json::json!({
+        "flights": cards,
+        "pricing": payload.get("pricing").cloned().unwrap_or_else(|| serde_json::json!({})),
+        "pagination": payload.get("pagination").cloned().unwrap_or_else(|| serde_json::json!({})),
+    })
+    .to_string())
+}
+
+fn completeness(payload: &Value) -> Option<bool> {
+    payload
+        .get("pagination")
+        .and_then(|p| p.get("hasMoreResults"))
+        .and_then(Value::as_bool)
+        .map(|more| !more)
+}
+
 pub fn skiplagged_parse(
     json: &str,
     origin: &str,
@@ -250,11 +306,7 @@ pub fn skiplagged_parse(
     display_currency: &str,
 ) -> Result<SkiplaggedPage, SkiplaggedError> {
     let payload: Value = serde_json::from_str(json).map_err(|_| SchemaChanged)?;
-    let cards = payload
-        .get("flights")
-        .ok_or(SchemaChanged)?
-        .as_array()
-        .ok_or(SchemaChanged)?;
+    let (cards, complete) = web_cards(&payload)?;
     let pricing = payload.get("pricing");
     let mut offers = Vec::new();
     for card in cards {
@@ -348,11 +400,6 @@ pub fn skiplagged_parse(
             hidden_city: "no".into(),
         });
     }
-    let complete = payload
-        .get("pagination")
-        .and_then(|p| p.get("hasMoreResults"))
-        .and_then(Value::as_bool)
-        .map(|more| !more);
     Ok(SkiplaggedPage { offers, complete })
 }
 

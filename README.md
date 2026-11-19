@@ -15,8 +15,9 @@ Provider observations are in
 ## Local setup
 
 Run from the repository root. Existing `.venv/` is the backend environment.
-Money, fingerprinting, ranking, planning and catalog calculations live in the shared Rust core (`core/`), so a Rust toolchain
-(`rustup`, stable) is required; rebuild the module after any change under `core/`.
+Money, fingerprints, ranking, planning, catalog lookup, and Fli/Skiplagged
+response decoding use the shared Rust core (`core/`). Setup requires a stable
+Rust toolchain. Rebuild the bindings after core source changes.
 
 ```sh
 python3.12 -m venv .venv

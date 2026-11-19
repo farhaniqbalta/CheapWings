@@ -17,6 +17,8 @@ _REQUIRED = (
     "from_minor_units",
     "fx_convert",
     "BUILD_REVISION",
+    "fli_parse",
+    "skiplagged_parse",
 )
 
 

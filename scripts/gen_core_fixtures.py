@@ -391,7 +391,7 @@ def skiplagged_cases():
 
     from cheapwings.domain.evidence import ProviderFailure
     from cheapwings.providers.common import json_payload
-    from cheapwings.providers.skiplagged import SkiplaggedProvider
+    from backend.tests.references.skiplagged import SkiplaggedProvider
 
     root = Path(__file__).resolve().parents[1]
     recorded = json.loads((root / "contracts/fixtures/provider/skiplagged_probe_20261109T123430Z.json").read_text(),

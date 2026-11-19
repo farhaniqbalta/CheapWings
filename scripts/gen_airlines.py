@@ -1,7 +1,6 @@
 """Write contracts/airlines.json: IATA airline code -> name, from the pinned fli package.
 
-The web provider already shows these names via fli's ``Airline`` enum (providers/fli.py); the iPad
-bundles this file so both show the same names. fli is MIT-licensed (pin: backend/pyproject.toml).
+The web and iPad bundle pinned Fli code tables so both show the same names. fli is MIT-licensed (pin: backend/pyproject.toml).
 Run: PYTHONPATH=backend/src .venv/bin/python scripts/gen_airlines.py
 """
 
@@ -9,9 +8,10 @@ import json
 from importlib.metadata import version
 from pathlib import Path
 
-from fli.models import Airline
+from fli.models import Airline, Airport
 
-OUT = Path(__file__).resolve().parents[1] / "contracts" / "airlines.json"
+ROOT = Path(__file__).resolve().parents[1]
+OUT = ROOT / "contracts" / "airlines.json"
 
 
 def main():
@@ -22,6 +22,17 @@ def main():
         "airlines": dict(sorted(names.items())),
     }
     OUT.write_text(json.dumps(data, ensure_ascii=False, indent=0, sort_keys=False) + "\n", encoding="utf-8")
+    web_codes = {
+        "source": "Pinned Fli Airline and Airport enums (MIT)",
+        "airlines": {
+            k.removeprefix("_"): (v.name.removeprefix("_"), v.value)
+            for k, v in Airline.__members__.items()
+        },
+        "airports": {k: v.name.removeprefix("_") for k, v in Airport.__members__.items()},
+    }
+    (ROOT / "backend/src/cheapwings/providers/fli_codes.json").write_text(
+        json.dumps(web_codes, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8"
+    )
     print(f"wrote {OUT.name}: {len(names)} airlines")
 
 

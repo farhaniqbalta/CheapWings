@@ -1,4 +1,5 @@
 """Strict adapter-boundary primitives, independent of HTTP and storage."""
+
 import hashlib
 import json
 from dataclasses import asdict, is_dataclass
@@ -10,20 +11,20 @@ from cheapwings.domain.money import Money
 
 
 def decimal_value(value):
-    if isinstance(value, bool) or isinstance(value, float) or not isinstance(value, (str, int, Decimal)):
-        raise ProviderFailure('invalid_price')
+    if isinstance(value, (bool, float)) or not isinstance(value, (str, int, Decimal)):
+        raise ProviderFailure("invalid_price")
     try:
         result = Decimal(value)
     except Exception as exc:
-        raise ProviderFailure('invalid_price') from exc
+        raise ProviderFailure("invalid_price") from exc
     if not result.is_finite() or result < 0:
-        raise ProviderFailure('invalid_price')
+        raise ProviderFailure("invalid_price")
     return result
 
 
 def money(value, currency):
     if not isinstance(currency, str) or len(currency) != 3 or not currency.isalpha():
-        raise ProviderFailure('invalid_currency')
+        raise ProviderFailure("invalid_currency")
     return Money(decimal_value(value), currency)
 
 
@@ -42,5 +43,24 @@ def obj_dict(value):
 def aware_iso(value):
     result = datetime.fromisoformat(value)
     if result.tzinfo is None:
-        raise ProviderFailure('missing_segments')
+        raise ProviderFailure("missing_segments")
     return result
+
+
+def exact_payload_json(value):
+    """Encode Decimal as JSON numbers, and keep rejected floats distinguishable."""
+    if isinstance(value, Decimal):
+        return str(value) if value.is_finite() else "null"
+    if isinstance(value, float):
+        return "null"
+    if isinstance(value, dict):
+        return (
+            "{"
+            + ",".join(
+                json.dumps(key) + ":" + exact_payload_json(item) for key, item in value.items()
+            )
+            + "}"
+        )
+    if isinstance(value, (tuple, list)):
+        return "[" + ",".join(map(exact_payload_json, value)) + "]"
+    return json.dumps(value)

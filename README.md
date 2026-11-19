@@ -15,8 +15,9 @@ Provider observations are in
 ## Local setup
 
 Run from the repository root. Existing `.venv/` is the backend environment.
-Money, fingerprinting, ranking, planning and catalog calculations live in the shared Rust core (`core/`), so a Rust toolchain
-(`rustup`, stable) is required; rebuild the module after any change under `core/`.
+Money, fingerprints, ranking, planning, catalog lookup, and Fli/Skiplagged
+response decoding use the shared Rust core (`core/`). Setup requires a stable
+Rust toolchain. Rebuild the bindings after core source changes.
 
 ```sh
 python3.12 -m venv .venv
@@ -45,6 +46,19 @@ Exactly one worker owns a database, enforced with a POSIX advisory file lock.
 The API does not execute provider work. Both commands reject missing/outdated
 migrations; neither silently creates tables. Use a local disk database, not a
 network filesystem. Relative database URLs resolve from the working directory.
+
+### P5.7 parser parity gate
+
+Run from the repository root with the backend environment active. The Fli
+parity tests require the pinned SDK as their independent reference. They
+fail if it is missing. The tests read saved fixtures and make no live requests.
+
+```sh
+pip install -e "backend[live]"
+sh core/update-expected-revision.sh
+maturin develop --release -m core/cheapwings-py/Cargo.toml
+python -m pytest backend/tests/unit/test_p57_parsers.py -ra
+```
 
 ### Shared core revision
 

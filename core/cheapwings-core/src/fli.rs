@@ -159,7 +159,7 @@ fn patterns() -> &'static Patterns {
 }
 
 /// The parsed `ds:1` payload, or None when the page has none (or it is not valid JSON).
-fn extract_ds1(html: &str) -> Option<Value> {
+pub fn extract_ds1(html: &str) -> Option<Value> {
     let p = patterns();
     p.blob.captures_iter(html).find_map(|blob| {
         let body = blob.get(1)?.as_str();
@@ -179,6 +179,19 @@ pub fn decode_page(html: &str) -> Result<FliPage, FliError> {
         return Err(FliError::AuthDenied);
     }
     let payload = extract_ds1(html).ok_or_else(|| schema("no ds:1 payload"))?;
+    let rows = page_rows(&payload)?;
+    let mut offers = Vec::new();
+    let mut unpriced = 0;
+    for row in rows {
+        match decode_row(row)? {
+            Some(row) => offers.push(row.ipad()?),
+            None => unpriced += 1,
+        }
+    }
+    Ok(FliPage { offers, unpriced })
+}
+
+fn page_rows(payload: &Value) -> Result<Vec<&Value>, FliError> {
     let data = payload
         .as_array()
         .filter(|d| d.len() >= 4)
@@ -207,46 +220,145 @@ pub fn decode_page(html: &str) -> Result<FliPage, FliError> {
         return Err(schema("no row groups"));
     }
 
+    Ok(rows)
+}
+
+struct RawLeg<'a> {
+    origin: &'a str,
+    destination: &'a str,
+    airline: &'a Value,
+    operator: &'a Value,
+    flight: &'a Value,
+    duration: &'a Value,
+    depart_date: &'a Value,
+    depart_time: &'a Value,
+    arrive_date: &'a Value,
+    arrive_time: &'a Value,
+}
+
+struct RawOffer<'a> {
+    price: &'a Value,
+    currency: Option<String>,
+    duration: &'a Value,
+    legs: Vec<RawLeg<'a>>,
+}
+
+fn decode_row(row: &Value) -> Result<Option<RawOffer<'_>>, FliError> {
+    let head = row[1][0].as_array().ok_or_else(|| schema("price head"))?;
+    let Some(price) = head.last() else {
+        return Ok(None);
+    };
+    let detail = row[0].as_array().ok_or_else(|| schema("detail"))?;
+    let legs = match detail.get(2) {
+        Some(Value::Null) => Vec::new(),
+        Some(Value::Array(legs)) => legs
+            .iter()
+            .map(|leg| {
+                let fl = leg
+                    .as_array()
+                    .filter(|fl| fl.len() > 22)
+                    .ok_or_else(|| schema("leg shape"))?;
+                let airline = &fl[22];
+                Ok(RawLeg {
+                    origin: fl[3].as_str().ok_or_else(|| schema("leg origin"))?,
+                    destination: fl[6].as_str().ok_or_else(|| schema("leg destination"))?,
+                    airline: &airline[0],
+                    operator: &airline[2],
+                    flight: &airline[1],
+                    duration: &fl[11],
+                    depart_date: &fl[20],
+                    depart_time: &fl[8],
+                    arrive_date: &fl[21],
+                    arrive_time: &fl[10],
+                })
+            })
+            .collect::<Result<Vec<_>, FliError>>()?,
+        _ => return Err(schema("legs")),
+    };
+    Ok(Some(RawOffer {
+        price,
+        currency: row[1][1].as_str().and_then(currency_from_token),
+        duration: detail.get(9).unwrap_or(&Value::Null),
+        legs,
+    }))
+}
+
+impl RawOffer<'_> {
+    fn ipad(self) -> Result<FliOffer, FliError> {
+        let price = self
+            .price
+            .as_number()
+            .ok_or_else(|| schema("price"))?
+            .to_string();
+        let legs = self
+            .legs
+            .into_iter()
+            .map(|leg| {
+                Ok(FliLeg {
+                    origin: leg.origin.to_owned(),
+                    destination: leg.destination.to_owned(),
+                    airline: text(Some(leg.airline)).unwrap_or_default(),
+                    flight_number: text(Some(leg.flight)).unwrap_or_default(),
+                    depart_local: local_time(leg.depart_date, leg.depart_time)?,
+                    arrive_local: local_time(leg.arrive_date, leg.arrive_time)?,
+                })
+            })
+            .collect::<Result<_, FliError>>()?;
+        Ok(FliOffer {
+            price,
+            currency: self.currency,
+            legs,
+        })
+    }
+
+    fn web(self) -> Result<Value, FliError> {
+        fn parts<'a>(day: &'a Value, time: &'a Value) -> Result<Vec<&'a Value>, FliError> {
+            // Do not truncate source seconds or microseconds at the boundary.
+            let day = day.as_array().filter(|a| a.iter().any(|v| !v.is_null()));
+            let time = time.as_array().filter(|a| a.iter().any(|v| !v.is_null()));
+            Ok(day
+                .ok_or_else(|| schema("leg date"))?
+                .iter()
+                .chain(time.ok_or_else(|| schema("leg time"))?)
+                .collect())
+        }
+        let legs = self
+            .legs
+            .into_iter()
+            .map(|leg| {
+                Ok(serde_json::json!({
+                    "origin": leg.origin, "destination": leg.destination,
+                    "airline": leg.airline.as_str(), "operator": leg.operator.as_str(),
+                    "flight_number": leg.flight.as_str().unwrap_or_default(),
+                    "duration": leg.duration,
+                    "depart": parts(leg.depart_date, leg.depart_time)?,
+                    "arrive": parts(leg.arrive_date, leg.arrive_time)?,
+                }))
+            })
+            .collect::<Result<Vec<_>, FliError>>()?;
+        Ok(serde_json::json!({
+            "duration": self.duration, "price": text(Some(self.price)),
+            "currency": self.currency, "legs": legs,
+        }))
+    }
+}
+
+pub fn web_payload(json: &str) -> Result<String, FliError> {
+    let payload = serde_json::from_str(json).map_err(|_| schema("payload JSON"))?;
     let mut offers = Vec::new();
     let mut unpriced = 0;
-    for row in rows {
-        let row = row.as_array().ok_or_else(|| schema("row"))?;
-        let price_block = row
-            .get(1)
-            .and_then(Value::as_array)
-            .ok_or_else(|| schema("price block"))?;
-        let head = price_block
-            .first()
-            .and_then(Value::as_array)
-            .ok_or_else(|| schema("price head"))?;
-        if head.is_empty() {
-            unpriced += 1;
-            continue;
+    for row in page_rows(&payload)? {
+        match decode_row(row).and_then(|row| row.map(RawOffer::web).transpose()) {
+            Ok(Some(offer)) => offers.push(Some(offer)),
+            Ok(None) => unpriced += 1,
+            Err(_) => {
+                // Earlier candidates must report their host validation failures first.
+                offers.push(None);
+                break;
+            }
         }
-        let price = match head.last() {
-            Some(Value::Number(n)) => n.to_string(),
-            _ => return Err(schema("price")),
-        };
-        let currency = price_block
-            .get(1)
-            .and_then(Value::as_str)
-            .and_then(currency_from_token);
-        let detail = row
-            .first()
-            .and_then(Value::as_array)
-            .ok_or_else(|| schema("detail"))?;
-        let legs = match detail.get(2) {
-            Some(Value::Array(legs)) => legs.iter().map(leg).collect::<Result<Vec<_>, _>>()?,
-            Some(Value::Null) => Vec::new(),
-            _ => return Err(schema("legs")),
-        };
-        offers.push(FliOffer {
-            price,
-            currency,
-            legs,
-        });
     }
-    Ok(FliPage { offers, unpriced })
+    Ok(serde_json::json!({"offers": offers, "unpriced": unpriced}).to_string())
 }
 
 fn text(value: Option<&Value>) -> Option<String> {
@@ -255,28 +367,6 @@ fn text(value: Option<&Value>) -> Option<String> {
         Value::Number(n) => Some(n.to_string()),
         _ => None,
     }
-}
-
-fn leg(value: &Value) -> Result<FliLeg, FliError> {
-    let fl = value
-        .as_array()
-        .filter(|fl| fl.len() > 22)
-        .ok_or_else(|| schema("leg shape"))?;
-    let airline = fl[22].as_array();
-    Ok(FliLeg {
-        origin: fl[3]
-            .as_str()
-            .ok_or_else(|| schema("leg origin"))?
-            .to_owned(),
-        destination: fl[6]
-            .as_str()
-            .ok_or_else(|| schema("leg destination"))?
-            .to_owned(),
-        airline: airline.and_then(|a| text(a.first())).unwrap_or_default(),
-        flight_number: airline.and_then(|a| text(a.get(1))).unwrap_or_default(),
-        depart_local: local_time(&fl[20], &fl[8])?,
-        arrive_local: local_time(&fl[21], &fl[10])?,
-    })
 }
 
 /// `[y, m, d]` + `[h, m]` with nulls as 0 (fli `_parse_datetime`).

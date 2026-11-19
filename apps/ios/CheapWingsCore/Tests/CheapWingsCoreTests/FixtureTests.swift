@@ -130,6 +130,26 @@ final class FixtureTests: XCTestCase {
         XCTAssertEqual(Self.fixtures.fli_tfs.count, 50)
     }
 
+    func testRecordedFliPage() throws {
+        struct Recorded: Decodable {
+            let data_json: String
+            let ipad: PageExpect
+        }
+        var root = URL(fileURLWithPath: #filePath)
+        for _ in 0..<6 { root.deleteLastPathComponent() }
+        let data = try Data(contentsOf: root.appendingPathComponent("contracts/fixtures/provider/fli_recorded_ds1.json"))
+        let fixture = try JSONDecoder().decode(Recorded.self, from: data)
+        let page = try fliDecodePage(html: "AF_initDataCallback({key: 'ds:1',data:\(fixture.data_json), sideChannel: {}});")
+        XCTAssertEqual(page.unpriced, fixture.ipad.unpriced)
+        let expected = (fixture.ipad.offers ?? []).map { offer in
+            FliOffer(price: offer.price, currency: offer.currency, legs: offer.legs.map {
+                FliLeg(origin: $0.origin, destination: $0.destination, airline: $0.airline,
+                       flightNumber: $0.flight_number, departLocal: $0.depart_local, arriveLocal: $0.arrive_local)
+            })
+        }
+        XCTAssertEqual(page.offers, expected)
+    }
+
     func testFliPages() {
         for (i, c) in Self.fixtures.fli_pages.enumerated() {
             do {

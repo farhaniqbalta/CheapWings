@@ -1,6 +1,6 @@
 import asyncio
 import threading
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 from types import SimpleNamespace
 
@@ -15,44 +15,10 @@ def query():
     return SingleDateRouteQuery("HND", "CGK", date.today() + timedelta(days=20), True, False, "IDR")
 
 
-@pytest.fixture
-def decoder(monkeypatch):
-    pytest.importorskip("fli")
-    from fli.search import _decoders
+def payload(amount=Decimal("6144602.123456789"), **kwargs):
+    from backend.tests.unit.test_p57_parsers import fli_payload
 
-    q = query()
-    flight = SimpleNamespace(
-        currency="IDR",
-        legs=[
-            SimpleNamespace(
-                airline=SimpleNamespace(name="TR", value="Scoot"),
-                operating_airline=None,
-                flight_number="801",
-                departure_airport=SimpleNamespace(name="HND"),
-                arrival_airport=SimpleNamespace(name="CGK"),
-                departure_datetime=datetime.combine(q.departure_date, datetime.min.time()).replace(
-                    hour=9
-                ),
-                arrival_datetime=datetime.combine(q.departure_date, datetime.min.time()).replace(
-                    hour=15
-                ),
-            )
-        ],
-    )
-
-    def decode(row):
-        assert row[1][0][-1] == 0  # SDK identity decode never sees the actual price.
-        return flight
-
-    monkeypatch.setattr(_decoders, "parse_flight_row", decode)
-    return flight
-
-
-def payload(amount=Decimal("6144602.123456789")):
-    return {
-        "data": [None, None, [[[[], [[None, amount], "synthetic-token"]]]], None],
-        "url": "https://www.google.com/travel/flights?tfs=synthetic-request",
-    }
+    return fli_payload(amount, day=query().departure_date, **kwargs)
 
 
 def provider():
@@ -61,7 +27,8 @@ def provider():
     )
 
 
-def test_exact_prices_identity_and_conservative_evidence(decoder):
+def test_exact_prices_identity_and_conservative_evidence():
+    pytest.importorskip("fli")
     p = provider()
     try:
         source = payload()
@@ -79,7 +46,8 @@ def test_exact_prices_identity_and_conservative_evidence(decoder):
 
 
 @pytest.mark.parametrize("amount", [True, 1.2, Decimal(-1), 0])
-def test_reject_float_bool_negative_prices(decoder, amount):
+def test_reject_float_bool_negative_prices(amount):
+    pytest.importorskip("fli")
     p = provider()
     try:
         with pytest.raises(ProviderFailure, match="invalid_price"):
@@ -88,21 +56,19 @@ def test_reject_float_bool_negative_prices(decoder, amount):
         p.blocking.close()
 
 
-def test_wrong_currency_or_route_cannot_commit(decoder):
+def test_wrong_currency_or_route_cannot_commit():
+    pytest.importorskip("fli")
     p = provider()
     try:
-        decoder.currency = "USD"
         with pytest.raises(ProviderFailure, match="invalid_currency"):
-            p.normalize(payload(), query())
-        decoder.currency = "IDR"
-        decoder.legs[0].departure_airport.name = "NRT"
+            p.normalize(payload(currency="USD"), query())
         with pytest.raises(ProviderFailure, match="schema_changed"):
-            p.normalize(payload(), query())
+            p.normalize(payload(origin="NRT"), query())
     finally:
         p.blocking.close()
 
 
-def test_valid_empty_vs_unpriced_and_missing_payload(decoder):
+def test_valid_empty_vs_unpriced_and_missing_payload():
     p = provider()
     try:
         r = p.normalize({"data": [None, None, [[], None], None]}, query())
@@ -177,7 +143,7 @@ def test_challenge_redirect_is_not_followed(target):
         p.blocking.close()
 
 
-async def test_c3_real_threads_overlap_and_cancel_retains_physical_capacity(decoder):
+async def test_c3_real_threads_overlap_and_cancel_retains_physical_capacity():
     p = provider()
     entered = threading.Barrier(4)
     release = threading.Event()

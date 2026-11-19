@@ -94,14 +94,12 @@ def test_fourth_registration_configuration_and_no_false_capabilities(monkeypatch
                 r.provider.blocking.close()
 
 
-async def test_fli_real_normalization_api_prices_and_cache(engine, query, monkeypatch):
+async def test_fli_real_normalization_api_prices_and_cache(engine, query):
     pytest.importorskip("fli")
-    from datetime import datetime
     from decimal import Decimal
-    from types import SimpleNamespace
 
+    from backend.tests.unit.test_p57_parsers import fli_payload
     from fastapi.testclient import TestClient
-    from fli.search import _decoders
 
     from cheapwings.api.routes import create_app
 
@@ -112,33 +110,16 @@ async def test_fli_real_normalization_api_prices_and_cache(engine, query, monkey
             "display_currency": "IDR",
         }
     )
-    flight = SimpleNamespace(
-        currency="IDR",
-        legs=[
-            SimpleNamespace(
-                airline=SimpleNamespace(name="QF", value="Qantas"),
-                operating_airline=None,
-                flight_number="45",
-                departure_airport=SimpleNamespace(name=q.origins[0]),
-                arrival_airport=SimpleNamespace(name="DPS"),
-                departure_datetime=datetime.combine(
-                    q.departure_date_from, datetime.min.time()
-                ).replace(hour=9),
-                arrival_datetime=datetime.combine(
-                    q.departure_date_from, datetime.min.time()
-                ).replace(hour=13),
-            )
-        ],
-    )
-    monkeypatch.setattr(_decoders, "parse_flight_row", lambda row: flight)
     calls = []
 
     async def transport(request):
         calls.append(request)
-        return {
-            "data": [None, None, [[[[], [[None, Decimal(1250000)], "synthetic"]]]], None],
-            "url": "https://www.google.com/travel/flights?tfs=synthetic-request",
-        }
+        return fli_payload(
+            1250000,
+            origin=request.origin,
+            destination=request.destination,
+            day=request.departure_date,
+        )
 
     p = FliProvider(transport=transport)
     reg = Registration(p, minimum_interval_seconds=0, live_data=True)

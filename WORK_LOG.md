@@ -38,7 +38,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | P5.6 iPad polish | Done; [PR #16](https://github.com/farhaniqbalta/CheapWings/pull/16) merged `addc272` | [P5.6](docs/log/p5.6.md), [plan](docs/log/p5.6-plan.md) |
 | P5.8 iPad parallel Fli pacing | Done; [PR #17](https://github.com/farhaniqbalta/CheapWings/pull/17) merged `69f6417` | [P5.8](docs/log/p5.8.md), [plan](docs/log/p5.8-plan.md) |
 | P5.4 Skiplagged on iPad | Done; [PR #19](https://github.com/farhaniqbalta/CheapWings/pull/19) merged `bc4f5b2`; owner device checks passed. OctoTrip on iPad deferred until further notice (owner 2026-11-14) | [P5.4](docs/log/p5.4.md), [plan](docs/log/p5.4-plan.md) |
-| P5.7 Web backend onto the Rust core | In progress; checkpoint 1 records approved plan; web currently shares money only | [Plan](docs/log/p5.7-plan.md), [execution](docs/log/p5.7.md) |
+| P5.7 Web backend onto the Rust core | In progress; checkpoint 2 shares engine rules through PyO3 | [Plan](docs/log/p5.7-plan.md), [execution](docs/log/p5.7.md) |
 | P6 Release acceptance | Not started | |
 | P7 Discover (Explore Anywhere / Surprise Me) | **Proposed / Not started** — separate feature beside Search (user chooses); awaits owner approval to start | [P7 plan](docs/06_IMPLEMENTATION_CHECKPOINTS.md#p7--explore-anywhere-proposed--not-started), [spec](docs/01_PRODUCT_REQUIREMENTS_UX.md#proposed-feature-explore-anywhere-and-surprise-me-p7--proposed--not-started) |
 
@@ -57,7 +57,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 - Plan, gates and execution evidence: [P5.7 plan](docs/log/p5.7-plan.md), [P5.7 execution](docs/log/p5.7.md).
 
 ## Next task
-P5.7 checkpoint 2: freeze independent engine fixtures, extend PyO3 and replace Python calculations after parity. Owner reviews and merges every checkpoint PR. P6/P7 remain separate.
+P5.7 checkpoint 3: connect Fli and Skiplagged parsers, verify both bindings, and close P5.7. Owner reviews and merges every checkpoint PR. P6/P7 remain separate.
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

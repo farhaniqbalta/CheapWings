@@ -60,7 +60,7 @@ fn normalize(codes: &[String]) -> Result<Vec<String>, PlanError> {
     }
     let mut out: Vec<String> = Vec::new();
     for code in codes {
-        let upper = code.trim().to_uppercase();
+        let upper = crate::python_strip(code).to_uppercase();
         if upper.len() != 3 || !upper.bytes().all(|b| b.is_ascii_uppercase()) {
             return Err(PlanError::InvalidAirport(code.clone()));
         }
@@ -100,8 +100,16 @@ fn parse_date(text: &str) -> Result<i64, PlanError> {
     if bytes.len() != 10 || bytes[4] != b'-' || bytes[7] != b'-' {
         return Err(invalid());
     }
-    let num = |range: std::ops::Range<usize>| text.get(range).filter(|s| s.bytes().all(|b| b.is_ascii_digit())).and_then(|s| s.parse::<i64>().ok());
-    let (y, m, d) = (num(0..4).ok_or_else(invalid)?, num(5..7).ok_or_else(invalid)?, num(8..10).ok_or_else(invalid)?);
+    let num = |range: std::ops::Range<usize>| {
+        text.get(range)
+            .filter(|s| s.bytes().all(|b| b.is_ascii_digit()))
+            .and_then(|s| s.parse::<i64>().ok())
+    };
+    let (y, m, d) = (
+        num(0..4).ok_or_else(invalid)?,
+        num(5..7).ok_or_else(invalid)?,
+        num(8..10).ok_or_else(invalid)?,
+    );
     let day = days_from_civil(y, m, d);
     if !(1..=12).contains(&m) || civil_from_days(day) != (y, m, d) {
         return Err(invalid());
@@ -138,12 +146,50 @@ pub fn plan_search(
     let days = end - start + 1;
     let combinations = u32::try_from(pairs.len() as i64 * days).unwrap_or(u32::MAX);
     if combinations > max_combinations {
-        return Err(PlanError::TooMany { combinations, max: max_combinations });
+        return Err(PlanError::TooMany {
+            combinations,
+            max: max_combinations,
+        });
     }
     Ok(pairs
         .into_iter()
         .flat_map(|(o, d)| {
-            (start..=end).map(move |day| RouteDate { origin: o.clone(), destination: d.clone(), date: format_date(day) })
+            (start..=end).map(move |day| RouteDate {
+                origin: o.clone(),
+                destination: d.clone(),
+                date: format_date(day),
+            })
         })
         .collect())
+}
+
+/// Preview arithmetic deliberately accepts empty airport sets and reversed ranges.
+pub fn scope(
+    origins: &[String],
+    destinations: &[String],
+    start: &str,
+    end: &str,
+    providers: &[String],
+) -> Result<(u64, u64, u64, u64, u64), PlanError> {
+    use std::collections::HashSet;
+    let origins: HashSet<String> = origins
+        .iter()
+        .map(|s| crate::python_strip(s).to_uppercase())
+        .collect();
+    let destinations: HashSet<String> = destinations
+        .iter()
+        .map(|s| crate::python_strip(s).to_uppercase())
+        .collect();
+    let days = (parse_date(end)? - parse_date(start)? + 1).max(0) as u64;
+    let pairs =
+        (origins.len() * destinations.len() - origins.intersection(&destinations).count()) as u64;
+    let combinations = pairs * days;
+    let providers = providers.iter().collect::<HashSet<_>>().len() as u64;
+    Ok((
+        days,
+        pairs,
+        combinations,
+        providers,
+        combinations * providers,
+    ))
 }

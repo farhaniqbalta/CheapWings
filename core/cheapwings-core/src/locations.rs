@@ -38,6 +38,13 @@ pub struct MajorResolution {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CatalogError {
     Invalid(String),
+    DuplicateLocation,
+    DuplicateAirport,
+    AirportWithoutCode,
+    InvalidAssociation,
+    InvalidMappingId,
+    InvalidMapping,
+
     TooLong,
     UnknownLocation(String),
     StaleVersion,
@@ -48,7 +55,13 @@ pub enum CatalogError {
 impl CatalogError {
     pub fn code(&self) -> &'static str {
         match self {
-            Self::Invalid(_) => "invalid",
+            Self::Invalid(_)
+            | Self::DuplicateLocation
+            | Self::DuplicateAirport
+            | Self::AirportWithoutCode
+            | Self::InvalidAssociation
+            | Self::InvalidMappingId
+            | Self::InvalidMapping => "invalid",
             Self::TooLong => "too_long",
             Self::UnknownLocation(_) => "unknown_location",
             Self::StaleVersion => "stale_version",
@@ -62,11 +75,24 @@ impl fmt::Display for CatalogError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Invalid(why) => write!(f, "invalid location catalog: {why}"),
+            Self::DuplicateLocation => write!(f, "invalid location catalog: duplicate location ID"),
+            Self::DuplicateAirport => write!(f, "invalid location catalog: duplicate airport code"),
+            Self::AirportWithoutCode => write!(f, "invalid location catalog: airport without code"),
+            Self::InvalidAssociation => {
+                write!(f, "invalid location catalog: invalid airport association")
+            }
+            Self::InvalidMappingId => write!(f, "invalid location catalog: invalid mapping ID"),
+            Self::InvalidMapping => write!(f, "invalid location catalog: invalid major mapping"),
             Self::TooLong => write!(f, "search text exceeds 100 characters"),
             Self::UnknownLocation(id) => write!(f, "unknown location {id:?}; reload the catalog"),
-            Self::StaleVersion => write!(f, "stale catalog version; reload and review the included airports"),
+            Self::StaleVersion => write!(
+                f,
+                "stale catalog version; reload and review the included airports"
+            ),
             Self::TypeMismatch => write!(f, "location type does not match"),
-            Self::NoMajorMapping => write!(f, "no curated major-airport list; use specific airports"),
+            Self::NoMajorMapping => {
+                write!(f, "no curated major-airport list; use specific airports")
+            }
         }
     }
 }
@@ -104,11 +130,25 @@ struct RawCatalog {
 }
 
 /// Python `fold`: NFKD, casefold, combining marks dropped.
+// Folding differs only for code points newer than Python's Unicode database.
 pub fn fold(text: &str) -> String {
     text.nfkd()
         .flat_map(|c| match c {
             // Python casefold maps these to "ss"; Rust's to_lowercase keeps ß.
             'ß' | 'ẞ' => "ss".chars().collect::<Vec<_>>(),
+            '\u{0345}' => vec!['ι'],
+            'ς' => vec!['σ'],
+            '\u{13a0}'..='\u{13f5}' | '\u{13f8}'..='\u{13fd}' | '\u{ab70}'..='\u{abbf}' => {
+                c.to_uppercase().collect()
+            }
+            '\u{1c80}' => vec!['в'],
+            '\u{1c81}' => vec!['д'],
+            '\u{1c82}' => vec!['о'],
+            '\u{1c83}' => vec!['с'],
+            '\u{1c84}' | '\u{1c85}' => vec!['т'],
+            '\u{1c86}' => vec!['ъ'],
+            '\u{1c87}' => vec!['ѣ'],
+            '\u{1c88}' => vec!['ꙋ'],
             other => other.to_lowercase().collect(),
         })
         // Python `unicodedata.combining`: drop only combining class != 0 (keeps Mc spacing marks).
@@ -130,35 +170,44 @@ pub struct Catalog {
 impl Catalog {
     /// Parses and validates the catalog exactly as `LocationCatalog.__init__` does; fails closed.
     pub fn from_json(text: &str) -> Result<Catalog, CatalogError> {
-        let raw: RawCatalog = serde_json::from_str(text).map_err(|e| CatalogError::Invalid(e.to_string()))?;
-        let invalid = |why: &str| CatalogError::Invalid(why.to_owned());
+        let raw: RawCatalog =
+            serde_json::from_str(text).map_err(|e| CatalogError::Invalid(e.to_string()))?;
         let mut by_id = HashMap::new();
         let mut airports = HashMap::new();
         for (i, e) in raw.entities.iter().enumerate() {
             if by_id.insert(e.id.clone(), i).is_some() {
-                return Err(invalid("duplicate location ID"));
+                return Err(CatalogError::DuplicateLocation);
             }
             if e.kind == "airport" {
-                let code = e.code.clone().ok_or_else(|| invalid("airport without code"))?;
+                let code = e
+                    .code
+                    .clone()
+                    .ok_or_else(|| CatalogError::AirportWithoutCode)?;
                 if airports.insert(code, i).is_some() {
-                    return Err(invalid("duplicate airport code"));
+                    return Err(CatalogError::DuplicateAirport);
                 }
             }
         }
         for e in &raw.entities {
             let unique: HashSet<&String> = e.codes.iter().collect();
             if unique.len() != e.codes.len() || !e.codes.iter().all(|c| airports.contains_key(c)) {
-                return Err(invalid("invalid airport association"));
+                return Err(CatalogError::InvalidAssociation);
             }
         }
         for (id, mapping) in &raw.major {
-            let entity = by_id.get(id).map(|&i| &raw.entities[i]).ok_or_else(|| invalid("invalid mapping ID"))?;
+            let entity = by_id
+                .get(id)
+                .map(|&i| &raw.entities[i])
+                .ok_or_else(|| CatalogError::InvalidMappingId)?;
             if entity.kind == "airport" {
-                return Err(invalid("invalid mapping ID"));
+                return Err(CatalogError::InvalidMappingId);
             }
             let unique: HashSet<&String> = mapping.codes.iter().collect();
-            if mapping.codes.is_empty() || unique.len() != mapping.codes.len() || !mapping.codes.iter().all(|c| entity.codes.contains(c)) {
-                return Err(invalid("invalid major mapping"));
+            if mapping.codes.is_empty()
+                || unique.len() != mapping.codes.len()
+                || !mapping.codes.iter().all(|c| entity.codes.contains(c))
+            {
+                return Err(CatalogError::InvalidMapping);
             }
         }
         let index = raw
@@ -191,7 +240,16 @@ impl Catalog {
                 timezone: e.timezone,
             })
             .collect();
-        Ok(Catalog { version: raw.version, definition: raw.definition, entities, aliases, by_id, airports, major: raw.major, index })
+        Ok(Catalog {
+            version: raw.version,
+            definition: raw.definition,
+            entities,
+            aliases,
+            by_id,
+            airports,
+            major: raw.major,
+            index,
+        })
     }
 
     pub fn version(&self) -> &str {
@@ -206,11 +264,16 @@ impl Catalog {
 
     /// The first `limit` matches in search order plus the total match count, so a picker copies
     /// only what it shows (a one-letter query matches most of the catalog).
-    pub fn search_page(&self, text: &str, within: Option<&str>, limit: usize) -> Result<SearchPage, CatalogError> {
+    pub fn search_page(
+        &self,
+        text: &str,
+        within: Option<&str>,
+        limit: usize,
+    ) -> Result<SearchPage, CatalogError> {
         if text.chars().count() > 100 {
             return Err(CatalogError::TooLong);
         }
-        let term = fold(text.trim());
+        let term = fold(crate::python_strip(text));
         let allowed: Option<HashSet<String>> = match within {
             None => None,
             Some(id) => Some(self.airports_of(id)?.into_iter().map(|l| l.id).collect()),
@@ -219,40 +282,75 @@ impl Catalog {
             .filter(|&i| {
                 let e = &self.entities[i];
                 let in_scope = allowed.as_ref().map_or(true, |a| a.contains(&e.id));
-                in_scope && ((!term.is_empty() && self.index[i].contains(&term)) || (allowed.is_some() && term.is_empty()))
+                in_scope
+                    && ((!term.is_empty() && self.index[i].contains(&term))
+                        || (allowed.is_some() && term.is_empty()))
             })
             .collect();
         matches.sort_by_cached_key(|&i| {
             let e = &self.entities[i];
             let exact_code = term != fold(e.code.as_deref().unwrap_or(""));
-            let exact_name = !(term == fold(&e.name) || self.aliases[i].iter().any(|a| fold(a) == term));
-            (exact_code, exact_name, e.kind.clone(), fold(&e.name), e.id.clone())
+            let exact_name =
+                !(term == fold(&e.name) || self.aliases[i].iter().any(|a| fold(a) == term));
+            (
+                exact_code,
+                exact_name,
+                e.kind.clone(),
+                fold(&e.name),
+                e.id.clone(),
+            )
         });
         let total = matches.len() as u32;
-        Ok(SearchPage { locations: matches.into_iter().take(limit).map(|i| self.entities[i].clone()).collect(), total })
+        Ok(SearchPage {
+            locations: matches
+                .into_iter()
+                .take(limit)
+                .map(|i| self.entities[i].clone())
+                .collect(),
+            total,
+        })
     }
 
     pub fn airports_of(&self, id: &str) -> Result<Vec<Location>, CatalogError> {
-        let &i = self.by_id.get(id).ok_or_else(|| CatalogError::UnknownLocation(id.to_owned()))?;
-        Ok(self.entities[i].codes.iter().map(|c| self.entities[self.airports[c]].clone()).collect())
+        let &i = self
+            .by_id
+            .get(id)
+            .ok_or_else(|| CatalogError::UnknownLocation(id.to_owned()))?;
+        Ok(self.entities[i]
+            .codes
+            .iter()
+            .map(|c| self.entities[self.airports[c]].clone())
+            .collect())
     }
 
     pub fn has_major(&self, id: &str) -> bool {
         self.major.contains_key(id)
     }
 
-    pub fn resolve_major(&self, kind: &str, id: &str, version: &str) -> Result<MajorResolution, CatalogError> {
+    pub fn resolve_major(
+        &self,
+        kind: &str,
+        id: &str,
+        version: &str,
+    ) -> Result<MajorResolution, CatalogError> {
         if version != self.version {
             return Err(CatalogError::StaleVersion);
         }
-        let &i = self.by_id.get(id).ok_or_else(|| CatalogError::UnknownLocation(id.to_owned()))?;
+        let &i = self
+            .by_id
+            .get(id)
+            .ok_or_else(|| CatalogError::UnknownLocation(id.to_owned()))?;
         if self.entities[i].kind != kind {
             return Err(CatalogError::TypeMismatch);
         }
         let mapping = self.major.get(id).ok_or(CatalogError::NoMajorMapping)?;
         let mut codes = mapping.codes.clone();
         codes.sort();
-        Ok(MajorResolution { codes, rationale: mapping.rationale.clone(), definition: self.definition.clone() })
+        Ok(MajorResolution {
+            codes,
+            rationale: mapping.rationale.clone(),
+            definition: self.definition.clone(),
+        })
     }
 
     pub fn location(&self, id: &str) -> Option<Location> {

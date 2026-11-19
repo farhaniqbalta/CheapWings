@@ -15,11 +15,13 @@ pub struct LocalInstant {
     pub s: u32,
     pub us: u32,
     pub offset: i32,
+    #[serde(default)]
+    pub offset_fraction: i32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct Segment {
-    pub ordinal: u32,
+    pub ordinal: i64,
     pub marketing: String,
     pub operating: String,
     pub flight: String,
@@ -32,15 +34,23 @@ pub struct Segment {
 /// Python `datetime.isoformat()` for an aware datetime: microseconds only when non-zero,
 /// offset `±HH:MM`, plus `:SS` only for second-precision offsets.
 pub fn isoformat(t: &LocalInstant) -> String {
-    let mut out = format!("{:04}-{:02}-{:02}T{:02}:{:02}:{:02}", t.y, t.mo, t.d, t.h, t.mi, t.s);
+    let mut out = format!(
+        "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}",
+        t.y, t.mo, t.d, t.h, t.mi, t.s
+    );
     if t.us != 0 {
         out += &format!(".{:06}", t.us);
     }
-    let sign = if t.offset < 0 { '-' } else { '+' };
-    let off = t.offset.unsigned_abs();
+    let offset = i64::from(t.offset) * 1_000_000 + i64::from(t.offset_fraction);
+    let sign = if offset < 0 { '-' } else { '+' };
+    let off = offset.unsigned_abs() / 1_000_000;
+    let fraction = offset.unsigned_abs() % 1_000_000;
     out += &format!("{sign}{:02}:{:02}", off / 3600, off % 3600 / 60);
-    if off % 60 != 0 {
+    if off % 60 != 0 || fraction != 0 {
         out += &format!(":{:02}", off % 60);
+    }
+    if fraction != 0 {
+        out += &format!(".{fraction:06}");
     }
     out
 }
@@ -64,5 +74,8 @@ pub fn fingerprint(segments: &[Segment]) -> String {
         })
         .collect::<Vec<_>>()
         .join("|");
-    Sha256::digest(canonical.as_bytes()).iter().map(|b| format!("{b:02x}")).collect()
+    Sha256::digest(canonical.as_bytes())
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect()
 }

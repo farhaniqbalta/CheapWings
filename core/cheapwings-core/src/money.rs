@@ -8,11 +8,34 @@ use std::str::FromStr;
 
 /// ISO 4217 minor-unit exponents. Unknown currencies fail closed rather than assuming 2.
 const EXPONENTS: &[(&str, u32)] = &[
-    ("IDR", 0), ("JPY", 0), ("KRW", 0), ("VND", 0),
-    ("USD", 2), ("AUD", 2), ("EUR", 2), ("GBP", 2), ("CAD", 2), ("SGD", 2), ("MYR", 2),
-    ("INR", 2), ("CNY", 2), ("HKD", 2), ("NZD", 2), ("CHF", 2), ("THB", 2), ("PHP", 2),
-    ("BRL", 2), ("MXN", 2), ("CZK", 2), ("DKK", 2), ("SEK", 2), ("PLN", 2), ("RON", 2),
-    ("TRY", 2), ("TWD", 2), ("UAH", 2),
+    ("IDR", 0),
+    ("JPY", 0),
+    ("KRW", 0),
+    ("VND", 0),
+    ("USD", 2),
+    ("AUD", 2),
+    ("EUR", 2),
+    ("GBP", 2),
+    ("CAD", 2),
+    ("SGD", 2),
+    ("MYR", 2),
+    ("INR", 2),
+    ("CNY", 2),
+    ("HKD", 2),
+    ("NZD", 2),
+    ("CHF", 2),
+    ("THB", 2),
+    ("PHP", 2),
+    ("BRL", 2),
+    ("MXN", 2),
+    ("CZK", 2),
+    ("DKK", 2),
+    ("SEK", 2),
+    ("PLN", 2),
+    ("RON", 2),
+    ("TRY", 2),
+    ("TWD", 2),
+    ("UAH", 2),
 ];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -26,9 +49,15 @@ pub enum MoneyError {
 impl fmt::Display for MoneyError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::UnknownCurrency(c) => write!(f, "unknown_currency: minor-unit exponent for {c:?} is not configured"),
+            Self::UnknownCurrency(c) => write!(
+                f,
+                "unknown_currency: minor-unit exponent for {c:?} is not configured"
+            ),
             Self::InvalidDecimal(t) => write!(f, "invalid decimal amount {t:?}"),
-            Self::NotWholeMinorUnits => write!(f, "amount does not scale cleanly to the currency's minor units"),
+            Self::NotWholeMinorUnits => write!(
+                f,
+                "amount does not scale cleanly to the currency's minor units"
+            ),
             Self::Overflow => write!(f, "amount out of range"),
         }
     }
@@ -46,7 +75,11 @@ pub fn minor_unit_exponent(currency: &str) -> Result<u32, MoneyError> {
 }
 
 fn parse(text: &str) -> Result<Decimal, MoneyError> {
-    let parsed = if text.contains(['e', 'E']) { Decimal::from_scientific(text) } else { Decimal::from_str(text) };
+    let parsed = if text.contains(['e', 'E']) {
+        Decimal::from_scientific(text)
+    } else {
+        Decimal::from_str(text)
+    };
     parsed.map_err(|_| MoneyError::InvalidDecimal(text.to_owned()))
 }
 
@@ -73,10 +106,16 @@ pub fn as_minor_units(amount: &str, currency: &str) -> Result<i128, MoneyError> 
 /// scale padded like `Decimal.quantize`.
 pub fn fx_convert(amount: &str, rate: &str, quote_currency: &str) -> Result<String, MoneyError> {
     let exp = minor_unit_exponent(quote_currency)?;
-    let product = parse(amount)?.checked_mul(parse(rate)?).ok_or(MoneyError::Overflow)?;
+    let product = parse(amount)?
+        .checked_mul(parse(rate)?)
+        .ok_or(MoneyError::Overflow)?;
     let mut rounded = product.round_dp_with_strategy(exp, RoundingStrategy::MidpointNearestEven);
     rounded.rescale(exp);
     let text = rounded.to_string();
     // Python keeps the sign of a negative product that rounds to zero ("-0.00").
-    Ok(if product.is_sign_negative() && rounded.is_zero() { format!("-{text}") } else { text })
+    Ok(if product.is_sign_negative() && rounded.is_zero() {
+        format!("-{text}")
+    } else {
+        text
+    })
 }

@@ -13,7 +13,9 @@ pub enum CoreError {
 
 impl From<money::MoneyError> for CoreError {
     fn from(err: money::MoneyError) -> Self {
-        Self::Invalid { message: err.to_string() }
+        Self::Invalid {
+            message: err.to_string(),
+        }
     }
 }
 
@@ -48,14 +50,27 @@ pub fn plan_search(
     date_through: String,
     max_combinations: u32,
 ) -> Result<Vec<RouteDate>, PlanSearchError> {
-    planning::plan_search(&origins, &destinations, &date_from, &date_through, max_combinations)
-        .map(|combos| {
-            combos
-                .into_iter()
-                .map(|c| RouteDate { origin: c.origin, destination: c.destination, date: c.date })
-                .collect()
-        })
-        .map_err(|e| PlanSearchError::Rejected { code: e.code().to_owned(), detail: e.to_string() })
+    planning::plan_search(
+        &origins,
+        &destinations,
+        &date_from,
+        &date_through,
+        max_combinations,
+    )
+    .map(|combos| {
+        combos
+            .into_iter()
+            .map(|c| RouteDate {
+                origin: c.origin,
+                destination: c.destination,
+                date: c.date,
+            })
+            .collect()
+    })
+    .map_err(|e| PlanSearchError::Rejected {
+        code: e.code().to_owned(),
+        detail: e.to_string(),
+    })
 }
 
 // ---------- money ----------
@@ -67,7 +82,9 @@ pub fn minor_unit_exponent(currency: String) -> Result<u32, CoreError> {
 
 #[uniffi::export]
 pub fn from_minor_units(minor: String, currency: String) -> Result<String, CoreError> {
-    let minor: i128 = minor.parse().map_err(|_| CoreError::Invalid { message: format!("invalid minor units {minor:?}") })?;
+    let minor: i128 = minor.parse().map_err(|_| CoreError::Invalid {
+        message: format!("invalid minor units {minor:?}"),
+    })?;
     Ok(money::from_minor_units(minor, &currency)?)
 }
 
@@ -77,7 +94,11 @@ pub fn as_minor_units(amount: String, currency: String) -> Result<String, CoreEr
 }
 
 #[uniffi::export]
-pub fn fx_convert(amount: String, rate: String, quote_currency: String) -> Result<String, CoreError> {
+pub fn fx_convert(
+    amount: String,
+    rate: String,
+    quote_currency: String,
+) -> Result<String, CoreError> {
     Ok(money::fx_convert(&amount, &rate, &quote_currency)?)
 }
 
@@ -109,7 +130,17 @@ pub struct Segment {
 
 impl From<LocalInstant> for fp::LocalInstant {
     fn from(t: LocalInstant) -> Self {
-        Self { y: t.y, mo: t.mo, d: t.d, h: t.h, mi: t.mi, s: t.s, us: t.us, offset: t.offset }
+        Self {
+            y: t.y,
+            mo: t.mo,
+            d: t.d,
+            h: t.h,
+            mi: t.mi,
+            s: t.s,
+            us: t.us,
+            offset: t.offset,
+            offset_fraction: 0,
+        }
     }
 }
 
@@ -118,7 +149,7 @@ pub fn fingerprint(segments: Vec<Segment>) -> String {
     let segments: Vec<fp::Segment> = segments
         .into_iter()
         .map(|s| fp::Segment {
-            ordinal: s.ordinal,
+            ordinal: s.ordinal.into(),
             marketing: s.marketing,
             operating: s.operating,
             flight: s.flight,
@@ -216,7 +247,10 @@ impl From<fli::FliPage> for FliPage {
                     .collect(),
             })
             .collect();
-        Self { offers, unpriced: page.unpriced }
+        Self {
+            offers,
+            unpriced: page.unpriced,
+        }
     }
 }
 
@@ -242,12 +276,21 @@ impl From<FliPage> for fli::FliPage {
                     .collect(),
             })
             .collect();
-        Self { offers, unpriced: page.unpriced }
+        Self {
+            offers,
+            unpriced: page.unpriced,
+        }
     }
 }
 
 #[uniffi::export]
-pub fn fli_search_url(origin: String, destination: String, date: String, currency: String, country: String) -> String {
+pub fn fli_search_url(
+    origin: String,
+    destination: String,
+    date: String,
+    currency: String,
+    country: String,
+) -> String {
     fli::search_url(&origin, &destination, &date, &currency, &country)
 }
 
@@ -255,7 +298,10 @@ pub fn fli_search_url(origin: String, destination: String, date: String, currenc
 pub fn fli_decode_page(html: String) -> Result<FliPage, FliDecodeError> {
     fli::decode_page(&html)
         .map(FliPage::from)
-        .map_err(|e| FliDecodeError::Failed { code: e.code().to_owned(), detail: e.to_string() })
+        .map_err(|e| FliDecodeError::Failed {
+            code: e.code().to_owned(),
+            detail: e.to_string(),
+        })
 }
 
 #[derive(Debug, PartialEq, Eq, uniffi::Record)]
@@ -276,9 +322,24 @@ pub fn fli_filter_offers(
     currency: String,
     max_stops: Option<u32>,
 ) -> FliCheckedOffers {
-    let checked = fli::filter_offers(&page.into(), &origin, &destination, &date, &currency, max_stops);
-    let offers = FliPage::from(fli::FliPage { offers: checked.offers, unpriced: 0 }).offers;
-    FliCheckedOffers { offers, rejected: checked.rejected, excluded_by_stops: checked.excluded_by_stops }
+    let checked = fli::filter_offers(
+        &page.into(),
+        &origin,
+        &destination,
+        &date,
+        &currency,
+        max_stops,
+    );
+    let offers = FliPage::from(fli::FliPage {
+        offers: checked.offers,
+        unpriced: 0,
+    })
+    .offers;
+    FliCheckedOffers {
+        offers,
+        rejected: checked.rejected,
+        excluded_by_stops: checked.excluded_by_stops,
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
@@ -289,8 +350,14 @@ pub struct AirportChange {
 
 #[uniffi::export]
 pub fn fli_airport_changes(offer: FliOffer) -> Vec<AirportChange> {
-    let page = fli::FliPage::from(FliPage { offers: vec![offer], unpriced: 0 });
-    fli::airport_changes(&page.offers[0]).into_iter().map(|(from, to)| AirportChange { from, to }).collect()
+    let page = fli::FliPage::from(FliPage {
+        offers: vec![offer],
+        unpriced: 0,
+    });
+    fli::airport_changes(&page.offers[0])
+        .into_iter()
+        .map(|(from, to)| AirportChange { from, to })
+        .collect()
 }
 
 // ---------- Skiplagged + provider-neutral offers (P5.4) ----------
@@ -304,7 +371,10 @@ pub enum SkiplaggedError {
 
 impl From<skiplagged::SkiplaggedError> for SkiplaggedError {
     fn from(err: skiplagged::SkiplaggedError) -> Self {
-        Self::Failed { code: err.code().to_owned(), message: err.to_string() }
+        Self::Failed {
+            code: err.code().to_owned(),
+            message: err.to_string(),
+        }
     }
 }
 
@@ -344,8 +414,14 @@ pub struct SkiplaggedPage {
 }
 
 fn leg_from_core(l: fli::FliLeg) -> FliLeg {
-    FliLeg { origin: l.origin, destination: l.destination, airline: l.airline, flight_number: l.flight_number,
-             depart_local: l.depart_local, arrive_local: l.arrive_local }
+    FliLeg {
+        origin: l.origin,
+        destination: l.destination,
+        airline: l.airline,
+        flight_number: l.flight_number,
+        depart_local: l.depart_local,
+        arrive_local: l.arrive_local,
+    }
 }
 
 impl From<skiplagged::SourceOffer> for SourceOffer {
@@ -364,7 +440,11 @@ impl From<skiplagged::SourceOffer> for SourceOffer {
             price_original: o.price_original,
             currency_original: o.currency_original,
             price_comparable: o.price_comparable,
-            fx: o.fx.map(|f| FxNote { rate: f.rate, as_of: f.as_of, to_currency: f.to_currency }),
+            fx: o.fx.map(|f| FxNote {
+                rate: f.rate,
+                as_of: f.as_of,
+                to_currency: f.to_currency,
+            }),
             link: o.link,
             hidden_city: o.hidden_city,
         }
@@ -373,10 +453,19 @@ impl From<skiplagged::SourceOffer> for SourceOffer {
 
 /// Parses the raw `sk_flights_search` JSON text (exact numbers) for one route/date.
 #[uniffi::export]
-pub fn skiplagged_parse(json: String, origin: String, destination: String, date: String,
-                        display_currency: String) -> Result<SkiplaggedPage, SkiplaggedError> {
-    let page = skiplagged::skiplagged_parse(&json, &origin, &destination, &date, &display_currency)?;
-    Ok(SkiplaggedPage { offers: page.offers.into_iter().map(SourceOffer::from).collect(), complete: page.complete })
+pub fn skiplagged_parse(
+    json: String,
+    origin: String,
+    destination: String,
+    date: String,
+    display_currency: String,
+) -> Result<SkiplaggedPage, SkiplaggedError> {
+    let page =
+        skiplagged::skiplagged_parse(&json, &origin, &destination, &date, &display_currency)?;
+    Ok(SkiplaggedPage {
+        offers: page.offers.into_iter().map(SourceOffer::from).collect(),
+        complete: page.complete,
+    })
 }
 
 /// The exact `sk_flights_search` payload text from a raw JSON-RPC `tools/call` reply.
@@ -388,7 +477,10 @@ pub fn skiplagged_tool_payload(rpc_json: String) -> Result<String, SkiplaggedErr
 /// A Fli offer as a provider-neutral offer.
 #[uniffi::export]
 pub fn fli_source_offer(offer: FliOffer, id: String, display_currency: String) -> SourceOffer {
-    let page = fli::FliPage::from(FliPage { offers: vec![offer], unpriced: 0 });
+    let page = fli::FliPage::from(FliPage {
+        offers: vec![offer],
+        unpriced: 0,
+    });
     skiplagged::fli_source_offer(&page.offers[0], &id, &display_currency).into()
 }
 
@@ -403,7 +495,10 @@ pub enum CatalogError {
 
 impl From<locations::CatalogError> for CatalogError {
     fn from(err: locations::CatalogError) -> Self {
-        Self::Failed { code: err.code().to_owned(), message: err.to_string() }
+        Self::Failed {
+            code: err.code().to_owned(),
+            message: err.to_string(),
+        }
     }
 }
 
@@ -460,34 +555,69 @@ pub struct LocationCatalog {
 impl LocationCatalog {
     #[uniffi::constructor]
     pub fn new(json: String) -> Result<std::sync::Arc<Self>, CatalogError> {
-        Ok(std::sync::Arc::new(Self { inner: locations::Catalog::from_json(&json)? }))
+        Ok(std::sync::Arc::new(Self {
+            inner: locations::Catalog::from_json(&json)?,
+        }))
     }
 
     pub fn version(&self) -> String {
         self.inner.version().to_owned()
     }
 
-    pub fn search(&self, text: String, within: Option<String>) -> Result<Vec<Location>, CatalogError> {
-        Ok(self.inner.search(&text, within.as_deref())?.into_iter().map(Location::from).collect())
+    pub fn search(
+        &self,
+        text: String,
+        within: Option<String>,
+    ) -> Result<Vec<Location>, CatalogError> {
+        Ok(self
+            .inner
+            .search(&text, within.as_deref())?
+            .into_iter()
+            .map(Location::from)
+            .collect())
     }
 
     /// The first `limit` matches plus the total count (the picker shows "N more").
-    pub fn search_page(&self, text: String, within: Option<String>, limit: u32) -> Result<SearchPage, CatalogError> {
-        let page = self.inner.search_page(&text, within.as_deref(), limit as usize)?;
-        Ok(SearchPage { locations: page.locations.into_iter().map(Location::from).collect(), total: page.total })
+    pub fn search_page(
+        &self,
+        text: String,
+        within: Option<String>,
+        limit: u32,
+    ) -> Result<SearchPage, CatalogError> {
+        let page = self
+            .inner
+            .search_page(&text, within.as_deref(), limit as usize)?;
+        Ok(SearchPage {
+            locations: page.locations.into_iter().map(Location::from).collect(),
+            total: page.total,
+        })
     }
 
     pub fn airports_of(&self, id: String) -> Result<Vec<Location>, CatalogError> {
-        Ok(self.inner.airports_of(&id)?.into_iter().map(Location::from).collect())
+        Ok(self
+            .inner
+            .airports_of(&id)?
+            .into_iter()
+            .map(Location::from)
+            .collect())
     }
 
     pub fn has_major(&self, id: String) -> bool {
         self.inner.has_major(&id)
     }
 
-    pub fn resolve_major(&self, kind: String, id: String, version: String) -> Result<MajorResolution, CatalogError> {
+    pub fn resolve_major(
+        &self,
+        kind: String,
+        id: String,
+        version: String,
+    ) -> Result<MajorResolution, CatalogError> {
         let r = self.inner.resolve_major(&kind, &id, &version)?;
-        Ok(MajorResolution { codes: r.codes, rationale: r.rationale, definition: r.definition })
+        Ok(MajorResolution {
+            codes: r.codes,
+            rationale: r.rationale,
+            definition: r.definition,
+        })
     }
 
     pub fn location(&self, id: String) -> Option<Location> {
@@ -500,7 +630,13 @@ impl LocationCatalog {
 }
 
 #[uniffi::export]
-pub fn fli_cross_check(page: FliPage, origin: String, destination: String, date: String, currency: String) -> Option<String> {
+pub fn fli_cross_check(
+    page: FliPage,
+    origin: String,
+    destination: String,
+    date: String,
+    currency: String,
+) -> Option<String> {
     fli::cross_check(&page.into(), &origin, &destination, &date, &currency)
 }
 
@@ -518,7 +654,10 @@ pub enum StoreError {
 
 impl From<store::StoreError> for StoreError {
     fn from(err: store::StoreError) -> Self {
-        Self::Failed { code: err.code().to_owned(), message: err.to_string() }
+        Self::Failed {
+            code: err.code().to_owned(),
+            message: err.to_string(),
+        }
     }
 }
 
@@ -551,7 +690,11 @@ impl From<StoredRequest> for store::StoredRequest {
             max_stops: r.max_stops,
             origin_majors: r.origin_majors,
             destination_majors: r.destination_majors,
-            providers: if r.providers.is_empty() { vec!["fli".into()] } else { r.providers },
+            providers: if r.providers.is_empty() {
+                vec!["fli".into()]
+            } else {
+                r.providers
+            },
         }
     }
 }
@@ -630,16 +773,30 @@ pub struct StoredSearch {
 }
 
 fn route_to_core(c: RouteDate) -> planning::RouteDate {
-    planning::RouteDate { origin: c.origin, destination: c.destination, date: c.date }
+    planning::RouteDate {
+        origin: c.origin,
+        destination: c.destination,
+        date: c.date,
+    }
 }
 
 fn route_from_core(c: planning::RouteDate) -> RouteDate {
-    RouteDate { origin: c.origin, destination: c.destination, date: c.date }
+    RouteDate {
+        origin: c.origin,
+        destination: c.destination,
+        date: c.date,
+    }
 }
 
 fn leg_to_core(l: FliLeg) -> fli::FliLeg {
-    fli::FliLeg { origin: l.origin, destination: l.destination, airline: l.airline, flight_number: l.flight_number,
-                  depart_local: l.depart_local, arrive_local: l.arrive_local }
+    fli::FliLeg {
+        origin: l.origin,
+        destination: l.destination,
+        airline: l.airline,
+        flight_number: l.flight_number,
+        depart_local: l.depart_local,
+        arrive_local: l.arrive_local,
+    }
 }
 
 impl From<SourceOffer> for skiplagged::SourceOffer {
@@ -658,7 +815,11 @@ impl From<SourceOffer> for skiplagged::SourceOffer {
             price_original: o.price_original,
             currency_original: o.currency_original,
             price_comparable: o.price_comparable,
-            fx: o.fx.map(|f| skiplagged::FxNote { rate: f.rate, as_of: f.as_of, to_currency: f.to_currency }),
+            fx: o.fx.map(|f| skiplagged::FxNote {
+                rate: f.rate,
+                as_of: f.as_of,
+                to_currency: f.to_currency,
+            }),
             link: o.link,
             hidden_city: o.hidden_city,
         }
@@ -690,13 +851,23 @@ pub struct SearchStore {
 impl SearchStore {
     #[uniffi::constructor]
     pub fn new(path: String) -> Result<Arc<Self>, StoreError> {
-        Ok(Arc::new(Self { inner: store::Store::open(&path)? }))
+        Ok(Arc::new(Self {
+            inner: store::Store::open(&path)?,
+        }))
     }
 
-    pub fn create_search(&self, request: StoredRequest, items: Vec<WorkItem>, now_ms: i64) -> Result<i64, StoreError> {
+    pub fn create_search(
+        &self,
+        request: StoredRequest,
+        items: Vec<WorkItem>,
+        now_ms: i64,
+    ) -> Result<i64, StoreError> {
         let items: Vec<store::WorkItem> = items
             .into_iter()
-            .map(|i| store::WorkItem { provider: i.provider, route_date: route_to_core(i.route_date) })
+            .map(|i| store::WorkItem {
+                provider: i.provider,
+                route_date: route_to_core(i.route_date),
+            })
             .collect();
         Ok(self.inner.create_search(&request.into(), &items, now_ms)?)
     }
@@ -711,15 +882,35 @@ impl SearchStore {
         now_ms: i64,
     ) -> Result<(), StoreError> {
         let offers: Vec<skiplagged::SourceOffer> = offers.into_iter().map(Into::into).collect();
-        Ok(self.inner.finish_combo(search_id, index, &offers, &hidden, failure.as_deref(), now_ms)?)
+        Ok(self.inner.finish_combo(
+            search_id,
+            index,
+            &offers,
+            &hidden,
+            failure.as_deref(),
+            now_ms,
+        )?)
     }
 
-    pub fn set_stopped(&self, search_id: i64, reason: String, now_ms: i64) -> Result<(), StoreError> {
+    pub fn set_stopped(
+        &self,
+        search_id: i64,
+        reason: String,
+        now_ms: i64,
+    ) -> Result<(), StoreError> {
         Ok(self.inner.set_stopped(search_id, &reason, now_ms)?)
     }
 
-    pub fn set_provider_stopped(&self, search_id: i64, provider: String, reason: String, now_ms: i64) -> Result<(), StoreError> {
-        Ok(self.inner.set_provider_stopped(search_id, &provider, &reason, now_ms)?)
+    pub fn set_provider_stopped(
+        &self,
+        search_id: i64,
+        provider: String,
+        reason: String,
+        now_ms: i64,
+    ) -> Result<(), StoreError> {
+        Ok(self
+            .inner
+            .set_provider_stopped(search_id, &provider, &reason, now_ms)?)
     }
 
     pub fn clear_stopped(&self, search_id: i64) -> Result<(), StoreError> {
@@ -727,26 +918,51 @@ impl SearchStore {
     }
 
     pub fn pending(&self, search_id: i64) -> Result<Vec<StoredCombo>, StoreError> {
-        Ok(self.inner.pending(search_id)?.into_iter().map(combo_from_store).collect())
+        Ok(self
+            .inner
+            .pending(search_id)?
+            .into_iter()
+            .map(combo_from_store)
+            .collect())
     }
 
     pub fn latest(&self) -> Result<Option<StoredSearch>, StoreError> {
-        let Some(s) = self.inner.latest()? else { return Ok(None) };
+        let Some(s) = self.inner.latest()? else {
+            return Ok(None);
+        };
         Ok(Some(StoredSearch {
             id: s.id,
             request: s.request.into(),
             created_at_ms: s.created_at_ms,
             updated_at_ms: s.updated_at_ms,
             stop_reason: s.stop_reason,
-            provider_stops: s.provider_stops.into_iter().map(|(provider, reason)| ProviderStop { provider, reason }).collect(),
+            provider_stops: s
+                .provider_stops
+                .into_iter()
+                .map(|(provider, reason)| ProviderStop { provider, reason })
+                .collect(),
             combos: s.combos.into_iter().map(combo_from_store).collect(),
             offers: s
                 .offers
                 .into_iter()
-                .map(|o| StoredOffer { combo_index: o.combo_index, offer_index: o.offer_index, offer: o.offer.into(),
-                                       fetched_at_ms: o.fetched_at_ms })
+                .map(|o| StoredOffer {
+                    combo_index: o.combo_index,
+                    offer_index: o.offer_index,
+                    offer: o.offer.into(),
+                    fetched_at_ms: o.fetched_at_ms,
+                })
                 .collect(),
-            hidden: s.hidden.into_iter().map(|(reason, count)| HiddenCount { reason, count }).collect(),
+            hidden: s
+                .hidden
+                .into_iter()
+                .map(|(reason, count)| HiddenCount { reason, count })
+                .collect(),
         }))
     }
+}
+
+/// Raw accessor for the Swift initialization check, before UniFFI calls are allowed.
+#[no_mangle]
+pub extern "C" fn cheapwings_core_build_revision() -> *const std::ffi::c_char {
+    cheapwings_core::BUILD_REVISION_C.as_ptr().cast()
 }

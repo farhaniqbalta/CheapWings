@@ -214,26 +214,40 @@ impl Store {
     pub fn open(path: &str) -> Result<Store, StoreError> {
         let open = |e: rusqlite::Error| StoreError::Open(e.to_string());
         let mut conn = Connection::open(path).map_err(open)?;
-        conn.pragma_update(None, "foreign_keys", true).map_err(open)?;
-        conn.query_row("PRAGMA journal_mode = WAL", [], |_| Ok(())).map_err(open)?;
-        let version: i64 = conn.query_row("PRAGMA user_version", [], |r| r.get(0)).map_err(open)?;
+        conn.pragma_update(None, "foreign_keys", true)
+            .map_err(open)?;
+        conn.query_row("PRAGMA journal_mode = WAL", [], |_| Ok(()))
+            .map_err(open)?;
+        let version: i64 = conn
+            .query_row("PRAGMA user_version", [], |r| r.get(0))
+            .map_err(open)?;
         let tx = conn.transaction().map_err(open)?;
         tx.execute_batch(SCHEMA_V1).map_err(open)?;
         if version < 2 {
             tx.execute_batch(MIGRATE_V2).map_err(open)?;
         }
-        tx.pragma_update(None, "user_version", SCHEMA_VERSION).map_err(open)?;
+        tx.pragma_update(None, "user_version", SCHEMA_VERSION)
+            .map_err(open)?;
         tx.commit().map_err(open)?;
-        Ok(Store { conn: Mutex::new(conn) })
+        Ok(Store {
+            conn: Mutex::new(conn),
+        })
     }
 
     fn lock(&self) -> std::sync::MutexGuard<'_, Connection> {
         // A panic while holding the lock cannot leave SQLite inconsistent; keep serving.
-        self.conn.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+        self.conn
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
     /// Records a new search with every work item pending; keeps only the newest 10 searches.
-    pub fn create_search(&self, request: &StoredRequest, items: &[WorkItem], now_ms: i64) -> Result<i64, StoreError> {
+    pub fn create_search(
+        &self,
+        request: &StoredRequest,
+        items: &[WorkItem],
+        now_ms: i64,
+    ) -> Result<i64, StoreError> {
         let mut conn = self.lock();
         let tx = conn.transaction().map_err(sql)?;
         tx.execute(
@@ -248,7 +262,16 @@ impl Store {
                 .map_err(sql)?;
             for (index, item) in items.iter().enumerate() {
                 let rd = &item.route_date;
-                insert.execute(params![id, index as i64, item.provider, rd.origin, rd.destination, rd.date]).map_err(sql)?;
+                insert
+                    .execute(params![
+                        id,
+                        index as i64,
+                        item.provider,
+                        rd.origin,
+                        rd.destination,
+                        rd.date
+                    ])
+                    .map_err(sql)?;
             }
         }
         tx.execute(
@@ -272,7 +295,11 @@ impl Store {
     ) -> Result<(), StoreError> {
         let mut conn = self.lock();
         let tx = conn.transaction().map_err(sql)?;
-        let status = if failure.is_some() { ComboStatus::Failed } else { ComboStatus::Done };
+        let status = if failure.is_some() {
+            ComboStatus::Failed
+        } else {
+            ComboStatus::Done
+        };
         let updated = tx
             .execute(
                 "UPDATE combos SET status = ?3, code = ?4, finished_at_ms = ?5 WHERE search_id = ?1 AND idx = ?2",
@@ -282,16 +309,32 @@ impl Store {
         if updated == 0 {
             return Err(StoreError::NotFound(search_id));
         }
-        tx.execute("DELETE FROM offers WHERE search_id = ?1 AND combo_idx = ?2", params![search_id, index]).map_err(sql)?;
-        tx.execute("DELETE FROM hidden WHERE search_id = ?1 AND combo_idx = ?2", params![search_id, index]).map_err(sql)?;
+        tx.execute(
+            "DELETE FROM offers WHERE search_id = ?1 AND combo_idx = ?2",
+            params![search_id, index],
+        )
+        .map_err(sql)?;
+        tx.execute(
+            "DELETE FROM hidden WHERE search_id = ?1 AND combo_idx = ?2",
+            params![search_id, index],
+        )
+        .map_err(sql)?;
         {
             let mut insert = tx
                 .prepare("INSERT INTO offers (search_id, combo_idx, offer_idx, price, currency, legs, fetched_at_ms, offer_json) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)")
                 .map_err(sql)?;
             for (offer_index, offer) in offers.iter().enumerate() {
                 insert
-                    .execute(params![search_id, index, offer_index as i64, offer.price_original, offer.currency_original,
-                                     json(&offer.legs)?, now_ms, json(offer)?])
+                    .execute(params![
+                        search_id,
+                        index,
+                        offer_index as i64,
+                        offer.price_original,
+                        offer.currency_original,
+                        json(&offer.legs)?,
+                        now_ms,
+                        json(offer)?
+                    ])
                     .map_err(sql)?;
             }
             let mut counts: Vec<(&String, u32)> = Vec::new();
@@ -305,10 +348,16 @@ impl Store {
                 .prepare("INSERT INTO hidden (search_id, combo_idx, reason, count) VALUES (?1, ?2, ?3, ?4)")
                 .map_err(sql)?;
             for (reason, count) in counts {
-                insert_hidden.execute(params![search_id, index, reason, count]).map_err(sql)?;
+                insert_hidden
+                    .execute(params![search_id, index, reason, count])
+                    .map_err(sql)?;
             }
         }
-        tx.execute("UPDATE searches SET updated_at_ms = ?2 WHERE id = ?1", params![search_id, now_ms]).map_err(sql)?;
+        tx.execute(
+            "UPDATE searches SET updated_at_ms = ?2 WHERE id = ?1",
+            params![search_id, now_ms],
+        )
+        .map_err(sql)?;
         tx.commit().map_err(sql)
     }
 
@@ -320,18 +369,34 @@ impl Store {
                 params![search_id, reason, now_ms],
             )
             .map_err(sql)?;
-        if n == 0 { Err(StoreError::NotFound(search_id)) } else { Ok(()) }
+        if n == 0 {
+            Err(StoreError::NotFound(search_id))
+        } else {
+            Ok(())
+        }
     }
 
     /// Records that one provider stopped on its own (replacing an earlier reason for it).
-    pub fn set_provider_stopped(&self, search_id: i64, provider: &str, reason: &str, now_ms: i64) -> Result<(), StoreError> {
+    pub fn set_provider_stopped(
+        &self,
+        search_id: i64,
+        provider: &str,
+        reason: &str,
+        now_ms: i64,
+    ) -> Result<(), StoreError> {
         let mut conn = self.lock();
         let tx = conn.transaction().map_err(sql)?;
         let current: Option<Option<String>> = tx
-            .query_row("SELECT provider_stops FROM searches WHERE id = ?1", params![search_id], |r| r.get(0))
+            .query_row(
+                "SELECT provider_stops FROM searches WHERE id = ?1",
+                params![search_id],
+                |r| r.get(0),
+            )
             .optional()
             .map_err(sql)?;
-        let Some(current) = current else { return Err(StoreError::NotFound(search_id)) };
+        let Some(current) = current else {
+            return Err(StoreError::NotFound(search_id));
+        };
         let mut stops: Vec<(String, String)> = match current {
             Some(text) => from_json(&text)?,
             None => Vec::new(),
@@ -352,19 +417,31 @@ impl Store {
     pub fn clear_stopped(&self, search_id: i64) -> Result<(), StoreError> {
         let n = self
             .lock()
-            .execute("UPDATE searches SET stop_reason = NULL, provider_stops = NULL WHERE id = ?1", params![search_id])
+            .execute(
+                "UPDATE searches SET stop_reason = NULL, provider_stops = NULL WHERE id = ?1",
+                params![search_id],
+            )
             .map_err(sql)?;
-        if n == 0 { Err(StoreError::NotFound(search_id)) } else { Ok(()) }
+        if n == 0 {
+            Err(StoreError::NotFound(search_id))
+        } else {
+            Ok(())
+        }
     }
 
     pub fn search_count(&self) -> Result<i64, StoreError> {
-        self.lock().query_row("SELECT COUNT(*) FROM searches", [], |r| r.get(0)).map_err(sql)
+        self.lock()
+            .query_row("SELECT COUNT(*) FROM searches", [], |r| r.get(0))
+            .map_err(sql)
     }
 
     pub fn pending(&self, search_id: i64) -> Result<Vec<StoredCombo>, StoreError> {
         let conn = self.lock();
         Self::require(&conn, search_id)?;
-        Ok(Self::combos(&conn, search_id)?.into_iter().filter(|c| c.status == ComboStatus::Pending).collect())
+        Ok(Self::combos(&conn, search_id)?
+            .into_iter()
+            .filter(|c| c.status == ComboStatus::Pending)
+            .collect())
     }
 
     pub fn latest(&self) -> Result<Option<StoredSearch>, StoreError> {
@@ -380,7 +457,10 @@ impl Store {
             )
             .optional()
             .map_err(sql)?;
-        let Some((id, request, created_at_ms, updated_at_ms, stop_reason, provider_stops)) = row else { return Ok(None) };
+        let Some((id, request, created_at_ms, updated_at_ms, stop_reason, provider_stops)) = row
+        else {
+            return Ok(None);
+        };
         let request: StoredRequest = from_json(&request)?;
         let offers = Self::offers(&conn, id, &request.currency)?;
         Ok(Some(StoredSearch {
@@ -401,7 +481,11 @@ impl Store {
 
     fn require(conn: &Connection, search_id: i64) -> Result<(), StoreError> {
         let found: Option<i64> = conn
-            .query_row("SELECT id FROM searches WHERE id = ?1", params![search_id], |r| r.get(0))
+            .query_row(
+                "SELECT id FROM searches WHERE id = ?1",
+                params![search_id],
+                |r| r.get(0),
+            )
             .optional()
             .map_err(sql)?;
         found.map(|_| ()).ok_or(StoreError::NotFound(search_id))
@@ -416,7 +500,11 @@ impl Store {
                 Ok(StoredCombo {
                     index: r.get(0)?,
                     provider: r.get(1)?,
-                    route_date: RouteDate { origin: r.get(2)?, destination: r.get(3)?, date: r.get(4)? },
+                    route_date: RouteDate {
+                        origin: r.get(2)?,
+                        destination: r.get(3)?,
+                        date: r.get(4)?,
+                    },
                     status: ComboStatus::parse(&r.get::<_, String>(5)?),
                     code: r.get(6)?,
                     finished_at_ms: r.get(7)?,
@@ -427,27 +515,52 @@ impl Store {
     }
 
     /// Neutral offers; rows written before P5.4 (no `offer_json`) are read back as Fli offers.
-    fn offers(conn: &Connection, search_id: i64, display_currency: &str) -> Result<Vec<StoredOffer>, StoreError> {
+    fn offers(
+        conn: &Connection,
+        search_id: i64,
+        display_currency: &str,
+    ) -> Result<Vec<StoredOffer>, StoreError> {
         let mut stmt = conn
             .prepare("SELECT combo_idx, offer_idx, price, currency, legs, fetched_at_ms, offer_json FROM offers WHERE search_id = ?1 ORDER BY combo_idx, offer_idx")
             .map_err(sql)?;
         let rows = stmt
             .query_map(params![search_id], |r| {
-                Ok((r.get::<_, u32>(0)?, r.get::<_, u32>(1)?, r.get::<_, String>(2)?, r.get::<_, Option<String>>(3)?,
-                    r.get::<_, String>(4)?, r.get::<_, i64>(5)?, r.get::<_, Option<String>>(6)?))
+                Ok((
+                    r.get::<_, u32>(0)?,
+                    r.get::<_, u32>(1)?,
+                    r.get::<_, String>(2)?,
+                    r.get::<_, Option<String>>(3)?,
+                    r.get::<_, String>(4)?,
+                    r.get::<_, i64>(5)?,
+                    r.get::<_, Option<String>>(6)?,
+                ))
             })
             .map_err(sql)?;
         let mut out = Vec::new();
         for row in rows {
-            let (combo_index, offer_index, price, currency, legs, fetched_at_ms, offer_json) = row.map_err(sql)?;
+            let (combo_index, offer_index, price, currency, legs, fetched_at_ms, offer_json) =
+                row.map_err(sql)?;
             let offer = match offer_json {
                 Some(text) => from_json(&text)?,
                 None => {
                     let legs: Vec<FliLeg> = from_json(&legs)?;
-                    fli_source_offer(&FliOffer { price, currency, legs }, "", display_currency)
+                    fli_source_offer(
+                        &FliOffer {
+                            price,
+                            currency,
+                            legs,
+                        },
+                        "",
+                        display_currency,
+                    )
                 }
             };
-            out.push(StoredOffer { combo_index, offer_index, offer, fetched_at_ms });
+            out.push(StoredOffer {
+                combo_index,
+                offer_index,
+                offer,
+                fetched_at_ms,
+            });
         }
         Ok(out)
     }
@@ -456,7 +569,9 @@ impl Store {
         let mut stmt = conn
             .prepare("SELECT reason, SUM(count) FROM hidden WHERE search_id = ?1 GROUP BY reason ORDER BY reason")
             .map_err(sql)?;
-        let rows = stmt.query_map(params![search_id], |r| Ok((r.get(0)?, r.get(1)?))).map_err(sql)?;
+        let rows = stmt
+            .query_map(params![search_id], |r| Ok((r.get(0)?, r.get(1)?)))
+            .map_err(sql)?;
         rows.collect::<Result<Vec<_>, _>>().map_err(sql)
     }
 }

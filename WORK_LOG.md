@@ -57,7 +57,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 - The iPad results use plain-language failure messages. See the [P6 execution log](docs/log/p6.md) for evidence and open items, including the 4 MB Fli cap.
 
 ## Next task
-P6 awaits signed iPad acceptance and an owner decision on full web Fli live fare acceptance. P7 remains separate.
+P6 signed app installed and launched on iPad. Owner interaction check and full web Fli live fare acceptance remain pending. P7 remains separate.
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

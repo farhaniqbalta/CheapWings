@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  RUST_VERSION: "1.100.0"
+
+jobs:
+  backend:
+    name: Backend + Rust
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Set up Rust
+        run: |
+          rustup toolchain install "$RUST_VERSION" --profile minimal
+          rustup override set "$RUST_VERSION"
+      - name: Check committed binding revisions
+        run: |
+          sh core/update-expected-revision.sh
+          git diff --exit-code -- backend/src/cheapwings/_core_revision.py apps/ios/CheapWingsCore/Sources/CheapWingsCore/ExpectedCoreRevision.swift
+      - name: Install backend and rebuild PyO3
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install -e './backend[dev,live]'
+          maturin develop --release --locked -m core/cheapwings-py/Cargo.toml
+      - name: Rust workspace tests
+        run: cargo test --locked --manifest-path core/Cargo.toml --workspace
+      - name: Backend and scheduler tests
+        run: |
+          .venv/bin/python -m pytest backend/tests -ra
+          .venv/bin/python -m pytest -c backend/pyproject.toml \
+            scripts/benchmarks/test_p48_{instrumentation,failures,scheduler_review}.py -q
+      - name: Fake-provider worker restart
+        run: .venv/bin/python scripts/p2_smoke.py
+
+  web:
+    name: Web
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: "26"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - name: Production build and browser tests
+        run: npm run test:browser
+
+  ipad:
+    name: iPad
+    runs-on: xcode-27
+    timeout-minutes: 40
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Set up build tools
+        run: |
+          xcrun xcodebuild -version
+          rustup toolchain install "$RUST_VERSION" --profile minimal \
+            --target aarch64-apple-ios,aarch64-apple-ios-sim,aarch64-apple-darwin
+          rustup override set "$RUST_VERSION"
+          brew install xcodegen
+      - name: Rebuild Swift bindings
+        run: sh core/build-ios.sh
+      - name: Swift package tests
+        run: |
+          xcrun swift test --package-path apps/ios/CheapWingsCore
+          xcrun swift test --package-path apps/ios/CheapWingsKit
+      - name: Unsigned iOS Release build
+        run: |
+          xcodegen generate --spec apps/ios/CheapWings/project.yml
+          xcrun xcodebuild -project apps/ios/CheapWings/CheapWings.xcodeproj \
+            -scheme CheapWings -configuration Release -sdk iphoneos \
+            -destination generic/platform=iOS -derivedDataPath "$RUNNER_TEMP/cheapwings-release" \
+            CODE_SIGNING_ALLOWED=NO build

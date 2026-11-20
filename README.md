@@ -340,6 +340,14 @@ are required in fake mode.
 
 ## Validation and contract
 
+[GitHub Actions](.github/workflows/ci.yml) runs three offline checks on pull
+requests to `main` and on pushes to `main`. **Backend + Rust** rebuilds PyO3,
+checks both expected binding revisions, and runs the backend, scheduler,
+Rust, and fake-worker restart checks. **Web** builds the app and runs the
+unit and Chromium tests. **iPad** rebuilds the XCFramework, tests both Swift
+packages, and builds an unsigned iOS Release app on Apple silicon with Xcode 27.1.
+Live provider checks and signed iPad testing are run separately for release acceptance.
+
 ```sh
 .venv/bin/python -m pytest backend/tests -q
 .venv/bin/python -m cheapwings.cli_demo

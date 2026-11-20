@@ -47,6 +47,12 @@ The API does not execute provider work. Both commands reject missing/outdated
 migrations; neither silently creates tables. Use a local disk database, not a
 network filesystem. Relative database URLs resolve from the working directory.
 
+### Release acceptance
+
+The example environment starts with the fake provider and needs no external
+credentials. See the [P6 release log](docs/log/p6.md) for the clean-install
+checks, synthetic browser evidence, and scoped live provider results.
+
 ### P5.7 parser parity gate
 
 Run from the repository root with the backend environment active. The Fli

@@ -39,7 +39,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | P5.8 iPad parallel Fli pacing | Done; [PR #17](https://github.com/farhaniqbalta/CheapWings/pull/17) merged `69f6417` | [P5.8](docs/log/p5.8.md), [plan](docs/log/p5.8-plan.md) |
 | P5.4 Skiplagged on iPad | Done; [PR #19](https://github.com/farhaniqbalta/CheapWings/pull/19) merged `bc4f5b2`; owner device checks passed. OctoTrip on iPad deferred until further notice (owner 2026-11-14) | [P5.4](docs/log/p5.4.md), [plan](docs/log/p5.4-plan.md) |
 | P5.7 Web backend onto the Rust core | Done; all three checkpoints merged | [Plan](docs/log/p5.7-plan.md), [execution](docs/log/p5.7.md) |
-| P6 Release acceptance | Offline and signed iPad acceptance passed | [P6 evidence](docs/log/p6.md). Skiplagged returned indicative fares. A later Fli transport-only check connected. |
+| P6 Release acceptance | Acceptance passed locally | [P6 evidence](docs/log/p6.md). Signed iPad checks and live web Fli fares verified. |
 | P7 Discover (Explore Anywhere / Surprise Me) | **Proposed / Not started** — separate feature beside Search (user chooses); awaits owner approval to start | [P7 plan](docs/06_IMPLEMENTATION_CHECKPOINTS.md#p7--explore-anywhere-proposed--not-started), [spec](docs/01_PRODUCT_REQUIREMENTS_UX.md#proposed-feature-explore-anywhere-and-surprise-me-p7--proposed--not-started) |
 
 ## Provider decision ledger
@@ -51,13 +51,12 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | Fli | Owner-requested personal-use integration (2026-11-12) | Google Flights public page; indicative quotes/search links; basic-economy exclusion unsupported; same inventory as swoop. |
 
 ## Latest checkpoint
-- P5.7 closed with checkpoint 3 merged at `648d104`. OctoTrip/swoop parsing and scheduler migration remain deferred.
-- P6 offline acceptance passed on clean merged main. Fresh install, both binding builds, worker restart, web UI submit/reload, and unsigned iPad Release build passed.
-- The scoped live check returned 20 indicative Skiplagged offers. Web Fli failed during TLS on the initial check and one owner-approved retry.
-- The iPad results use plain-language failure messages. See the [P6 execution log](docs/log/p6.md) for evidence and open items, including the 4 MB Fli cap.
+- P6 offline acceptance passed, including clean setup, both bindings, worker restart, browser recovery, and the unsigned iPad Release build.
+- The owner verified the signed iPad build. A single live web Fli search returned 21 indicative IDR offers, visible after reload. The earlier Skiplagged canary returned 20 indicative offers.
+- P6 follow-up: assess the 4 MB Fli web body cap. See the [P6 evidence](docs/log/p6.md) for coverage limits and remaining items.
 
 ## Next task
-P6 signed iPad owner checks passed. Full web Fli live fare acceptance remains pending. P7 remains separate.
+P6 is ready for owner review. P7 awaits separate approval.
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

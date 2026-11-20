@@ -39,7 +39,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | P5.8 iPad parallel Fli pacing | Done; [PR #17](https://github.com/farhaniqbalta/CheapWings/pull/17) merged `69f6417` | [P5.8](docs/log/p5.8.md), [plan](docs/log/p5.8-plan.md) |
 | P5.4 Skiplagged on iPad | Done; [PR #19](https://github.com/farhaniqbalta/CheapWings/pull/19) merged `bc4f5b2`; owner device checks passed. OctoTrip on iPad deferred until further notice (owner 2026-11-14) | [P5.4](docs/log/p5.4.md), [plan](docs/log/p5.4-plan.md) |
 | P5.7 Web backend onto the Rust core | Done; all three checkpoints merged | [Plan](docs/log/p5.7-plan.md), [execution](docs/log/p5.7.md) |
-| P6 Release acceptance | Offline passed; owner acceptance pending | [P6 evidence](docs/log/p6.md). Skiplagged returned indicative fares. Web Fli could not connect. |
+| P6 Release acceptance | Offline passed; owner acceptance pending | [P6 evidence](docs/log/p6.md). Skiplagged returned indicative fares. A later Fli transport-only check connected. |
 | P7 Discover (Explore Anywhere / Surprise Me) | **Proposed / Not started** — separate feature beside Search (user chooses); awaits owner approval to start | [P7 plan](docs/06_IMPLEMENTATION_CHECKPOINTS.md#p7--explore-anywhere-proposed--not-started), [spec](docs/01_PRODUCT_REQUIREMENTS_UX.md#proposed-feature-explore-anywhere-and-surprise-me-p7--proposed--not-started) |
 
 ## Provider decision ledger
@@ -57,7 +57,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 - The iPad results use plain-language failure messages. See the [P6 execution log](docs/log/p6.md) for evidence and open items, including the 4 MB Fli cap.
 
 ## Next task
-P6 awaits signed iPad acceptance and an owner decision on web Fli readiness after the TLS failure. P7 remains separate.
+P6 awaits signed iPad acceptance and an owner decision on full web Fli live fare acceptance. P7 remains separate.
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

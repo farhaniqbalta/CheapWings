@@ -197,10 +197,10 @@ never on provider name. A discovery-only source never produces ranked offers by 
 | Discovery response parsing | Rust core where the format is shared and pure (like the Fli decoder), else adapter | No networking in Rust |
 | Candidate normalization to catalog airports, dedupe | Rust core (`locations` catalog already ported in P5.5) | Same output on web (PyO3) and iPad (UniFFI) |
 | Budget / currency / region / date filtering | Rust core (`money` already shared) | Discovery FX is display-only |
-| Shortlist prioritization, discovery-to-search plan | Rust core, feeding the existing `plan_search` cap | Deterministic for the same inputs |
+| Shortlist prioritization, discovery-to-search plan | Rust core: `select_discovery_plan` produces an explicit route/date list; `plan_search` is Search-only ([P7.0](log/p7.0.md)) | Deterministic for the same inputs |
 | Price provenance / evidence level | Rust core ranking (extends `lowest_advertised` evidence) | Discovery price never ranks as checked |
 | Scheduling, pacing, retries, cooldown, cache, persistence, cancellation, progress | **Existing** engine (web scheduler; iPad engine) | No second scheduler; discovery calls get their own provider interval and a bounded budget in the same pool |
-| Explore form, results, Surprise Me presentation | React and SwiftUI separately | Random pick may use a shared seeded helper in Rust for parity |
+| Explore form, results, Surprise Me presentation | React and SwiftUI separately | Surprise Me deferred (owner); no random helper in Rust |
 
 ### Execution rules
 

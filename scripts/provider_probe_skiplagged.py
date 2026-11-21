@@ -18,7 +18,9 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import re
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -148,8 +150,81 @@ async def run(do_search: bool, do_faq: bool = False) -> dict:
     return observed
 
 
+CALL_SPACING_S = 60
+STOP_MARKERS = ("429", "401", "403", "rate limit", "too many requests", "forbidden")
+
+
+_UTM = re.compile(r"([?&])utm_[^&\s)\"']*&?")
+
+
+def _redact(value):
+    """Strip utm_* tracking parameters from URLs anywhere in the payload, including markdown text."""
+    if isinstance(value, dict):
+        return {k: _redact(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_redact(v) for v in value]
+    if isinstance(value, str) and "utm_" in value:
+        while _UTM.search(value):
+            value = _UTM.sub(r"\1", value)
+        return re.sub(r"[?&](?=[\s)\"']|$)", "", value)
+    return value
+
+
+async def run_calls(calls: list[dict], list_tools: bool = True) -> dict:
+    """P7.1: owner-approved calls, one session, one at a time, spaced, stop at the first error."""
+    observed: dict = {
+        "provider_id": "skiplagged",
+        "endpoint": ENDPOINT,
+        "mcp_sdk_version": importlib.metadata.version("mcp"),
+        "probe_run_at": _utc_now_iso(),
+        "tools": [],
+        "calls": [],
+        "stopped": None,
+    }
+    async with streamablehttp_client(ENDPOINT) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            if list_tools:  # counts against the probe budget; later stages skip it
+                observed["tools"] = [
+                    {"name": t.name, "input_schema": t.input_schema, "output_schema": t.output_schema}
+                    for t in (await session.list_tools()).tools
+                ]
+            for i, call in enumerate(calls):
+                if i:
+                    await asyncio.sleep(CALL_SPACING_S)
+                started = time.monotonic()
+                entry = {"tool": call["tool"], "args": call["args"], "at": _utc_now_iso()}
+                try:
+                    result = await session.call_tool(call["tool"], call["args"])
+                    entry["is_error"] = result.is_error
+                    entry["structured"] = _redact(result.structured_content)
+                    entry["content"] = _redact([b.model_dump(mode="json") for b in result.content])
+                except Exception as exc:  # noqa: BLE001 - probe script, record and stop
+                    entry["exception"] = repr(exc)
+                entry["latency_ms"] = round((time.monotonic() - started) * 1000)
+                entry["response_bytes"] = len(json.dumps(entry.get("content", ""), default=str))
+                observed["calls"].append(entry)
+                print(f"[{i + 1}/{len(calls)}] {call['tool']} {entry['latency_ms']} ms", file=sys.stderr)
+                text = json.dumps(entry.get("content", ""), default=str).lower() + entry.get("exception", "").lower()
+                if "exception" in entry or (entry.get("is_error") and any(m in text for m in STOP_MARKERS)):
+                    observed["stopped"] = f"call {i + 1}: {entry.get('exception') or 'error result'}"
+                    break
+    return observed
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--calls",
+        type=Path,
+        help="P7.1: JSON list of {tool, args}; runs them one at a time, 60 s apart, stopping at the first error.",
+    )
+    parser.add_argument("--skip-list", action="store_true", help="With --calls: do not call tools/list.")
+    parser.add_argument(
+        "--i-have-owner-approval",
+        action="store_true",
+        help="Required with --calls: live calls run only under an owner-approved probe budget.",
+    )
     parser.add_argument(
         "--search",
         action="store_true",
@@ -161,6 +236,18 @@ def main() -> int:
         help="Also query sk_faq_search for published policy answers (caching/aggregation/redistribution).",
     )
     args = parser.parse_args()
+
+    if args.calls:
+        if not args.i_have_owner_approval:
+            parser.error("--calls makes live provider calls; pass --i-have-owner-approval only under an approved budget")
+        calls = json.loads(args.calls.read_text())
+        observed = asyncio.run(run_calls(calls, list_tools=not args.skip_list))
+        FIXTURE_DIR.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        out_path = FIXTURE_DIR / f"skiplagged_p71_{args.calls.stem}_{stamp}.json"
+        out_path.write_text(json.dumps(observed, indent=2, default=str))
+        print(f"Wrote fixture: {out_path}; stopped={observed['stopped']}", file=sys.stderr)
+        return 0 if observed["stopped"] is None else 1
 
     observed = asyncio.run(run(do_search=args.search, do_faq=args.faq))
 

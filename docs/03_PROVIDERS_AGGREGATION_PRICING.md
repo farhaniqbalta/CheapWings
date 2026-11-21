@@ -152,6 +152,8 @@ For the proposed Explore Anywhere feature ([01](01_PRODUCT_REQUIREMENTS_UX.md#pr
 **None of these is verified, approved or integrated.** Each needs the same P0-style probe
 (actual response, terms, quotas, freshness) in P7.1 before any adapter work.
 
+**P7.1 desk result (2026-11-21):** Fli and swoop fail the priced one-way gate. Skiplagged (`sk_destinations_anywhere` + `sk_flex_departure_calendar`) is the only no-secret iPad candidate, pending a probe. Travelpayouts is the fallback and needs an account/token decision. See [P7.1](log/p7.1.md).
+
 | Candidate | Possible use | Access / credentials | Known or expected limits | Native iPad (no server)? |
 |---|---|---|---|---|
 | Skiplagged (MCP, "anywhere"-style search if offered) | Destinations + indicative "from" prices from an origin | No auth for current detailed search; discovery tool not yet confirmed in the tool list | Personal-use terms (no commercial/redistribution); USD prices, display-only FX; hidden-city offers mixed in | Likely (plain HTTPS JSON-RPC), unproven |

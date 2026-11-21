@@ -40,7 +40,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | P5.4 Skiplagged on iPad | Done; [PR #19](https://github.com/farhaniqbalta/CheapWings/pull/19) merged `bc4f5b2`; owner device checks passed. OctoTrip on iPad deferred until further notice (owner 2026-11-14) | [P5.4](docs/log/p5.4.md), [plan](docs/log/p5.4-plan.md) |
 | P5.7 Web backend onto the Rust core | Done; all three checkpoints merged | [Plan](docs/log/p5.7-plan.md), [execution](docs/log/p5.7.md) |
 | P6 Release acceptance | Acceptance passed locally | [P6 evidence](docs/log/p6.md). Signed iPad checks and live web Fli fares verified. |
-| P7 Discover (Explore Anywhere / Surprise Me) | **P7.0 readiness in review**: separate feature beside Search; P7.1 waits for owner approval of the P7 start | [P7.0](docs/log/p7.0.md), [plan](docs/log/p7-plan.md), [handover](docs/log/p7-handover.md);  [P7 plan](docs/06_IMPLEMENTATION_CHECKPOINTS.md#p7--explore-anywhere-proposed--not-started), [spec](docs/01_PRODUCT_REQUIREMENTS_UX.md#proposed-feature-explore-anywhere-and-surprise-me-p7--proposed--not-started) |
+| P7 Discover (Explore Anywhere / Surprise Me) | **P7.1 feasibility**: desk matrix done; Skiplagged probe awaits owner approval | [P7.0](docs/log/p7.0.md), [plan](docs/log/p7-plan.md), [handover](docs/log/p7-handover.md);  [P7 plan](docs/06_IMPLEMENTATION_CHECKPOINTS.md#p7--explore-anywhere-proposed--not-started), [spec](docs/01_PRODUCT_REQUIREMENTS_UX.md#proposed-feature-explore-anywhere-and-surprise-me-p7--proposed--not-started) |
 
 ## Provider decision ledger
 | Provider | Decision | Key limits (details in provider-feasibility-evidence / research logs) |
@@ -56,7 +56,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 - P6 follow-up: assess the 4 MB Fli web body cap. See the [P6 evidence](docs/log/p6.md) for coverage limits and remaining items.
 
 ## Next task
-Owner: review P7.0 and approve the P7 start. Then P7.1 desk feasibility matrix and probe request ([plan](docs/log/p7-plan.md) Task 2).
+P7 start approved (owner 2026-11-21). Owner: approve the P7.1 Skiplagged probe budget (16 calls) in [P7.1](docs/log/p7.1.md); then plan Task 3.
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

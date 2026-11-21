@@ -1,0 +1,1172 @@
+{
+  "_note": "All prices fictitious. Hand-specified P7.2 discovery contract; gates Rust, PyO3 and Swift.",
+  "cases": [
+    {
+      "name": "main",
+      "query": {
+        "origins": [
+          "CGK"
+        ],
+        "date_from": "2027-03-01",
+        "date_through": "2027-03-07",
+        "display_currency": "IDR",
+        "budget": "1500000",
+        "include_hidden_city": false
+      },
+      "fx": [
+        {
+          "currency": "USD",
+          "rate": "16000"
+        }
+      ],
+      "max_route_dates": 120,
+      "observations": [
+        {
+          "origin": "CGK",
+          "destination": "DPS",
+          "departure_date": "2027-03-02",
+          "amount": "900000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "DPS",
+          "departure_date": "2027-03-03",
+          "amount": "850000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "SIN",
+          "departure_date": "2027-03-04",
+          "amount": "60",
+          "currency": "USD",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "KUL",
+          "departure_date": "2027-03-05",
+          "amount": "50",
+          "currency": "EUR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "BKK",
+          "departure_date": null,
+          "amount": "700000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "HND",
+          "departure_date": "2027-03-09",
+          "amount": "400000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "CGK",
+          "departure_date": "2027-03-02",
+          "amount": "100000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "SYD",
+          "departure_date": "2027-03-02",
+          "amount": "1600000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "LAX",
+          "departure_date": "2027-03-02",
+          "amount": "2000000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "DPS",
+          "departure_date": "2027-03-03",
+          "amount": "850000",
+          "currency": "IDR",
+          "source_id": "fli_explore",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "SIN",
+          "departure_date": "2027-03-04",
+          "amount": "-5",
+          "currency": "USD",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        }
+      ],
+      "expect": {
+        "selected": [
+          {
+            "origin": "CGK",
+            "destination": "DPS",
+            "date": "2027-03-03",
+            "observation_index": 1,
+            "comparable_amount": "850000"
+          },
+          {
+            "origin": "CGK",
+            "destination": "SIN",
+            "date": "2027-03-04",
+            "observation_index": 2,
+            "comparable_amount": "960000"
+          },
+          {
+            "origin": "CGK",
+            "destination": "SYD",
+            "date": "2027-03-02",
+            "observation_index": 7,
+            "comparable_amount": "1600000"
+          }
+        ],
+        "counts": {
+          "observed": 11,
+          "selected": 3,
+          "invalid": 2,
+          "hidden_city": 0,
+          "out_of_window": 1,
+          "undated": 1,
+          "no_fx": 1,
+          "over_budget": 1,
+          "superseded": 2,
+          "capped": 0
+        }
+      }
+    },
+    {
+      "name": "hidden_city_excluded",
+      "query": {
+        "origins": [
+          "CGK"
+        ],
+        "date_from": "2027-03-01",
+        "date_through": "2027-03-07",
+        "display_currency": "IDR",
+        "budget": null,
+        "include_hidden_city": false
+      },
+      "fx": [
+        {
+          "currency": "USD",
+          "rate": "16000"
+        }
+      ],
+      "max_route_dates": 120,
+      "observations": [
+        {
+          "origin": "CGK",
+          "destination": "DPS",
+          "departure_date": "2027-03-02",
+          "amount": "800000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "yes",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "SIN",
+          "departure_date": "2027-03-03",
+          "amount": "900000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "unknown",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "SYD",
+          "departure_date": "2027-03-04",
+          "amount": "1000000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        }
+      ],
+      "expect": {
+        "selected": [
+          {
+            "origin": "CGK",
+            "destination": "SIN",
+            "date": "2027-03-03",
+            "observation_index": 1,
+            "comparable_amount": "900000"
+          },
+          {
+            "origin": "CGK",
+            "destination": "SYD",
+            "date": "2027-03-04",
+            "observation_index": 2,
+            "comparable_amount": "1000000"
+          }
+        ],
+        "counts": {
+          "observed": 3,
+          "selected": 2,
+          "invalid": 0,
+          "hidden_city": 1,
+          "out_of_window": 0,
+          "undated": 0,
+          "no_fx": 0,
+          "over_budget": 0,
+          "superseded": 0,
+          "capped": 0
+        }
+      }
+    },
+    {
+      "name": "hidden_city_included",
+      "query": {
+        "origins": [
+          "CGK"
+        ],
+        "date_from": "2027-03-01",
+        "date_through": "2027-03-07",
+        "display_currency": "IDR",
+        "budget": null,
+        "include_hidden_city": true
+      },
+      "fx": [
+        {
+          "currency": "USD",
+          "rate": "16000"
+        }
+      ],
+      "max_route_dates": 120,
+      "observations": [
+        {
+          "origin": "CGK",
+          "destination": "DPS",
+          "departure_date": "2027-03-02",
+          "amount": "800000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "yes",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "SIN",
+          "departure_date": "2027-03-03",
+          "amount": "900000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "unknown",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "SYD",
+          "departure_date": "2027-03-04",
+          "amount": "1000000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        }
+      ],
+      "expect": {
+        "selected": [
+          {
+            "origin": "CGK",
+            "destination": "DPS",
+            "date": "2027-03-02",
+            "observation_index": 0,
+            "comparable_amount": "800000"
+          },
+          {
+            "origin": "CGK",
+            "destination": "SIN",
+            "date": "2027-03-03",
+            "observation_index": 1,
+            "comparable_amount": "900000"
+          },
+          {
+            "origin": "CGK",
+            "destination": "SYD",
+            "date": "2027-03-04",
+            "observation_index": 2,
+            "comparable_amount": "1000000"
+          }
+        ],
+        "counts": {
+          "observed": 3,
+          "selected": 3,
+          "invalid": 0,
+          "hidden_city": 0,
+          "out_of_window": 0,
+          "undated": 0,
+          "no_fx": 0,
+          "over_budget": 0,
+          "superseded": 0,
+          "capped": 0
+        }
+      }
+    },
+    {
+      "name": "capped",
+      "query": {
+        "origins": [
+          "CGK"
+        ],
+        "date_from": "2027-03-01",
+        "date_through": "2027-03-07",
+        "display_currency": "IDR",
+        "budget": "1500000",
+        "include_hidden_city": false
+      },
+      "fx": [
+        {
+          "currency": "USD",
+          "rate": "16000"
+        }
+      ],
+      "max_route_dates": 2,
+      "observations": [
+        {
+          "origin": "CGK",
+          "destination": "DPS",
+          "departure_date": "2027-03-02",
+          "amount": "900000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "DPS",
+          "departure_date": "2027-03-03",
+          "amount": "850000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "SIN",
+          "departure_date": "2027-03-04",
+          "amount": "60",
+          "currency": "USD",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "KUL",
+          "departure_date": "2027-03-05",
+          "amount": "50",
+          "currency": "EUR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "BKK",
+          "departure_date": null,
+          "amount": "700000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "HND",
+          "departure_date": "2027-03-09",
+          "amount": "400000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "CGK",
+          "departure_date": "2027-03-02",
+          "amount": "100000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "SYD",
+          "departure_date": "2027-03-02",
+          "amount": "1600000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "LAX",
+          "departure_date": "2027-03-02",
+          "amount": "2000000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "DPS",
+          "departure_date": "2027-03-03",
+          "amount": "850000",
+          "currency": "IDR",
+          "source_id": "fli_explore",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "SIN",
+          "departure_date": "2027-03-04",
+          "amount": "-5",
+          "currency": "USD",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        }
+      ],
+      "expect": {
+        "selected": [
+          {
+            "origin": "CGK",
+            "destination": "DPS",
+            "date": "2027-03-03",
+            "observation_index": 1,
+            "comparable_amount": "850000"
+          },
+          {
+            "origin": "CGK",
+            "destination": "SIN",
+            "date": "2027-03-04",
+            "observation_index": 2,
+            "comparable_amount": "960000"
+          }
+        ],
+        "counts": {
+          "observed": 11,
+          "selected": 2,
+          "invalid": 2,
+          "hidden_city": 0,
+          "out_of_window": 1,
+          "undated": 1,
+          "no_fx": 1,
+          "over_budget": 1,
+          "superseded": 2,
+          "capped": 1
+        }
+      }
+    },
+    {
+      "name": "tie",
+      "query": {
+        "origins": [
+          "CGK"
+        ],
+        "date_from": "2027-03-01",
+        "date_through": "2027-03-07",
+        "display_currency": "IDR",
+        "budget": null,
+        "include_hidden_city": false
+      },
+      "fx": [
+        {
+          "currency": "USD",
+          "rate": "16000"
+        }
+      ],
+      "max_route_dates": 120,
+      "observations": [
+        {
+          "origin": "CGK",
+          "destination": "SIN",
+          "departure_date": "2027-03-02",
+          "amount": "500000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "BKK",
+          "departure_date": "2027-03-03",
+          "amount": "500000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        }
+      ],
+      "expect": {
+        "selected": [
+          {
+            "origin": "CGK",
+            "destination": "BKK",
+            "date": "2027-03-03",
+            "observation_index": 1,
+            "comparable_amount": "500000"
+          },
+          {
+            "origin": "CGK",
+            "destination": "SIN",
+            "date": "2027-03-02",
+            "observation_index": 0,
+            "comparable_amount": "500000"
+          }
+        ],
+        "counts": {
+          "observed": 2,
+          "selected": 2,
+          "invalid": 0,
+          "hidden_city": 0,
+          "out_of_window": 0,
+          "undated": 0,
+          "no_fx": 0,
+          "over_budget": 0,
+          "superseded": 0,
+          "capped": 0
+        }
+      }
+    },
+    {
+      "name": "error_no_airports",
+      "query": {
+        "origins": [],
+        "date_from": "2027-03-01",
+        "date_through": "2027-03-07",
+        "display_currency": "IDR",
+        "budget": null,
+        "include_hidden_city": false
+      },
+      "fx": [
+        {
+          "currency": "USD",
+          "rate": "16000"
+        }
+      ],
+      "max_route_dates": 120,
+      "observations": [
+        {
+          "origin": "CGK",
+          "destination": "DPS",
+          "departure_date": "2027-03-02",
+          "amount": "500000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        }
+      ],
+      "expect": {
+        "error": "no_airports"
+      }
+    },
+    {
+      "name": "error_dates_reversed",
+      "query": {
+        "origins": [
+          "CGK"
+        ],
+        "date_from": "2027-03-07",
+        "date_through": "2027-03-01",
+        "display_currency": "IDR",
+        "budget": null,
+        "include_hidden_city": false
+      },
+      "fx": [
+        {
+          "currency": "USD",
+          "rate": "16000"
+        }
+      ],
+      "max_route_dates": 120,
+      "observations": [
+        {
+          "origin": "CGK",
+          "destination": "DPS",
+          "departure_date": "2027-03-02",
+          "amount": "500000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        }
+      ],
+      "expect": {
+        "error": "dates_reversed"
+      }
+    },
+    {
+      "name": "error_invalid_currency",
+      "query": {
+        "origins": [
+          "CGK"
+        ],
+        "date_from": "2027-03-01",
+        "date_through": "2027-03-07",
+        "display_currency": "XXX",
+        "budget": null,
+        "include_hidden_city": false
+      },
+      "fx": [
+        {
+          "currency": "USD",
+          "rate": "16000"
+        }
+      ],
+      "max_route_dates": 120,
+      "observations": [
+        {
+          "origin": "CGK",
+          "destination": "DPS",
+          "departure_date": "2027-03-02",
+          "amount": "500000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        }
+      ],
+      "expect": {
+        "error": "invalid_currency"
+      }
+    },
+    {
+      "name": "error_invalid_budget",
+      "query": {
+        "origins": [
+          "CGK"
+        ],
+        "date_from": "2027-03-01",
+        "date_through": "2027-03-07",
+        "display_currency": "IDR",
+        "budget": "abc",
+        "include_hidden_city": false
+      },
+      "fx": [
+        {
+          "currency": "USD",
+          "rate": "16000"
+        }
+      ],
+      "max_route_dates": 120,
+      "observations": [
+        {
+          "origin": "CGK",
+          "destination": "DPS",
+          "departure_date": "2027-03-02",
+          "amount": "500000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        }
+      ],
+      "expect": {
+        "error": "invalid_budget"
+      }
+    },
+    {
+      "name": "normalizes_codes_like_search",
+      "query": {
+        "origins": [
+          " cgk"
+        ],
+        "date_from": "2027-03-01",
+        "date_through": "2027-03-07",
+        "display_currency": "IDR",
+        "budget": null,
+        "include_hidden_city": false
+      },
+      "fx": [
+        {
+          "currency": "USD",
+          "rate": "16000"
+        }
+      ],
+      "max_route_dates": 120,
+      "observations": [
+        {
+          "origin": "cgk",
+          "destination": " dps",
+          "departure_date": "2027-03-02",
+          "amount": "500000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        }
+      ],
+      "expect": {
+        "selected": [
+          {
+            "origin": "CGK",
+            "destination": "DPS",
+            "date": "2027-03-02",
+            "observation_index": 0,
+            "comparable_amount": "500000"
+          }
+        ],
+        "counts": {
+          "observed": 1,
+          "selected": 1,
+          "invalid": 0,
+          "hidden_city": 0,
+          "out_of_window": 0,
+          "undated": 0,
+          "no_fx": 0,
+          "over_budget": 0,
+          "superseded": 0,
+          "capped": 0
+        }
+      }
+    },
+    {
+      "name": "unknown_currency_is_no_fx",
+      "query": {
+        "origins": [
+          "CGK"
+        ],
+        "date_from": "2027-03-01",
+        "date_through": "2027-03-07",
+        "display_currency": "IDR",
+        "budget": null,
+        "include_hidden_city": false
+      },
+      "fx": [
+        {
+          "currency": "USD",
+          "rate": "16000"
+        }
+      ],
+      "max_route_dates": 120,
+      "observations": [
+        {
+          "origin": "CGK",
+          "destination": "DPS",
+          "departure_date": "2027-03-02",
+          "amount": "100",
+          "currency": "XAF",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "SIN",
+          "departure_date": "2027-03-03",
+          "amount": "600000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        }
+      ],
+      "expect": {
+        "selected": [
+          {
+            "origin": "CGK",
+            "destination": "SIN",
+            "date": "2027-03-03",
+            "observation_index": 1,
+            "comparable_amount": "600000"
+          }
+        ],
+        "counts": {
+          "observed": 2,
+          "selected": 1,
+          "invalid": 0,
+          "hidden_city": 0,
+          "out_of_window": 0,
+          "undated": 0,
+          "no_fx": 1,
+          "over_budget": 0,
+          "superseded": 0,
+          "capped": 0
+        }
+      }
+    },
+    {
+      "name": "huge_amount_is_invalid",
+      "query": {
+        "origins": [
+          "CGK"
+        ],
+        "date_from": "2027-03-01",
+        "date_through": "2027-03-07",
+        "display_currency": "IDR",
+        "budget": null,
+        "include_hidden_city": false
+      },
+      "fx": [
+        {
+          "currency": "USD",
+          "rate": "16000"
+        }
+      ],
+      "max_route_dates": 120,
+      "observations": [
+        {
+          "origin": "CGK",
+          "destination": "DPS",
+          "departure_date": "2027-03-02",
+          "amount": "1e40",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "SYD",
+          "departure_date": "2027-03-02",
+          "amount": "1000000000000000000000000000000000000000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "SIN",
+          "departure_date": "2027-03-03",
+          "amount": "600000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        }
+      ],
+      "expect": {
+        "selected": [
+          {
+            "origin": "CGK",
+            "destination": "SIN",
+            "date": "2027-03-03",
+            "observation_index": 2,
+            "comparable_amount": "600000"
+          }
+        ],
+        "counts": {
+          "observed": 3,
+          "selected": 1,
+          "invalid": 2,
+          "hidden_city": 0,
+          "out_of_window": 0,
+          "undated": 0,
+          "no_fx": 0,
+          "over_budget": 0,
+          "superseded": 0,
+          "capped": 0
+        }
+      }
+    },
+    {
+      "name": "empty_input_is_empty_plan",
+      "query": {
+        "origins": [
+          "CGK"
+        ],
+        "date_from": "2027-03-01",
+        "date_through": "2027-03-07",
+        "display_currency": "IDR",
+        "budget": null,
+        "include_hidden_city": false
+      },
+      "fx": [
+        {
+          "currency": "USD",
+          "rate": "16000"
+        }
+      ],
+      "max_route_dates": 120,
+      "observations": [],
+      "expect": {
+        "selected": [],
+        "counts": {
+          "observed": 0,
+          "selected": 0,
+          "invalid": 0,
+          "hidden_city": 0,
+          "out_of_window": 0,
+          "undated": 0,
+          "no_fx": 0,
+          "over_budget": 0,
+          "superseded": 0,
+          "capped": 0
+        }
+      }
+    },
+    {
+      "name": "window_is_inclusive",
+      "query": {
+        "origins": [
+          "CGK"
+        ],
+        "date_from": "2027-03-01",
+        "date_through": "2027-03-07",
+        "display_currency": "IDR",
+        "budget": null,
+        "include_hidden_city": false
+      },
+      "fx": [
+        {
+          "currency": "USD",
+          "rate": "16000"
+        }
+      ],
+      "max_route_dates": 120,
+      "observations": [
+        {
+          "origin": "CGK",
+          "destination": "DPS",
+          "departure_date": "2027-03-01",
+          "amount": "500000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "SIN",
+          "departure_date": "2027-03-07",
+          "amount": "600000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "SYD",
+          "departure_date": "2027-02-28",
+          "amount": "400000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "BKK",
+          "departure_date": "2027-03-08",
+          "amount": "400000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        }
+      ],
+      "expect": {
+        "selected": [
+          {
+            "origin": "CGK",
+            "destination": "DPS",
+            "date": "2027-03-01",
+            "observation_index": 0,
+            "comparable_amount": "500000"
+          },
+          {
+            "origin": "CGK",
+            "destination": "SIN",
+            "date": "2027-03-07",
+            "observation_index": 1,
+            "comparable_amount": "600000"
+          }
+        ],
+        "counts": {
+          "observed": 4,
+          "selected": 2,
+          "invalid": 0,
+          "hidden_city": 0,
+          "out_of_window": 2,
+          "undated": 0,
+          "no_fx": 0,
+          "over_budget": 0,
+          "superseded": 0,
+          "capped": 0
+        }
+      }
+    }
+  ]
+}

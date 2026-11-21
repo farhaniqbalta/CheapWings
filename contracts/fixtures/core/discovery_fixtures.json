@@ -1167,6 +1167,178 @@
           "capped": 0
         }
       }
+    },
+    {
+      "name": "rounds_to_zero_is_invalid",
+      "query": {
+        "origins": [
+          "CGK"
+        ],
+        "date_from": "2027-03-01",
+        "date_through": "2027-03-07",
+        "display_currency": "IDR",
+        "budget": null,
+        "include_hidden_city": false
+      },
+      "fx": [
+        {
+          "currency": "USD",
+          "rate": "16000"
+        }
+      ],
+      "max_route_dates": 120,
+      "observations": [
+        {
+          "origin": "CGK",
+          "destination": "DPS",
+          "departure_date": "2027-03-02",
+          "amount": "0.4",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "DPS",
+          "departure_date": "2027-03-02",
+          "amount": "850000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "SIN",
+          "departure_date": "2027-03-03",
+          "amount": "0.00001",
+          "currency": "USD",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        }
+      ],
+      "expect": {
+        "selected": [
+          {
+            "origin": "CGK",
+            "destination": "DPS",
+            "date": "2027-03-02",
+            "observation_index": 1,
+            "comparable_amount": "850000"
+          }
+        ],
+        "counts": {
+          "observed": 3,
+          "selected": 1,
+          "invalid": 2,
+          "hidden_city": 0,
+          "out_of_window": 0,
+          "undated": 0,
+          "no_fx": 0,
+          "over_budget": 0,
+          "superseded": 0,
+          "capped": 0
+        }
+      }
+    },
+    {
+      "name": "non_positive_rate_is_no_fx",
+      "query": {
+        "origins": [
+          "CGK"
+        ],
+        "date_from": "2027-03-01",
+        "date_through": "2027-03-07",
+        "display_currency": "IDR",
+        "budget": "1000000",
+        "include_hidden_city": false
+      },
+      "fx": [
+        {
+          "currency": "USD",
+          "rate": "0"
+        },
+        {
+          "currency": "EUR",
+          "rate": "-16000"
+        }
+      ],
+      "max_route_dates": 120,
+      "observations": [
+        {
+          "origin": "CGK",
+          "destination": "SIN",
+          "departure_date": "2027-03-02",
+          "amount": "10",
+          "currency": "USD",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "SYD",
+          "departure_date": "2027-03-02",
+          "amount": "10",
+          "currency": "EUR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        },
+        {
+          "origin": "CGK",
+          "destination": "DPS",
+          "departure_date": "2027-03-02",
+          "amount": "500000",
+          "currency": "IDR",
+          "source_id": "skiplagged",
+          "observed_at": null,
+          "fetched_at": "2027-02-20T00:00:00Z",
+          "price_kind": "indicative",
+          "hidden_city": "no",
+          "source_reference": null
+        }
+      ],
+      "expect": {
+        "selected": [
+          {
+            "origin": "CGK",
+            "destination": "DPS",
+            "date": "2027-03-02",
+            "observation_index": 2,
+            "comparable_amount": "500000"
+          }
+        ],
+        "counts": {
+          "observed": 3,
+          "selected": 1,
+          "invalid": 0,
+          "hidden_city": 0,
+          "out_of_window": 0,
+          "undated": 0,
+          "no_fx": 2,
+          "over_budget": 0,
+          "superseded": 0,
+          "capped": 0
+        }
+      }
     }
   ]
 }

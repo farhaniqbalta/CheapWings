@@ -200,6 +200,7 @@ pub fn select_discovery_plan(
             fx.iter()
                 .find(|r| code(&r.currency) == currency)
                 .map(|r| r.rate.as_str())
+                .filter(|r| parse(r).is_ok_and(|d| d > Decimal::ZERO))
         };
         let Some(comparable_text) = rate.and_then(|r| fx_convert(&obs.amount, r, &display).ok())
         else {
@@ -207,6 +208,11 @@ pub fn select_discovery_plan(
             continue;
         };
         let comparable = parse(&comparable_text).expect("fx_convert returns a decimal");
+        // A tiny amount can round to 0 in the display currency; it must not win its destination.
+        if comparable <= Decimal::ZERO {
+            counts.invalid += 1;
+            continue;
+        }
         if ceiling.is_some_and(|c| comparable > c) {
             counts.over_budget += 1;
             continue;

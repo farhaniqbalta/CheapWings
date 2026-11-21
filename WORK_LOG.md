@@ -56,7 +56,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 - P6 follow-up: assess the 4 MB Fli web body cap. See the [P6 evidence](docs/log/p6.md) for coverage limits and remaining items.
 
 ## Next task
-P7.1 probe done (16 calls, no errors). Owner: sign the Skiplagged anywhere GO in [P7.1](docs/log/p7.1.md); then Phase B (P7.2 contract, iPad binding before Python).
+P7.1 probes done: Skiplagged (16 calls, no errors) and Fli Explore addendum (10 requests, 8 refused by Google). Owner: decide on Skiplagged as primary and Fli Explore as an opportunistic second source ([P7.1](docs/log/p7.1.md)); then Phase B.
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

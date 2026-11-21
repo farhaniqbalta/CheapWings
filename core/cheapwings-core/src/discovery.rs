@@ -1,7 +1,9 @@
 //! Discover (P7): provider-neutral price observations → a capped, explicit route/date shortlist.
 //! Search keeps `planning::plan_search`; this module never expands a Cartesian product.
 
-use crate::planning::PlanError;
+use crate::money::{fx_convert, parse};
+use crate::planning::{normalize, parse_date, PlanError};
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -97,7 +99,9 @@ impl fmt::Display for DiscoveryError {
         match self {
             Self::Plan(e) => e.fmt(f),
             Self::InvalidCurrency(c) => write!(f, "unsupported display currency {c:?}"),
-            Self::InvalidBudget(b) => write!(f, "invalid budget {b:?}; expected a positive decimal"),
+            Self::InvalidBudget(b) => {
+                write!(f, "invalid budget {b:?}; expected a positive decimal")
+            }
         }
     }
 }
@@ -108,4 +112,144 @@ impl From<PlanError> for DiscoveryError {
     fn from(e: PlanError) -> Self {
         Self::Plan(e)
     }
+}
+
+/// Discovery may shortlist near-budget leads; only detailed fares are "checked within budget".
+const BUDGET_HEADROOM: Decimal = Decimal::from_parts(110, 0, 0, false, 2);
+
+struct Survivor {
+    index: u32,
+    origin: String,
+    destination: String,
+    day: i64,
+    date: String,
+    comparable: Decimal,
+    comparable_text: String,
+}
+
+fn code(text: &str) -> String {
+    crate::python_strip(text).to_uppercase()
+}
+
+/// Cheapest priced lead per destination inside the query window, capped at `max_route_dates`.
+/// The caller derives the cap from its work-item limit and enabled providers.
+pub fn select_discovery_plan(
+    observations: &[DiscoveryObservation],
+    query: &DiscoveryQuery,
+    fx: &[FxRate],
+    max_route_dates: u32,
+) -> Result<DiscoveryPlan, DiscoveryError> {
+    let origins = normalize(&query.origins)?;
+    let (from, through) = (
+        parse_date(&query.date_from)?,
+        parse_date(&query.date_through)?,
+    );
+    if through < from {
+        return Err(PlanError::DatesReversed.into());
+    }
+    let display = code(&query.display_currency);
+    fx_convert("0", "1", &display)
+        .map_err(|_| DiscoveryError::InvalidCurrency(query.display_currency.clone()))?;
+    let ceiling = match &query.budget {
+        None => None,
+        Some(b) => {
+            let budget = parse(b)
+                .ok()
+                .filter(|d| *d > Decimal::ZERO)
+                .ok_or_else(|| DiscoveryError::InvalidBudget(b.clone()))?;
+            Some(
+                budget
+                    .checked_mul(BUDGET_HEADROOM)
+                    .ok_or_else(|| DiscoveryError::InvalidBudget(b.clone()))?,
+            )
+        }
+    };
+
+    let mut counts = DiscoveryCounts {
+        observed: observations.len() as u32,
+        ..Default::default()
+    };
+    let mut survivors: Vec<Survivor> = Vec::new();
+    for (index, obs) in observations.iter().enumerate() {
+        let route = normalize(&[obs.origin.clone(), obs.destination.clone()]);
+        let date = obs.departure_date.as_deref().map(parse_date).transpose();
+        let positive = parse(&obs.amount).is_ok_and(|a| a > Decimal::ZERO);
+        let (route, day) = match (route, date) {
+            (Ok(r), Ok(day)) if r.len() == 2 && origins.contains(&r[0]) && positive => (r, day),
+            _ => {
+                counts.invalid += 1;
+                continue;
+            }
+        };
+        if obs.hidden_city == "yes" && !query.include_hidden_city {
+            counts.hidden_city += 1;
+            continue;
+        }
+        let Some(day) = day else {
+            counts.undated += 1;
+            continue;
+        };
+        if day < from || day > through {
+            counts.out_of_window += 1;
+            continue;
+        }
+        let currency = code(&obs.currency);
+        let rate = if currency == display {
+            Some("1")
+        } else {
+            fx.iter()
+                .find(|r| code(&r.currency) == currency)
+                .map(|r| r.rate.as_str())
+        };
+        let Some(comparable_text) = rate.and_then(|r| fx_convert(&obs.amount, r, &display).ok())
+        else {
+            counts.no_fx += 1;
+            continue;
+        };
+        let comparable = parse(&comparable_text).expect("fx_convert returns a decimal");
+        if ceiling.is_some_and(|c| comparable > c) {
+            counts.over_budget += 1;
+            continue;
+        }
+        let [origin, destination]: [String; 2] = route.try_into().expect("two codes");
+        survivors.push(Survivor {
+            index: index as u32,
+            origin,
+            destination,
+            day,
+            date: obs.departure_date.clone().expect("dated"),
+            comparable,
+            comparable_text,
+        });
+    }
+
+    // One winner per destination: cheapest, then earlier date, origin, index.
+    survivors.sort_by(|a, b| {
+        (&a.destination, a.comparable, a.day, &a.origin, a.index).cmp(&(
+            &b.destination,
+            b.comparable,
+            b.day,
+            &b.origin,
+            b.index,
+        ))
+    });
+    let before = survivors.len();
+    survivors.dedup_by(|later, first| later.destination == first.destination);
+    counts.superseded = (before - survivors.len()) as u32;
+    survivors.sort_by(|a, b| (a.comparable, &a.destination).cmp(&(b.comparable, &b.destination)));
+    let keep = survivors.len().min(max_route_dates as usize);
+    counts.capped = (survivors.len() - keep) as u32;
+    counts.selected = keep as u32;
+    let selected = survivors
+        .into_iter()
+        .take(keep)
+        .map(|s| SelectedLead {
+            origin: s.origin,
+            destination: s.destination,
+            date: s.date,
+            observation_index: s.index,
+            comparable_amount: s.comparable_text,
+        })
+        .collect();
+    Ok(DiscoveryPlan { selected, counts })
 }

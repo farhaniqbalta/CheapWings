@@ -41,6 +41,7 @@ cheapwings/
   contracts/openapi.yaml
   contracts/fixtures/{provider,canonical}/
   contracts/fixtures/core/core_fixtures.json  # generated from Python; gates Rust, PyO3 and Swift
+  contracts/fixtures/core/discovery_fixtures.json  # hand-specified P7 Discover contract (source of truth); gates Rust, PyO3 and Swift
   core/                                 # shared Rust engine (P5.1), see docs/log/p5.1.md
     cheapwings-core/                    # pure logic: money, fingerprint, ranking, Fli decoder
     cheapwings-py/                      # PyO3 module `cheapwings_core` used by domain/money.py

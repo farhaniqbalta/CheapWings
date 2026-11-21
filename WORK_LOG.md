@@ -40,7 +40,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | P5.4 Skiplagged on iPad | Done; [PR #19](https://github.com/farhaniqbalta/CheapWings/pull/19) merged `bc4f5b2`; owner device checks passed. OctoTrip on iPad deferred until further notice (owner 2026-11-14) | [P5.4](docs/log/p5.4.md), [plan](docs/log/p5.4-plan.md) |
 | P5.7 Web backend onto the Rust core | Done; all three checkpoints merged | [Plan](docs/log/p5.7-plan.md), [execution](docs/log/p5.7.md) |
 | P6 Release acceptance | Acceptance passed locally | [P6 evidence](docs/log/p6.md). Signed iPad checks and live web Fli fares verified. |
-| P7 Discover (Explore Anywhere / Surprise Me) | **P7.1 feasibility**: probe done, proposed GO on Skiplagged anywhere; awaits owner sign-off | [P7.0](docs/log/p7.0.md), [plan](docs/log/p7-plan.md), [handover](docs/log/p7-handover.md);  [P7 plan](docs/06_IMPLEMENTATION_CHECKPOINTS.md#p7--explore-anywhere-proposed--not-started), [spec](docs/01_PRODUCT_REQUIREMENTS_UX.md#proposed-feature-explore-anywhere-and-surprise-me-p7--proposed--not-started) |
+| P7 Discover (Explore Anywhere / Surprise Me) | **P7.2/P7.3 done in PR #26** (contract + shared Rust selection, iPad and web bindings); P7.1 GO: Skiplagged primary, Fli Explore opportunistic | [P7.3](docs/log/p7.3.md), [P7.1](docs/log/p7.1.md), [P7.0](docs/log/p7.0.md), [plan](docs/log/p7-plan.md), [handover](docs/log/p7-handover.md) |
 
 ## Provider decision ledger
 | Provider | Decision | Key limits (details in provider-feasibility-evidence / research logs) |
@@ -56,7 +56,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 - P6 follow-up: assess the 4 MB Fli web body cap. See the [P6 evidence](docs/log/p6.md) for coverage limits and remaining items.
 
 ## Next task
-P7.1 GO signed by owner 2026-11-21: Skiplagged primary, Fli Explore opportunistic second source ([P7.1](docs/log/p7.1.md)). Next: Phase B, P7.2 discovery contract and fixture (plan Task 4).
+Owner: review PR #26 (P7.2 contract + P7.3 selection into `p7-implementation`). Then write a separate P7.4 runtime plan (storage, adapters, `max_route_dates`).
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

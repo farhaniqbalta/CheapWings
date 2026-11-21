@@ -253,3 +253,26 @@ pub fn select_discovery_plan(
         .collect();
     Ok(DiscoveryPlan { selected, counts })
 }
+
+#[derive(Deserialize)]
+struct WebInput {
+    observations: Vec<DiscoveryObservation>,
+    query: DiscoveryQuery,
+    fx: Vec<FxRate>,
+    max_route_dates: u32,
+}
+
+/// JSON in/out for the web (PyO3) host: `{observations, query, fx, max_route_dates}` → `DiscoveryPlan`.
+/// Errors are `"{code}: {detail}"`; malformed JSON is `invalid_payload`.
+pub fn web_payload(payload: &str) -> Result<String, String> {
+    let input: WebInput =
+        serde_json::from_str(payload).map_err(|e| format!("invalid_payload: {e}"))?;
+    let plan = select_discovery_plan(
+        &input.observations,
+        &input.query,
+        &input.fx,
+        input.max_route_dates,
+    )
+    .map_err(|e| format!("{}: {e}", e.code()))?;
+    Ok(serde_json::to_string(&plan).expect("plan serializes"))
+}

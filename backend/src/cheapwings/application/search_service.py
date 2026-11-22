@@ -201,6 +201,7 @@ def discover_projection(repo, job_id):
             discovered_destinations=len(destinations),
             counts=summary.get("counts"),
             outcome=outcome,
+            stopped_providers=summary.get("stopped_providers", []),
         ),
         total_checks=len(detailed),
         succeeded_checks=sum(counts[k] for k in SUCCESS),

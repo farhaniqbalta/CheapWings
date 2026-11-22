@@ -210,3 +210,70 @@ async def test_search_jobs_unchanged(engine):
     job, work = repo.get_job(job.id)
     assert (job.kind, job.status, job.discovery_json) == ("search", "completed", None)
     assert {w.work_type for w in work} == {"detailed"}
+
+
+# --- final-review fixes: a source that stops us, and the deadline while discovering ---
+
+
+async def test_long_retry_after_stops_source_and_plans_from_arrivals(engine):
+    repo = Repository(engine)
+    disc = discoverer()
+    disc.provider.script_discovery("CGK", "2027-03-02", ProviderFailure("http_rate_limited", 3600))
+    regs = [disc, checker()]
+    job = repo.create_discovery_job(QUERY, regs)
+    await drain(JobRunner(repo, regs), repo, job.id)  # must not wait out the 3600 s or the job budget
+    job, _ = repo.get_job(job.id)
+    d = job.discovery_json
+    assert (d["calls_failed"], d["outcome"], d["stopped_providers"]) == (1, "planned", ["disc"])
+    detailed = items(engine, job.id, "detailed")
+    assert {(i.provider_id, i.departure_date) for i in detailed} == {("check", "2027-03-01")}
+    assert job.status == "partial"
+
+
+async def test_auth_denied_stops_source(engine):
+    repo = Repository(engine)
+    disc = discoverer()
+    calls = []
+    original = disc.provider.discover
+
+    async def refused(request):
+        calls.append(request.departure_date.isoformat())
+        if request.departure_date.isoformat() == "2027-03-01":
+            raise ProviderFailure("auth_denied")
+        return await original(request)
+
+    disc.provider.discover = refused
+    disc = replace(disc, minimum_interval_seconds=0.05)  # paced like a real source: one call starts at a time
+    regs = [disc, checker()]
+    job = repo.create_discovery_job(QUERY, regs)
+    await drain(JobRunner(repo, regs), repo, job.id)
+    job, _ = repo.get_job(job.id)
+    assert calls == ["2027-03-01"], "no further calls to a source that refused us"
+    assert (job.status, job.discovery_json["outcome"]) == ("failed", "unavailable")
+    assert items(engine, job.id, "detailed") == []
+
+
+async def test_deadline_while_discovering_records_outcome(engine):
+    from cheapwings.providers.base import DiscoveryRequest
+
+    repo = Repository(engine)
+    disc = discoverer()
+    job = repo.create_discovery_job(QUERY, [disc, checker()])
+    item, _ = repo.claim(disc)
+    result = await disc.provider.discover(
+        DiscoveryRequest(item.origin, __import__("datetime").date.fromisoformat(item.departure_date), "IDR"))
+    assert repo.finish(item.id, item.lease_token, result)
+    repo.sweep(now=job.deadline_at + 1)  # the second call never ran before the budget ended
+    job, _ = repo.get_job(job.id)
+    assert job.status == "partial"
+    assert job.discovery_json["outcome"] == "timed_out"
+    assert job.discovery_json["calls_failed"] == 1
+    assert items(engine, job.id, "detailed") == []
+
+
+async def test_deadline_with_nothing_found_is_unavailable(engine):
+    repo = Repository(engine)
+    job = repo.create_discovery_job(QUERY, [discoverer(), checker()])
+    repo.sweep(now=job.deadline_at + 1)
+    job, _ = repo.get_job(job.id)
+    assert (job.status, job.discovery_json["outcome"]) == ("failed", "unavailable")

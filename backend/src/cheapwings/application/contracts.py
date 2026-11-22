@@ -118,7 +118,12 @@ class DiscoveryStatus(DTO):
     discovered_destinations: int
     counts: dict[str, int] | None = None
     # planned | no_prices (no usable lead) | none_under_budget | unavailable (every call failed)
-    outcome: Literal["planned", "no_prices", "none_under_budget", "unavailable"] | None = None
+    # | timed_out (the job budget ended during discovery; leads reported, nothing checked)
+    outcome: (
+        Literal["planned", "no_prices", "none_under_budget", "unavailable", "timed_out"] | None
+    ) = None
+    # Sources that refused us or asked for too long a wait during discovery (not used for checks).
+    stopped_providers: list[str] = Field(default_factory=list)
 
 
 class Created(DTO):

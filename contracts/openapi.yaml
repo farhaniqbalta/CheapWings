@@ -1252,7 +1252,8 @@
                   "planned",
                   "no_prices",
                   "none_under_budget",
-                  "unavailable"
+                  "unavailable",
+                  "timed_out"
                 ]
               },
               {
@@ -1260,6 +1261,13 @@
               }
             ],
             "title": "Outcome"
+          },
+          "stopped_providers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Stopped Providers"
           }
         },
         "additionalProperties": false,

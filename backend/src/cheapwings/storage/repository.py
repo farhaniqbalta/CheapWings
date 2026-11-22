@@ -20,6 +20,9 @@ from cheapwings.typeadapters import adapter
 ACTIVE = ("pending", "retry_wait", "running")
 SUCCESS = ("succeeded_results", "succeeded_empty")
 JOB_ACTIVE = ("queued", "running")
+# P7.4: a discovery source that asks for a longer wait than this stops for the job, like the
+# iPad's PacedRunner.maxRetryWait; leads that already arrived are still planned and checked.
+DISCOVERY_MAX_RETRY_WAIT_MS = 120_000
 
 
 def now_ms():
@@ -245,7 +248,6 @@ class Repository(CacheRepository, VerificationRepository):
             job.kind == "discover"
             and job.phase == "discovering"
             and not job.cancel_requested
-            and job.deadline_at > now
             and Repository._plan_discovery(s, job, now)
         ):
             return  # detailed checks enqueued in this same transaction
@@ -283,6 +285,30 @@ class Repository(CacheRepository, VerificationRepository):
         job.completed_at = now
 
     @staticmethod
+    def _stop_discovery_source(s, job, item, error_code, now):
+        """The source refused or asked for too long a wait: no more discovery calls to it in this
+        job (no evasion) and no checks from it; what already arrived is still planned."""
+        item.status = "failed_terminal"
+        for other in s.scalars(
+            select(WorkItem).where(
+                WorkItem.job_id == job.id,
+                WorkItem.provider_id == item.provider_id,
+                WorkItem.work_type == "discover",
+                WorkItem.id != item.id,
+                WorkItem.status.in_(("pending", "retry_wait")),
+            )
+        ):
+            other.status = "failed_terminal"
+            other.last_error_code = "provider_stopped"
+            other.last_error_detail = error_code
+            other.finished_at = now
+        stopped = (job.discovery_json or {}).get("stopped_providers", [])
+        job.discovery_json = {  # reassigned: plain JSON columns do not track in-place changes
+            **(job.discovery_json or {}),
+            "stopped_providers": sorted({*stopped, item.provider_id}),
+        }
+
+    @staticmethod
     def _plan_discovery(s, job, now):
         """P7.4, inside the caller's write session: snapshot → `select_discovery_plan` → detailed
         items, then phase `searching`. The phase guard makes it run once; returns True when checks
@@ -293,11 +319,13 @@ class Repository(CacheRepository, VerificationRepository):
             select(WorkItem).where(WorkItem.job_id == job.id, WorkItem.work_type == "discover")
         ).all()
         succeeded = [i for i in calls if i.status in SUCCESS]
+        stopped = (job.discovery_json or {}).get("stopped_providers", [])
         summary = {
             "calls_planned": len(calls),
             "calls_failed": len(calls) - len(succeeded),
             "unpriced": sum(i.unpriced_candidate_count for i in succeeded),
             "counts": None,
+            "stopped_providers": stopped,
         }
         job.phase = "searching"
         if not succeeded:
@@ -324,15 +352,20 @@ class Repository(CacheRepository, VerificationRepository):
             )
         )
         counts = plan["counts"]
+        if job.deadline_at <= now:
+            # The job budget ended during discovery: report what arrived, check nothing.
+            job.discovery_json = {**summary, "counts": counts, "outcome": "timed_out"}
+            return False
         if counts["selected"]:
             outcome = "planned"
         else:
             outcome = "none_under_budget" if counts["over_budget"] else "no_prices"
         job.discovery_json = {**summary, "counts": counts, "outcome": outcome}
+        checkers = [p for p in job.provider_ids or [] if p not in stopped]
         # shortcut: checks run as direct work items (no shared provider cache: finalize has no
         # registry); route them through prepare_cached_work if Discover checks should hit the cache.
         for lead in plan["selected"]:
-            for provider_id in job.provider_ids or []:
+            for provider_id in checkers:
                 s.add(
                     WorkItem(
                         id=str(uuid4()),
@@ -345,7 +378,7 @@ class Repository(CacheRepository, VerificationRepository):
                     )
                 )
         s.flush()
-        return bool(plan["selected"] and job.provider_ids)
+        return bool(plan["selected"] and checkers)
 
     def cancel(self, job_id):
         from cheapwings.storage.models import WorkAttempt
@@ -694,6 +727,14 @@ class Repository(CacheRepository, VerificationRepository):
                     state = s.get(ProviderState, item.provider_id)
                     state.next_request_at = max(state.next_request_at, now + delay_ms)
                 attempt.error_code = error_code
+                if item.work_type == "discover" and (
+                    error_code == "auth_denied"
+                    or (
+                        error_code == "http_rate_limited"
+                        and (delay_ms > DISCOVERY_MAX_RETRY_WAIT_MS or now + delay_ms >= job.deadline_at)
+                    )
+                ):
+                    self._stop_discovery_source(s, job, item, error_code, now)
                 if item.work_type == "reprice" and item.status == "failed_terminal":
                     job.verification_planned = False
             else:

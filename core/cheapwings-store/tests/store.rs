@@ -14,6 +14,8 @@ fn request() -> StoredRequest {
         origin_majors: vec![],
         destination_majors: vec!["metro:JP:TYO".into(), "metro:JP:OSA".into()],
         providers: vec!["fli".into()],
+        kind: String::new(),
+        budget: None,
     }
 }
 

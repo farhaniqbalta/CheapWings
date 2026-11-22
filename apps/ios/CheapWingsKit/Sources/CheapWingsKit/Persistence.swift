@@ -11,6 +11,9 @@ public protocol SearchPersistence: AnyObject {
     func clearStopped(searchId: Int64) throws
     func latest() throws -> StoredSearch?
     func pending(searchId: Int64) throws -> [StoredCombo]
+    /// P7.4 Discover: a search in its discovery stage, then the snapshot + work items in one transaction.
+    func createDiscovery(request: StoredRequest, nowMs: Int64) throws -> Int64
+    func commitDiscovery(searchId: Int64, snapshot: DiscoverySnapshot, items: [WorkItem], nowMs: Int64) throws
 }
 
 extension SearchStore: SearchPersistence {}

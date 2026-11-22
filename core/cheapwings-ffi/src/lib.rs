@@ -877,7 +877,7 @@ use std::sync::Arc;
 
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 pub enum StoreError {
-    /// `code`: `open | sql | not_found`.
+    /// `code`: `open | sql | not_found | already_committed`.
     #[error("{code}: {message}")]
     Failed { code: String, message: String },
 }
@@ -907,6 +907,11 @@ pub struct StoredRequest {
     /// P5.4 sources; empty means Fli only (searches stored before P5.4).
     #[uniffi(default = [])]
     pub providers: Vec<String>,
+    /// P7.4: `"discover"`, or empty for Search.
+    #[uniffi(default = "")]
+    pub kind: String,
+    #[uniffi(default = None)]
+    pub budget: Option<String>,
 }
 
 impl From<StoredRequest> for store::StoredRequest {
@@ -925,6 +930,8 @@ impl From<StoredRequest> for store::StoredRequest {
             } else {
                 r.providers
             },
+            kind: r.kind,
+            budget: r.budget,
         }
     }
 }
@@ -941,6 +948,8 @@ impl From<store::StoredRequest> for StoredRequest {
             origin_majors: r.origin_majors,
             destination_majors: r.destination_majors,
             providers: r.providers,
+            kind: r.kind,
+            budget: r.budget,
         }
     }
 }
@@ -1000,6 +1009,66 @@ pub struct StoredSearch {
     pub combos: Vec<StoredCombo>,
     pub offers: Vec<StoredOffer>,
     pub hidden: Vec<HiddenCount>,
+    /// P7.4: None for Search; `discovering` or `checking` for Discover.
+    pub stage: Option<String>,
+    pub discovery: Option<DiscoverySnapshot>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct DiscoverySnapshot {
+    pub observations: Vec<DiscoveryObservation>,
+    pub fx: Vec<FxRate>,
+    pub calls_planned: u32,
+    pub calls_failed: u32,
+    pub unpriced: u32,
+}
+
+impl From<DiscoverySnapshot> for store::DiscoverySnapshot {
+    fn from(d: DiscoverySnapshot) -> Self {
+        Self {
+            observations: d.observations.into_iter().map(Into::into).collect(),
+            fx: d
+                .fx
+                .into_iter()
+                .map(|r| discovery::FxRate {
+                    currency: r.currency,
+                    rate: r.rate,
+                })
+                .collect(),
+            calls_planned: d.calls_planned,
+            calls_failed: d.calls_failed,
+            unpriced: d.unpriced,
+        }
+    }
+}
+
+impl From<store::DiscoverySnapshot> for DiscoverySnapshot {
+    fn from(d: store::DiscoverySnapshot) -> Self {
+        Self {
+            observations: d.observations.into_iter().map(Into::into).collect(),
+            fx: d
+                .fx
+                .into_iter()
+                .map(|r| FxRate {
+                    currency: r.currency,
+                    rate: r.rate,
+                })
+                .collect(),
+            calls_planned: d.calls_planned,
+            calls_failed: d.calls_failed,
+            unpriced: d.unpriced,
+        }
+    }
+}
+
+fn items_to_store(items: Vec<WorkItem>) -> Vec<store::WorkItem> {
+    items
+        .into_iter()
+        .map(|i| store::WorkItem {
+            provider: i.provider,
+            route_date: route_to_core(i.route_date),
+        })
+        .collect()
 }
 
 fn route_to_core(c: RouteDate) -> planning::RouteDate {
@@ -1092,14 +1161,28 @@ impl SearchStore {
         items: Vec<WorkItem>,
         now_ms: i64,
     ) -> Result<i64, StoreError> {
-        let items: Vec<store::WorkItem> = items
-            .into_iter()
-            .map(|i| store::WorkItem {
-                provider: i.provider,
-                route_date: route_to_core(i.route_date),
-            })
-            .collect();
-        Ok(self.inner.create_search(&request.into(), &items, now_ms)?)
+        Ok(self
+            .inner
+            .create_search(&request.into(), &items_to_store(items), now_ms)?)
+    }
+
+    pub fn create_discovery(&self, request: StoredRequest, now_ms: i64) -> Result<i64, StoreError> {
+        Ok(self.inner.create_discovery(&request.into(), now_ms)?)
+    }
+
+    pub fn commit_discovery(
+        &self,
+        search_id: i64,
+        snapshot: DiscoverySnapshot,
+        items: Vec<WorkItem>,
+        now_ms: i64,
+    ) -> Result<(), StoreError> {
+        Ok(self.inner.commit_discovery(
+            search_id,
+            &snapshot.into(),
+            &items_to_store(items),
+            now_ms,
+        )?)
     }
 
     pub fn finish_combo(
@@ -1187,6 +1270,8 @@ impl SearchStore {
                 .into_iter()
                 .map(|(reason, count)| HiddenCount { reason, count })
                 .collect(),
+            stage: s.stage,
+            discovery: s.discovery.map(Into::into),
         }))
     }
 }

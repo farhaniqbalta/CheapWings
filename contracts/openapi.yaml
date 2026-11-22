@@ -1100,6 +1100,11 @@
             "type": "boolean",
             "title": "Has Baggage Details"
           },
+          "destination_discovery": {
+            "type": "boolean",
+            "title": "Destination Discovery",
+            "default": false
+          },
           "permitted_to_aggregate": {
             "type": "boolean",
             "title": "Permitted To Aggregate",

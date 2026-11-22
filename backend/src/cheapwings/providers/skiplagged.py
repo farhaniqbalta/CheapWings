@@ -1,5 +1,6 @@
 """Skiplagged MCP adapter pinned to P0 FlightCard evidence, never invented legs."""
 
+import json
 from datetime import UTC, datetime
 from typing import ClassVar
 
@@ -9,7 +10,7 @@ from cheapwings.domain.evidence import ProviderFailure, SourceEvidence
 from cheapwings.domain.itinerary import ItinerarySummary
 from cheapwings.domain.money import FXSnapshot
 from cheapwings.domain.offer import ComparisonStatus, LinkScope, Offer, PriceStatus, ThreeValued
-from cheapwings.providers.base import ProviderCapabilities, ProviderSearchResult
+from cheapwings.providers.base import DiscoveryResult, ProviderCapabilities, ProviderSearchResult
 from cheapwings.providers.common import (
     decimal_value,
     exact_payload_json,
@@ -21,13 +22,13 @@ from cheapwings.providers.common import (
 ENDPOINT = "https://mcp.skiplagged.com/mcp"
 
 
-async def mcp_search(arguments):
+async def mcp_search(arguments, tool="sk_flights_search", key="flights"):
     from mcp import ClientSession
     from mcp.client.streamable_http import streamable_http_client
 
     from cheapwings.providers.exact_json import ExactCapture, exact_http_client
 
-    capture = ExactCapture()
+    capture = ExactCapture(key)
     async with exact_http_client(capture) as client:
         try:
             async with (
@@ -35,7 +36,7 @@ async def mcp_search(arguments):
                 ClientSession(read, write) as session,
             ):
                 await session.initialize()
-                result = await session.call_tool("sk_flights_search", arguments)
+                result = await session.call_tool(tool, arguments)
                 if result.is_error:
                     raise ProviderFailure("provider_unavailable")
                 if capture.result is not None:
@@ -47,7 +48,7 @@ async def mcp_search(arguments):
                             payload = json_payload(block.text)
                         except ValueError:
                             continue
-                        if isinstance(payload, dict) and "flights" in payload:
+                        if isinstance(payload, dict) and key in payload:
                             return payload
                 # Some MCP servers wrap the tool JSON in structured_content.
                 # Integer-only structured prices are safe; floats fail closed in normalization.
@@ -63,17 +64,60 @@ async def mcp_search(arguments):
             raise
 
 
+async def mcp_anywhere(arguments):
+    return await mcp_search(arguments, "sk_destinations_anywhere", "results")
+
+
 class SkiplaggedProvider:
     cache_dependencies = ("mcp",)
     cache_version = "2"
     cache_options: ClassVar[dict] = {"includeHiddenCity": False, "includeVirtualInterlining": False}
     provider_id = "skiplagged"
     # Calendar tools exist, but no implemented/tested calendar method is advertised.
-    capabilities = ProviderCapabilities(True, False, False, True, True, False)
+    capabilities = ProviderCapabilities(True, False, False, True, True, False, True)
 
-    def __init__(self, transport=None, limit=20):
+    def __init__(self, transport=None, limit=20, discovery_transport=None):
         self.transport = transport or mcp_search
+        self.discovery_transport = discovery_transport or mcp_anywhere
         self.limit = limit
+
+    async def discover(self, request):
+        """P7.4: `sk_destinations_anywhere` → observations via the shared Rust parser (p7.1 mapping)."""
+        payload = await self.discovery_transport(
+            {
+                "from": request.origin,
+                "depart": request.departure_date.isoformat(),
+                "currency": request.display_currency,
+                "fare_class": "economy",
+                "adults": 1,
+            }
+        )
+        rpc = '{"jsonrpc":"2.0","id":0,"result":{"structuredContent":' + exact_payload_json(payload) + "}}"
+        now = datetime.now(UTC)
+        try:
+            page = json.loads(
+                _core.skiplagged_anywhere(
+                    json.dumps(
+                        {
+                            "rpc_json": rpc,
+                            "origin": request.origin,
+                            "depart": request.departure_date.isoformat(),
+                            "fetched_at": now.isoformat(),
+                        }
+                    )
+                )
+            )
+        except ValueError as exc:
+            code = str(exc).split(":", 1)[0]
+            raise ProviderFailure(code if code == "provider_unavailable" else "schema_changed") from None
+        return DiscoveryResult(
+            self.provider_id,
+            request,
+            tuple(page["observations"]),
+            tuple(page["fx"]),
+            page["unpriced"],
+            now,
+        )
 
     async def search(self, query):
         if not query.include_basic_economy:

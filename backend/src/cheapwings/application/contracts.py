@@ -95,6 +95,7 @@ class ProviderCapability(DTO):
     has_booking_link: bool
     has_hidden_city_flag: bool
     has_baggage_details: bool
+    destination_discovery: bool = False  # P7.4 Discover source
     permitted_to_aggregate: bool = True
     can_cache: bool = True
     attribution_required: bool = False

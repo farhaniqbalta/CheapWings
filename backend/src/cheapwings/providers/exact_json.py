@@ -8,7 +8,8 @@ from cheapwings.providers.common import json_payload
 
 
 class ExactCapture:
-    def __init__(self):
+    def __init__(self, key='flights'):
+        self.key = key  # top-level field of the tool payload: 'flights' (search), 'results' (anywhere)
         self.buffer = b''
         self.result = None
 
@@ -19,7 +20,7 @@ class ExactCapture:
             return
         result = obj.get('result', {}) if isinstance(obj, dict) else {}
         content = result.get('structuredContent') if isinstance(result, dict) else None
-        if isinstance(content, dict) and 'flights' in content:
+        if isinstance(content, dict) and self.key in content:
             self.result = content
 
     def feed(self, data):

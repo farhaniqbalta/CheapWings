@@ -131,14 +131,16 @@ fn code(text: &str) -> String {
     crate::python_strip(text).to_uppercase()
 }
 
-/// Cheapest priced lead per destination inside the query window, capped at `max_route_dates`.
-/// The caller derives the cap from its work-item limit and enabled providers.
-pub fn select_discovery_plan(
-    observations: &[DiscoveryObservation],
-    query: &DiscoveryQuery,
-    fx: &[FxRate],
-    max_route_dates: u32,
-) -> Result<DiscoveryPlan, DiscoveryError> {
+pub(crate) struct ValidQuery {
+    pub origins: Vec<String>,
+    pub from: i64,
+    pub through: i64,
+    pub display: String,
+    pub ceiling: Option<Decimal>,
+}
+
+/// Query checks shared by `select_discovery_plan` and `discovery_sources::discovery_calls`.
+pub(crate) fn validate(query: &DiscoveryQuery) -> Result<ValidQuery, DiscoveryError> {
     let origins = normalize(&query.origins)?;
     let (from, through) = (
         parse_date(&query.date_from)?,
@@ -164,6 +166,30 @@ pub fn select_discovery_plan(
             )
         }
     };
+    Ok(ValidQuery {
+        origins,
+        from,
+        through,
+        display,
+        ceiling,
+    })
+}
+
+/// Cheapest priced lead per destination inside the query window, capped at `max_route_dates`.
+/// The caller derives the cap from its work-item limit and enabled providers.
+pub fn select_discovery_plan(
+    observations: &[DiscoveryObservation],
+    query: &DiscoveryQuery,
+    fx: &[FxRate],
+    max_route_dates: u32,
+) -> Result<DiscoveryPlan, DiscoveryError> {
+    let ValidQuery {
+        origins,
+        from,
+        through,
+        display,
+        ceiling,
+    } = validate(query)?;
 
     let mut counts = DiscoveryCounts {
         observed: observations.len() as u32,

@@ -231,6 +231,16 @@ fn select_discovery_plan(payload: &str) -> PyResult<String> {
 }
 
 #[pyfunction]
+fn discovery_calls(payload: &str) -> PyResult<String> {
+    engine::discovery_sources::calls_web_payload(payload).map_err(PyValueError::new_err)
+}
+
+#[pyfunction]
+fn skiplagged_anywhere(payload: &str) -> PyResult<String> {
+    engine::discovery_sources::anywhere_web_payload(payload).map_err(PyValueError::new_err)
+}
+
+#[pyfunction]
 fn fli_parse(payload: &str) -> PyResult<String> {
     engine::fli::web_payload(payload).map_err(|error| PyValueError::new_err(error.code()))
 }
@@ -247,6 +257,8 @@ fn cheapwings_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("BUILD_REVISION", engine::BUILD_REVISION)?;
     m.add_function(wrap_pyfunction!(minor_unit_exponent, m)?)?;
     m.add_function(wrap_pyfunction!(select_discovery_plan, m)?)?;
+    m.add_function(wrap_pyfunction!(discovery_calls, m)?)?;
+    m.add_function(wrap_pyfunction!(skiplagged_anywhere, m)?)?;
     m.add_function(wrap_pyfunction!(from_minor_units, m)?)?;
     m.add_function(wrap_pyfunction!(as_minor_units, m)?)?;
     m.add_function(wrap_pyfunction!(fx_convert, m)?)?;

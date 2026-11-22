@@ -31,6 +31,9 @@ class SearchJob(Base):
     reprice_budget: Mapped[int] = mapped_column(Integer, default=0)
     reprice_providers: Mapped[list] = mapped_column(JSON, default=list)
     verification_planned: Mapped[bool] = mapped_column(Boolean, default=False)
+    # P7.4: "search" or "discover"; Discover counts (calls, unpriced, selection) once planned.
+    kind: Mapped[str] = mapped_column(String, default="search", server_default="search")
+    discovery_json: Mapped[dict | None] = mapped_column(JSON)
 
 
 class WorkItem(Base):
@@ -74,6 +77,22 @@ class WorkItem(Base):
     unpriced_candidate_count: Mapped[int] = mapped_column(Integer, default=0)
     started_at: Mapped[int | None] = mapped_column(Integer)
     finished_at: Mapped[int | None] = mapped_column(Integer)
+
+
+class DiscoveryObservationRow(Base):
+    """P7.4: one priced lead from a finished `discover` work item, with that call's FX rates."""
+
+    __tablename__ = "discovery_observations"
+    __table_args__ = (
+        UniqueConstraint("work_item_id", "idx", name="uq_discovery_observation_item_idx"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    job_id: Mapped[str] = mapped_column(ForeignKey("search_jobs.id"), index=True)
+    work_item_id: Mapped[str] = mapped_column(ForeignKey("work_items.id"))
+    idx: Mapped[int] = mapped_column(Integer)
+    observation_json: Mapped[dict] = mapped_column(JSON)
+    fx_json: Mapped[list] = mapped_column(JSON)
 
 
 class WorkAttempt(Base):

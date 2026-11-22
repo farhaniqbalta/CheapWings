@@ -129,6 +129,13 @@ struct ResultsView: View {
         case .searchesFailed(let count):
             Label("No results: \(count) searches failed. Check the connection and see the list below.",
                   systemImage: "wifi.exclamationmark").foregroundStyle(Theme.hold)
+        case .sourceUnavailable:
+            Label("No results: the destination source could not be reached.", systemImage: "wifi.exclamationmark")
+                .foregroundStyle(Theme.hold)
+        case .noPrices:
+            Label("The destination source returned no prices for these dates.", systemImage: "airplane.circle")
+        case .noneUnderBudget:
+            Label("No destinations found under your budget.", systemImage: "airplane.circle")
         }
     }
 

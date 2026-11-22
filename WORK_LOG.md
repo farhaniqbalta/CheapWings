@@ -56,7 +56,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 - P6 follow-up: assess the 4 MB Fli web body cap. See the [P6 evidence](docs/log/p6.md) for coverage limits and remaining items.
 
 ## Next task
-P7.4 PR A (shared core: anywhere parser, call planner, bindings) in review; then PR B (iPad runtime) per [p7.4-plan](docs/log/p7.4-plan.md).
+P7.4 PR A (#27) and PR B (iPad runtime) in review; then PR C (web runtime) per [p7.4-plan](docs/log/p7.4-plan.md).
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

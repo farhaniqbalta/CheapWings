@@ -30,14 +30,8 @@ public struct SkiplaggedSearchProvider: SearchProvider {
         let raw: String
         do {
             raw = try await client.callTool(name: "sk_flights_search", arguments: Self.arguments(combo, request: request))
-        } catch MCPError.http(let status, let retryAfter) {
-            if status == 429 { return .outcome(.retry(after: Self.retryDelay(retryAfter))) }
-            if status == 401 || status == 403 { return .outcome(.stop(.blocked("http_\(status)"))) }
-            return .outcome(.failed(code: "http_\(status)", hidden: []))
         } catch {
-            if Task.isCancelled { return .outcome(.stop(.cancelled)) }
-            if let code = (error as? URLError)?.code, OfflineErrors.codes.contains(code) { return .outcome(.stop(.offline)) }
-            return .outcome(.failed(code: "network", hidden: []))
+            return .outcome(Self.outcome(for: error))
         }
         if Task.isCancelled { return .outcome(.stop(.cancelled)) }
         do {
@@ -61,6 +55,19 @@ public struct SkiplaggedSearchProvider: SearchProvider {
             }
             return .found(offers: offers, hidden: [])
         }
+    }
+
+    /// Skiplagged's transport rules, shared by search and discovery: 429 → retry after the header,
+    /// 401/403 → the source stops, offline → everything pauses, other errors fail this call.
+    static func outcome(for error: Error) -> ProviderOutcome {
+        if case MCPError.http(let status, let retryAfter) = error {
+            if status == 429 { return .retry(after: retryDelay(retryAfter)) }
+            if status == 401 || status == 403 { return .stop(.blocked("http_\(status)")) }
+            return .failed(code: "http_\(status)", hidden: [])
+        }
+        if Task.isCancelled { return .stop(.cancelled) }
+        if let code = (error as? URLError)?.code, OfflineErrors.codes.contains(code) { return .stop(.offline) }
+        return .failed(code: "network", hidden: [])
     }
 
     /// `rate_limit.retry_after`: seconds, or an HTTP date (time until it), else 60 s.

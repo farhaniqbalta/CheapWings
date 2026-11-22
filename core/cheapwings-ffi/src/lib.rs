@@ -1,7 +1,9 @@
 //! UniFFI surface of `cheapwings-core` for Swift. Thin wrappers only: records mirror the core
 //! types and every function delegates. UniFFI has no i128, so minor units cross as text.
 
-use cheapwings_core::{fingerprint as fp, fli, locations, money, planning, ranking, skiplagged};
+use cheapwings_core::{
+    discovery, fingerprint as fp, fli, locations, money, planning, ranking, skiplagged,
+};
 
 uniffi::setup_scaffolding!();
 
@@ -71,6 +73,156 @@ pub fn plan_search(
         code: e.code().to_owned(),
         detail: e.to_string(),
     })
+}
+
+// ---------- discovery (P7) ----------
+
+#[derive(Debug, thiserror::Error, uniffi::Error)]
+pub enum DiscoveryPlanError {
+    /// `code`: a `PlanSearchError` code, `invalid_currency` or `invalid_budget`.
+    #[error("{code}: {detail}")]
+    Rejected { code: String, detail: String },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct DiscoveryObservation {
+    pub origin: String,
+    pub destination: String,
+    pub departure_date: Option<String>,
+    pub amount: String,
+    pub currency: String,
+    pub source_id: String,
+    pub observed_at: Option<String>,
+    pub fetched_at: String,
+    pub price_kind: String,
+    pub hidden_city: String,
+    pub source_reference: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct FxRate {
+    pub currency: String,
+    pub rate: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct DiscoveryQuery {
+    pub origins: Vec<String>,
+    pub date_from: String,
+    pub date_through: String,
+    pub display_currency: String,
+    pub budget: Option<String>,
+    pub include_hidden_city: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct SelectedLead {
+    pub origin: String,
+    pub destination: String,
+    pub date: String,
+    pub observation_index: u32,
+    pub comparable_amount: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct DiscoveryCounts {
+    pub observed: u32,
+    pub selected: u32,
+    pub invalid: u32,
+    pub hidden_city: u32,
+    pub out_of_window: u32,
+    pub undated: u32,
+    pub no_fx: u32,
+    pub over_budget: u32,
+    pub superseded: u32,
+    pub capped: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct DiscoveryPlan {
+    pub selected: Vec<SelectedLead>,
+    pub counts: DiscoveryCounts,
+}
+
+impl From<DiscoveryObservation> for discovery::DiscoveryObservation {
+    fn from(o: DiscoveryObservation) -> Self {
+        Self {
+            origin: o.origin,
+            destination: o.destination,
+            departure_date: o.departure_date,
+            amount: o.amount,
+            currency: o.currency,
+            source_id: o.source_id,
+            observed_at: o.observed_at,
+            fetched_at: o.fetched_at,
+            price_kind: o.price_kind,
+            hidden_city: o.hidden_city,
+            source_reference: o.source_reference,
+        }
+    }
+}
+
+impl From<discovery::DiscoveryPlan> for DiscoveryPlan {
+    fn from(p: discovery::DiscoveryPlan) -> Self {
+        let c = p.counts;
+        Self {
+            selected: p
+                .selected
+                .into_iter()
+                .map(|s| SelectedLead {
+                    origin: s.origin,
+                    destination: s.destination,
+                    date: s.date,
+                    observation_index: s.observation_index,
+                    comparable_amount: s.comparable_amount,
+                })
+                .collect(),
+            counts: DiscoveryCounts {
+                observed: c.observed,
+                selected: c.selected,
+                invalid: c.invalid,
+                hidden_city: c.hidden_city,
+                out_of_window: c.out_of_window,
+                undated: c.undated,
+                no_fx: c.no_fx,
+                over_budget: c.over_budget,
+                superseded: c.superseded,
+                capped: c.capped,
+            },
+        }
+    }
+}
+
+#[uniffi::export]
+pub fn select_discovery_plan(
+    observations: Vec<DiscoveryObservation>,
+    query: DiscoveryQuery,
+    fx: Vec<FxRate>,
+    max_route_dates: u32,
+) -> Result<DiscoveryPlan, DiscoveryPlanError> {
+    let observations: Vec<discovery::DiscoveryObservation> =
+        observations.into_iter().map(Into::into).collect();
+    let query = discovery::DiscoveryQuery {
+        origins: query.origins,
+        date_from: query.date_from,
+        date_through: query.date_through,
+        display_currency: query.display_currency,
+        budget: query.budget,
+        include_hidden_city: query.include_hidden_city,
+    };
+    let fx: Vec<discovery::FxRate> = fx
+        .into_iter()
+        .map(|r| discovery::FxRate {
+            currency: r.currency,
+            rate: r.rate,
+        })
+        .collect();
+    discovery::select_discovery_plan(&observations, &query, &fx, max_route_dates)
+        .map(Into::into)
+        .map_err(|e| DiscoveryPlanError::Rejected {
+            code: e.code().to_owned(),
+            detail: e.to_string(),
+        })
 }
 
 // ---------- money ----------

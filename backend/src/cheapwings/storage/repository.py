@@ -65,11 +65,7 @@ class Repository(CacheRepository, VerificationRepository):
         now = now_ms()
         with write_session(self.engine) as s:
             jobs = s.scalars(select(SearchJob)).all()
-            if (
-                sum(j.created_at > now - 3_600_000 for j in jobs) >= max_requests
-                or sum(j.status in JOB_ACTIVE for j in jobs) >= max_active_requests
-            ):
-                raise CapacityExceeded("Search request limit exceeded; wait for capacity")
+            self._check_request_limit(jobs, now, max_requests, max_active_requests)
             job = SearchJob(
                 id=str(uuid4()),
                 # New arrivals join the current round instead of repeatedly
@@ -125,13 +121,89 @@ class Repository(CacheRepository, VerificationRepository):
                 ).all()
                 reserved = reserved or created or bool(pending)
             job.upstream_work_reserved = reserved
-            if reserved and (
-                sum(j.status in JOB_ACTIVE and j.upstream_work_reserved for j in jobs) >= max_active
-                or sum(j.created_at > now - 3_600_000 and j.upstream_work_reserved for j in jobs)
-                >= max_hourly
-            ):
-                raise CapacityExceeded("Search creation budget exceeded; wait for capacity")
+            if reserved:
+                self._check_creation_budget(jobs, now, max_active, max_hourly)
             self.finalize(s, job, now)
+            return job
+
+    @staticmethod
+    def _check_request_limit(jobs, now, max_requests, max_active_requests):
+        if (
+            sum(j.created_at > now - 3_600_000 for j in jobs) >= max_requests
+            or sum(j.status in JOB_ACTIVE for j in jobs) >= max_active_requests
+        ):
+            raise CapacityExceeded("Search request limit exceeded; wait for capacity")
+
+    @staticmethod
+    def _check_creation_budget(jobs, now, max_active, max_hourly):
+        if (
+            sum(j.status in JOB_ACTIVE and j.upstream_work_reserved for j in jobs) >= max_active
+            or sum(j.created_at > now - 3_600_000 and j.upstream_work_reserved for j in jobs)
+            >= max_hourly
+        ):
+            raise CapacityExceeded("Search creation budget exceeded; wait for capacity")
+
+    def create_discovery_job(
+        self,
+        query,
+        registry,
+        *,
+        max_active=2,
+        max_hourly=20,
+        budget_seconds=1800,
+        reprice_budget=0,
+        retention_seconds=None,
+        cache_mode="prefer_cache",
+        max_requests=100,
+        max_active_requests=20,
+    ):
+        """P7.4: a Discover job in `discovering`, one `discover` item per call per discovery source.
+        Detailed items are added by `finalize` once every discovery item has finished."""
+        available = [r for r in registry if not r.unavailable_reason]
+        discoverers = [r for r in available if r.provider.capabilities.destination_discovery]
+        if not discoverers:
+            raise ValueError("no_discovery_provider")
+        calls = query.calls()
+        now = now_ms()
+        with write_session(self.engine) as s:
+            jobs = s.scalars(select(SearchJob)).all()
+            self._check_request_limit(jobs, now, max_requests, max_active_requests)
+            self._check_creation_budget(jobs, now, max_active, max_hourly)
+            job = SearchJob(
+                id=str(uuid4()),
+                kind="discover",
+                phase="discovering",
+                dispatch_sequence=s.scalar(select(func.max(SearchJob.dispatch_sequence))) or 0,
+                provider_ids=[r.provider.provider_id for r in available],
+                cache_mode=cache_mode,
+                query_json=query.model_dump(mode="json"),
+                created_at=now,
+                updated_at=now,
+                deadline_at=now + budget_seconds * 1000,
+                data_expires_at=now + retention_seconds * 1000 if retention_seconds else None,
+                reprice_budget=reprice_budget,
+                reprice_providers=[
+                    r.provider.provider_id for r in available if r.provider.capabilities.exact_reprice
+                ],
+                upstream_work_reserved=True,
+            )
+            s.add(job)
+            s.flush()
+            for registration in discoverers:
+                for call in calls:
+                    s.add(
+                        WorkItem(
+                            id=str(uuid4()),
+                            job_id=job.id,
+                            provider_id=registration.provider.provider_id,
+                            origin=call["origin"],
+                            destination="*",
+                            departure_date=call["date"],
+                            work_type="discover",
+                            status="pending",
+                        )
+                    )
+            s.flush()
             return job
 
     def get_job(self, job_id):

@@ -1,6 +1,7 @@
 //! CheapWings shared engine core. Pure logic only: callers do networking and storage.
 
 pub mod discovery;
+pub mod discovery_sources;
 pub mod fingerprint;
 pub mod fli;
 pub mod locations;

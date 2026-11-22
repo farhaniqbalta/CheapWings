@@ -1,6 +1,7 @@
 """Public v1 contract. Provider selectors/raw payloads have no public DTO field."""
 
 from datetime import date, datetime
+from decimal import Decimal
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -14,7 +15,7 @@ from cheapwings.domain.offer import (
     ProviderErrorCode,
     ThreeValued,
 )
-from cheapwings.domain.query import MaxStops, SearchQuery
+from cheapwings.domain.query import DiscoverQuery, MaxStops, SearchQuery
 from cheapwings.locations.catalog import MajorSelection, catalog
 
 JobStatus = Literal["queued", "running", "completed", "partial", "failed", "cancelled"]
@@ -74,6 +75,50 @@ class SearchRequest(DTO):
             max_stops=MaxStops.ANY if self.max_stops is None else MaxStops(str(self.max_stops)),
             max_combinations=cap,
         )
+
+
+class DiscoverRequest(DTO):
+    """P7.4 Discover: origins and a departure window; a discovery source suggests destinations."""
+
+    provider_ids: list[str] | None = Field(default=None, min_length=1, max_length=10)
+    origins: list[Annotated[str, Field(max_length=16)]] = Field(min_length=1, max_length=31)
+    departure_date_from: date
+    departure_date_through: date
+    display_currency: Literal["IDR", "USD", "AUD", "JPY"] = "IDR"
+    budget: Decimal | None = Field(default=None, gt=0)
+    max_stops: Literal[0, 1, 2] | None = None
+
+    def to_domain(self):
+        if self.departure_date_from < date.today():
+            raise ValueError("Departure window has expired; choose today or a future date")
+        return DiscoverQuery(
+            origins=self.origins,
+            departure_date_from=self.departure_date_from,
+            departure_date_through=self.departure_date_through,
+            display_currency=self.display_currency,
+            budget=self.budget,
+            max_stops=MaxStops.ANY if self.max_stops is None else MaxStops(str(self.max_stops)),
+        )
+
+
+class DiscoverCreated(DTO):
+    job_id: str
+    status: JobStatus
+    created_at: datetime
+    discovery_calls: int
+    enabled_detailed_providers: list[str]
+    job_status_url: str
+
+
+class DiscoveryStatus(DTO):
+    calls_planned: int
+    calls_done: int
+    calls_failed: int
+    unpriced: int
+    discovered_destinations: int
+    counts: dict[str, int] | None = None
+    # planned | no_prices (no usable lead) | none_under_budget | unavailable (every call failed)
+    outcome: Literal["planned", "no_prices", "none_under_budget", "unavailable"] | None = None
 
 
 class Created(DTO):
@@ -198,6 +243,24 @@ class Job(DTO):
     data_expires_at: datetime | None = None
     provider_status: list[ProviderProgress]
     coverage: list[Coverage]
+    warnings: list[str]
+
+
+class DiscoverJob(DTO):
+    provider_ids: list[str] = Field(default_factory=list)
+    job_id: str
+    query: DiscoverRequest
+    status: JobStatus
+    phase: Literal["discovering", "searching", "verifying", "done"]
+    cancel_requested: bool
+    created_at: datetime
+    updated_at: datetime
+    discovery: DiscoveryStatus
+    total_checks: int
+    succeeded_checks: int
+    failed_checks: int
+    checked_route_dates: int
+    provider_status: list[ProviderProgress]
     warnings: list[str]
 
 

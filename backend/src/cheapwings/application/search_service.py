@@ -25,6 +25,7 @@ from cheapwings.engine.ranking import best_checked_deal, lowest_advertised
 from cheapwings.storage.models import (
     FareQuote,
     ItineraryRow,
+    DiscoveryObservationRow,
     ProviderOperation,
     QuoteRevision,
     SegmentRow,
@@ -47,11 +48,7 @@ def request_snapshot(data):
     return dto.SearchRequest.model_validate(data)
 
 
-def status_projection(repo, job_id):
-    job, items = repo.get_job(job_id)
-    detailed = [i for i in items if i.work_type == "detailed"]
-    reprices = [i for i in items if i.work_type == "reprice"]
-    counts = Counter(i.status for i in detailed)
+def _provider_progress(detailed):
     providers = []
     for provider_id in sorted({i.provider_id for i in detailed}):
         entries = [i for i in detailed if i.provider_id == provider_id]
@@ -72,6 +69,17 @@ def status_projection(repo, job_id):
                 ),
             )
         )
+    return providers
+
+
+def status_projection(repo, job_id):
+    job, items = repo.get_job(job_id)
+    if job.kind != "search":
+        raise KeyError(job_id)
+    detailed = [i for i in items if i.work_type == "detailed"]
+    reprices = [i for i in items if i.work_type == "reprice"]
+    counts = Counter(i.status for i in detailed)
+    providers = _provider_progress(detailed)
     warnings = ["Inventory completeness is unknown; coverage counts provider queries only."]
     if job.status in ("partial", "failed", "cancelled"):
         warnings.append("Search is incomplete; inspect provider coverage and errors.")
@@ -138,6 +146,67 @@ def status_projection(repo, job_id):
             )
             for i in items
         ],
+        warnings=warnings,
+    )
+
+
+def discover_projection(repo, job_id):
+    """P7.4 Discover status: discovery coverage first, then the ordinary checks."""
+    job, items = repo.get_job(job_id)
+    if job.kind != "discover":
+        raise KeyError(job_id)
+    calls = [i for i in items if i.work_type == "discover"]
+    detailed = [i for i in items if i.work_type == "detailed"]
+    counts = Counter(i.status for i in detailed)
+    summary = job.discovery_json or {}
+    with Session(repo.engine) as s:
+        destinations = {
+            r.observation_json["destination"]
+            for r in s.scalars(
+                select(DiscoveryObservationRow).where(DiscoveryObservationRow.job_id == job_id)
+            )
+        }
+    checked = {(i.origin, i.destination, i.departure_date) for i in detailed if i.status in SUCCESS}
+    outcome = summary.get("outcome")
+    warnings = [
+        f"Lowest fares found among {len(destinations)} discovered destinations; "
+        f"{len({d for _, d, _ in checked})} checked. Not every destination in the world was searched."
+    ]
+    if outcome == "unavailable":
+        warnings.append("The destination source could not be reached; no destinations were found.")
+    if any(i.status not in SUCCESS for i in calls if i.status not in ("pending", "running", "retry_wait")):
+        warnings.append("Some discovery calls failed; destinations from those days may be missing.")
+    q = job.query_json
+    return dto.DiscoverJob(
+        provider_ids=job.provider_ids or [],
+        job_id=job.id,
+        query=dto.DiscoverRequest(
+            origins=q["origins"],
+            departure_date_from=q["departure_date_from"],
+            departure_date_through=q["departure_date_through"],
+            display_currency=q["display_currency"],
+            budget=q["budget"],
+            max_stops=None if q["max_stops"] == "any" else int(q["max_stops"]),
+        ),
+        status=job.status,
+        phase=job.phase,
+        cancel_requested=job.cancel_requested,
+        created_at=instant(job.created_at),
+        updated_at=instant(job.updated_at),
+        discovery=dto.DiscoveryStatus(
+            calls_planned=len(calls),
+            calls_done=sum(i.status not in ("pending", "running", "retry_wait") for i in calls),
+            calls_failed=sum(i.status == "failed_terminal" for i in calls),
+            unpriced=sum(i.unpriced_candidate_count for i in calls),
+            discovered_destinations=len(destinations),
+            counts=summary.get("counts"),
+            outcome=outcome,
+        ),
+        total_checks=len(detailed),
+        succeeded_checks=sum(counts[k] for k in SUCCESS),
+        failed_checks=counts["failed_terminal"],
+        checked_route_dates=len(checked),
+        provider_status=_provider_progress(detailed),
         warnings=warnings,
     )
 

@@ -2,7 +2,8 @@
 //! types and every function delegates. UniFFI has no i128, so minor units cross as text.
 
 use cheapwings_core::{
-    discovery, fingerprint as fp, fli, locations, money, planning, ranking, skiplagged,
+    discovery, discovery_sources, fingerprint as fp, fli, locations, money, planning, ranking,
+    skiplagged,
 };
 
 uniffi::setup_scaffolding!();
@@ -202,14 +203,7 @@ pub fn select_discovery_plan(
 ) -> Result<DiscoveryPlan, DiscoveryPlanError> {
     let observations: Vec<discovery::DiscoveryObservation> =
         observations.into_iter().map(Into::into).collect();
-    let query = discovery::DiscoveryQuery {
-        origins: query.origins,
-        date_from: query.date_from,
-        date_through: query.date_through,
-        display_currency: query.display_currency,
-        budget: query.budget,
-        include_hidden_city: query.include_hidden_city,
-    };
+    let query = core_query(query);
     let fx: Vec<discovery::FxRate> = fx
         .into_iter()
         .map(|r| discovery::FxRate {
@@ -223,6 +217,90 @@ pub fn select_discovery_plan(
             code: e.code().to_owned(),
             detail: e.to_string(),
         })
+}
+
+// ---------- discovery sources (P7.4) ----------
+
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct DiscoveryCall {
+    pub origin: String,
+    pub date: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct AnywherePage {
+    pub observations: Vec<DiscoveryObservation>,
+    pub fx: Vec<FxRate>,
+    pub unpriced: u32,
+}
+
+impl From<discovery::DiscoveryObservation> for DiscoveryObservation {
+    fn from(o: discovery::DiscoveryObservation) -> Self {
+        Self {
+            origin: o.origin,
+            destination: o.destination,
+            departure_date: o.departure_date,
+            amount: o.amount,
+            currency: o.currency,
+            source_id: o.source_id,
+            observed_at: o.observed_at,
+            fetched_at: o.fetched_at,
+            price_kind: o.price_kind,
+            hidden_city: o.hidden_city,
+            source_reference: o.source_reference,
+        }
+    }
+}
+
+fn core_query(query: DiscoveryQuery) -> discovery::DiscoveryQuery {
+    discovery::DiscoveryQuery {
+        origins: query.origins,
+        date_from: query.date_from,
+        date_through: query.date_through,
+        display_currency: query.display_currency,
+        budget: query.budget,
+        include_hidden_city: query.include_hidden_city,
+    }
+}
+
+#[uniffi::export]
+pub fn discovery_calls(query: DiscoveryQuery) -> Result<Vec<DiscoveryCall>, DiscoveryPlanError> {
+    discovery_sources::discovery_calls(&core_query(query))
+        .map(|calls| {
+            calls
+                .into_iter()
+                .map(|c| DiscoveryCall {
+                    origin: c.origin,
+                    date: c.date,
+                })
+                .collect()
+        })
+        .map_err(|e| DiscoveryPlanError::Rejected {
+            code: e.code().to_owned(),
+            detail: e.to_string(),
+        })
+}
+
+#[uniffi::export]
+pub fn skiplagged_anywhere(
+    rpc_json: String,
+    origin: String,
+    depart: String,
+    fetched_at: String,
+) -> Result<AnywherePage, SkiplaggedError> {
+    let page = discovery_sources::skiplagged_anywhere(&rpc_json, &origin, &depart, &fetched_at)?;
+    Ok(AnywherePage {
+        observations: page.observations.into_iter().map(Into::into).collect(),
+        fx: page
+            .fx
+            .into_iter()
+            .map(|r| FxRate {
+                currency: r.currency,
+                rate: r.rate,
+            })
+            .collect(),
+        unpriced: page.unpriced,
+    })
 }
 
 // ---------- money ----------

@@ -236,6 +236,7 @@ export interface ProviderCapability {
   has_booking_link: boolean;
   has_hidden_city_flag: boolean;
   has_baggage_details: boolean;
+  destination_discovery?: boolean; // P7 Discover source
   permitted_to_aggregate?: boolean;
   can_cache?: boolean;
   attribution_required?: boolean;

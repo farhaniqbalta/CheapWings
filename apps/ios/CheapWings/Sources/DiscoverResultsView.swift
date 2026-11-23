@@ -35,7 +35,10 @@ struct DiscoverResultsView: View {
             if let summary {
                 Section {
                     Text(progressText(summary))
-                    Text(coverageText(summary, rows: rows)).font(.footnote).foregroundStyle(.secondary)
+                    if let coverage = discoverCoverage(summary: summary, finished: session.finished, failures: session.failures) {
+                        Text("Lowest fares found among \(coverage.found) discovered destination\(coverage.found == 1 ? "" : "s"); \(coverage.checked) checked. Not every destination was searched.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                    }
                     if summary.callsFailed > 0 {
                         Text("\(summary.callsFailed) discovery call\(summary.callsFailed == 1 ? "" : "s") failed; destinations from those days may be missing.")
                             .font(.footnote).foregroundStyle(Theme.warn)
@@ -85,13 +88,6 @@ struct DiscoverResultsView: View {
         }
         let done = session.finished.count
         return session.isRunning ? "Checking fares: \(done) of \(session.planned.count) checks" : "\(done) of \(session.planned.count) checks done"
-    }
-
-    /// "Lowest fares found among N discovered destinations; M checked" (never "cheapest anywhere").
-    private func coverageText(_ summary: DiscoverySummary, rows: [DiscoverRow]) -> String {
-        let found = Set(summary.leads.map(\.destination)).count
-        let checked = Set(session.finished.map(\.routeDate.destination)).count
-        return "Lowest fares found among \(found) discovered destination\(found == 1 ? "" : "s"); \(checked) checked. Not every destination was searched."
     }
 }
 

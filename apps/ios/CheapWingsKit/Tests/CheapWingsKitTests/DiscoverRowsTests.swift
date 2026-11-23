@@ -43,4 +43,24 @@ final class DiscoverRowsTests: XCTestCase {
     func testEmptyShortlistHasNoRows() {
         XCTAssertTrue(discoverRows(summary: summary([]), offers: [checked("SIN", "2027-03-01", "1")], currency: "IDR", finished: true).isEmpty)
     }
+
+    // Review fix: the coverage line counts only successful checks, and waits for the snapshot.
+
+    func testCoverageCountsOnlySuccessfulChecksAfterCommit() {
+        var s = summary([lead("DPS", "2027-03-01", "640000"), lead("SIN", "2027-03-01", "800000")])
+        s.leads = ["DPS", "SIN", "BKK"].map {
+            DiscoveryObservation(origin: "CGK", destination: $0, departureDate: "2027-03-01", amount: "40", currency: "USD",
+                                 sourceId: "skiplagged", observedAt: nil, fetchedAt: "t", priceKind: "indicative",
+                                 hiddenCity: "no", sourceReference: nil)
+        }
+        let dps = WorkItem(provider: "fli", routeDate: RouteDate(origin: "CGK", destination: "DPS", date: "2027-03-01"))
+        let sin = WorkItem(provider: "fli", routeDate: RouteDate(origin: "CGK", destination: "SIN", date: "2027-03-01"))
+        let failed = [SkippedSearch(routeDate: sin.routeDate, code: "network", provider: "fli")]
+        let coverage = discoverCoverage(summary: s, finished: [dps, sin], failures: failed)
+        XCTAssertEqual(coverage?.found, 3)
+        XCTAssertEqual(coverage?.checked, 1, "a failed check is not a checked destination")
+        var discovering = s
+        discovering.committed = false
+        XCTAssertNil(discoverCoverage(summary: discovering, finished: [], failures: []), "no coverage line before the snapshot")
+    }
 }

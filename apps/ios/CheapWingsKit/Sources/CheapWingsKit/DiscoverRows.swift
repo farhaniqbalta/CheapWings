@@ -35,3 +35,12 @@ public func discoverRows(summary: DiscoverySummary, offers: [FoundOffer], curren
     let rest = rows.filter { $0.checkedOffer == nil }.sorted { amount($0.leadAmount) < amount($1.leadAmount) }
     return checked + rest
 }
+
+/// "Lowest fares found among `found` discovered destinations; `checked` checked." Only after the
+/// snapshot is committed; a destination counts as checked when one of its checks succeeded.
+public func discoverCoverage(summary: DiscoverySummary, finished: Set<WorkItem>, failures: [SkippedSearch]) -> (found: Int, checked: Int)? {
+    guard summary.committed else { return nil }
+    let failed = Set(failures.map { WorkItem(provider: $0.provider, routeDate: $0.routeDate) })
+    let checked = Set(finished.subtracting(failed).map(\.routeDate.destination))
+    return (Set(summary.leads.map(\.destination)).count, checked.count)
+}

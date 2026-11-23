@@ -50,6 +50,17 @@ def test_discover_create_poll_results(engine):
         assert any("2 discovered destinations" in w for w in job.warnings)
         assert job.query.origins == ["CGK"]
         results = dto.Results.model_validate_json(client.get(f"/api/v1/discover/{created.job_id}/results").text)
+        # P7.5: the shortlist in plan order, comparable amounts in the display currency (40/50 USD × 16000).
+        assert [(l.destination, l.date, l.comparable_amount) for l in d.shortlist] == [
+            ("DPS", "2027-03-01", "640000"), ("SIN", "2027-03-01", "800000")]
+        # P7.5 review fix: the cheapest checked fare per shortlisted route/date, computed on the server
+        # from every stored quote (not just the first results page).
+        for l in d.shortlist:
+            fares = [o.comparable_amount for i in results.itineraries for o in i.offers
+                     if i.destination == l.destination and i.departure_local.date().isoformat() == l.date]
+            assert l.checked_amount == str(min(fares, key=lambda x: __import__("decimal").Decimal(x)))
+            assert l.checked_itinerary_id
+        results = dto.Results.model_validate_json(client.get(f"/api/v1/discover/{created.job_id}/results").text)
         assert {i.destination for i in results.itineraries} >= {"DPS", "SIN"}
         # A Discover job is not a Search job, and the other way round.
         assert client.get(f"/api/v1/searches/{created.job_id}").status_code == 404

@@ -2,7 +2,10 @@ import { useEffect, useState } from "react";
 import "./p46.css";
 import { api } from "./api/client";
 import { setOwnerToken } from "./api/session";
-import type { Capabilities, SearchRequest, SortMode } from "./api/types";
+import type { Capabilities, DiscoverRequest, SearchRequest, SortMode } from "./api/types";
+import { DiscoverForm } from "./components/DiscoverForm";
+import { DiscoverView } from "./components/DiscoverView";
+import { useDiscoverPolling } from "./hooks/useDiscoverPolling";
 import { P46ResultsWorkspace } from "./components/P46ResultsWorkspace";
 import { ExpiredFareCard } from "./components/ExpiredFareCard";
 import { JobErrorPanel } from "./components/JobErrorPanel";
@@ -13,19 +16,24 @@ import { useCancelSearch } from "./hooks/useCancelSearch";
 import { useCreateSearch } from "./hooks/useCreateSearch";
 import { useJobPolling } from "./hooks/useJobPolling";
 
-function jobIdFromUrl(): string | null {
-  return new URLSearchParams(window.location.search).get("job");
+function jobIdFromUrl(key = "job"): string | null {
+  return new URLSearchParams(window.location.search).get(key);
 }
 
-function setJobIdInUrl(jobId: string | null) {
+function setJobIdInUrl(jobId: string | null, key = "job") {
   const url = new URL(window.location.href);
-  if (jobId) url.searchParams.set("job", jobId);
-  else url.searchParams.delete("job");
+  if (jobId) url.searchParams.set(key, jobId);
+  else url.searchParams.delete(key);
   window.history.replaceState(null, "", url.toString());
 }
 
 export default function App() {
   const [jobId, setJobId] = useState<string | null>(jobIdFromUrl);
+  // P7.5: Discover is a separate mode with its own job id (?discover=<id>).
+  const [discoverId, setDiscoverId] = useState<string | null>(() => jobIdFromUrl("discover"));
+  const [discoverSubmitting, setDiscoverSubmitting] = useState(false);
+  const [discoverError, setDiscoverError] = useState<Error | null>(null);
+  const [discoverCancelling, setDiscoverCancelling] = useState(false);
   const [accessVersion, setAccessVersion] = useState(0);
   const [tokenDraft, setTokenDraft] = useState("");
   const [capabilitiesError, setCapabilitiesError] = useState<Error | null>(null);
@@ -34,7 +42,8 @@ export default function App() {
 
   const { createSearch, submitting, error: createError } = useCreateSearch();
   const { cancelSearch, cancelling, error: cancelError, clearError: clearCancelError } = useCancelSearch();
-  const { job, results, error: pollError, loadMore, loadingMore, retry } = useJobPolling(jobId, sort, accessVersion);
+  const [mode, setMode] = useState<"search" | "discover">(() => jobIdFromUrl("discover") ? "discover" : "search");
+  const { job, results, error: pollError, loadMore, loadingMore, retry } = useJobPolling(mode === "search" ? jobId : null, sort, accessVersion);
 
   useEffect(() => {
     let alive = true;
@@ -49,6 +58,34 @@ export default function App() {
   useEffect(() => {
     setJobIdInUrl(jobId);
   }, [jobId]);
+  useEffect(() => {
+    setJobIdInUrl(discoverId, "discover");
+  }, [discoverId]);
+  const discover = useDiscoverPolling(mode === "discover" ? discoverId : null, sort, accessVersion);
+
+  const handleDiscover = async (request: DiscoverRequest) => {
+    setDiscoverSubmitting(true);
+    setDiscoverError(null);
+    try {
+      const created = await api.createDiscovery(request);
+      setDiscoverId(created.job_id);
+    } catch (err) {
+      setDiscoverError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      setDiscoverSubmitting(false);
+    }
+  };
+  const cancelDiscover = async () => {
+    if (!discoverId) return;
+    setDiscoverCancelling(true);
+    try { await api.cancelDiscovery(discoverId); discover.retry(); }
+    catch (err) { setDiscoverError(err instanceof Error ? err : new Error(String(err))); }
+    finally { setDiscoverCancelling(false); }
+  };
+  // Each mode keeps its own job; switching only changes which one is shown.
+  const chooseMode = (next: "search" | "discover") => {
+    if (next !== mode) setMode(next);
+  };
 
   const handleSubmit = async (request: SearchRequest) => {
     const created = await createSearch(request);
@@ -66,8 +103,15 @@ export default function App() {
         <div className="p46-header-line">
           <div className="p46-brand"><h1>CHEAPWINGS</h1><span className="p46-brand-sub">◉ SOURCE-REPORTED FARES</span></div>
           <div className="p46-header-nav">
-            <span className="p46-header-active">{jobId ? "FARE RESULTS" : "FLIGHT SEARCH"}</span>
-            {jobId && <>
+            <span className="p46-mode-toggle" role="group" aria-label="Search or Discover">
+              <button type="button" aria-pressed={mode === "search"} onClick={() => chooseMode("search")}>Search</button>
+              <button type="button" aria-pressed={mode === "discover"} onClick={() => chooseMode("discover")}>Discover</button>
+            </span>
+            {mode === "search" && <span className="p46-header-active">{jobId ? "FARE RESULTS" : "FLIGHT SEARCH"}</span>}
+            {mode === "discover" && discoverId && <button type="button" className="new-search-button p46-header-action" onClick={() => setDiscoverId(null)}>
+              &larr; New Discover
+            </button>}
+            {mode === "search" && jobId && <>
           <button type="button" className="new-search-button p46-header-action" onClick={startNewSearch}>
             &larr; New search
           </button>
@@ -78,13 +122,13 @@ export default function App() {
             })}>Run fresh search</button>
           )}
             </>}
-            {!jobId && <span>FLEXIBLE DATES</span>}
+            {mode === "search" && !jobId && <span>FLEXIBLE DATES</span>}
             <span className="p46-header-muted">ONE-WAY · ECONOMY</span>
           </div>
         </div>
         <div className="p46-meta-bar">
           <span className="p46-meta-tag">CHEAPWINGS // OBSIDIAN AMBER</span>
-          {job?.query && <>
+          {mode === "search" && job?.query && <>
             <span>ROUTE: <b>{job.query.origins.join(", ")} → {job.query.destinations.join(", ")}</b></span>
             <span>WINDOW: <b>{job.query.departure_date_from} – {job.query.departure_date_through}</b></span>
             <span>CURRENCY: <b>{job.query.display_currency ?? "IDR"}</b></span>
@@ -113,7 +157,36 @@ export default function App() {
         <button type="button" onClick={() => setAccessVersion(value => value + 1)}>Retry connection</button>
       </div>}
 
-      {!jobId && (
+      {mode === "discover" && !discoverId && (
+        <DiscoverForm
+          onSubmit={handleDiscover}
+          submitting={discoverSubmitting}
+          error={discoverError}
+          providers={capabilities?.providers ?? []}
+          supportedCurrencies={capabilities?.supported_currencies ?? ["IDR", "USD", "AUD", "JPY"]}
+        />
+      )}
+
+      {mode === "discover" && discoverId && (
+        <>
+          {(discover.error || discoverError) && <div role="alert">{(discover.error ?? discoverError)!.message}
+            <button type="button" onClick={() => { setDiscoverError(null); discover.retry(); }}>Retry Discover status</button></div>}
+          {!discover.job && !discover.error && <p aria-live="polite" role="status">Restoring Discover…</p>}
+          {discover.job && <DiscoverView job={discover.job} onCancel={cancelDiscover} cancelling={discoverCancelling} />}
+          {discover.results && discover.results.itineraries.length > 0 && (
+            <section className="results-section" aria-labelledby="discover-results-heading">
+              <div className="results-heading-row">
+                <h2 className="results-heading" id="discover-results-heading">Checked fares</h2>
+                <p className="results-count">{discover.results.itineraries.length} itineraries</p>
+              </div>
+              <ResultSortBar sort={sort} onChange={setSort} />
+              <P46ResultsWorkspace key={`${discoverId}:${sort}`} itineraries={discover.results.itineraries} />
+            </section>
+          )}
+        </>
+      )}
+
+      {mode === "search" && !jobId && (
         <SearchForm
           onSubmit={handleSubmit}
           submitting={submitting}
@@ -124,7 +197,7 @@ export default function App() {
         />
       )}
 
-      {jobId && (
+      {mode === "search" && jobId && (
         <>
           {createError && jobId && <p role="alert">{createError.message}</p>}
           <JobErrorPanel job={job} transportError={cancelError ?? pollError} />

@@ -1,17 +1,17 @@
-# Graph Report - CheapWings-p7  (2026-11-22)
+# Graph Report - CheapWings-p7  (2026-11-23)
 
 ## Corpus Check
-- 367 files · ~554,008 words
+- 375 files · ~558,451 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 30 file(s) not represented in the graph (top: (none) 16, .jsonl 6, .css 3)
 
 ## Summary
-- 4289 nodes · 11040 edges · 254 communities (175 shown, 79 thin omitted)
-- Extraction: 83% EXTRACTED · 17% INFERRED · 0% AMBIGUOUS · INFERRED: 1874 edges (avg confidence: 0.9)
+- 4313 nodes · 11292 edges · 226 communities (177 shown, 49 thin omitted)
+- Extraction: 82% EXTRACTED · 18% INFERRED · 0% AMBIGUOUS · INFERRED: 1988 edges (avg confidence: 0.91)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `0a610caa`
+- Built from commit: `ad9dbc5f`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -37,7 +37,7 @@
 - DiscoveryOutcome
 - WORK_LOG.md — Current State (keep under ~80 lines)
 - Provider and result-cache research (2026-11-10)
-- p48_throughput.py
+- Experiment
 - SearchSession
 - types.ts
 - SearchForm.tsx
@@ -54,14 +54,14 @@
 - pytest
 - View
 - Repository
-- plan_search
-- BoundedCall
+- .start
+- P4.12 — Shared global resource pool
 - P4.11 — Fli as a fourth provider
 - FlightSegment
 - SwiftCore
 - WorkStatus
 - CheapWings — P7 Explore Anywhere / Discover
-- MCPReply
+- MCPClient
 - P7 Discover — Readiness, Feasibility and Shared Rust Core Implementation Plan
 - Theme.swift
 - FliOffer
@@ -71,7 +71,7 @@
 - reply
 - .oxlintrc.json
 - datetime
-- contracts.py
+- search_service.py
 - FliPage
 - Reusable SVG icon sprite
 - vite-env.d.ts
@@ -93,9 +93,9 @@
 - 19. Python Tech Stack Decision, Long-Running Jobs, and Cross-Platform Integration
 - P4.8 — Provider interval benchmark and scheduling plan (2026-11-10)
 - FlightFinder — Architecture & Design Review Handoff
-- 17. Mandatory Multi-Provider Aggregation Architecture (restored; mandatory)
+- discover.ts
 - 12. MVP Milestones and Checkpoints
-- View
+- P7.5 / P7.6 Discover UI Implementation Plan
 - DaySummary
 - 18. Web + Native iOS Product Design
 - 1. Product Intent, Requirements, and Non-Goals
@@ -104,7 +104,7 @@
 - 15. Mandatory Deliverables from the Reviewing Agent
 - 5. Search Algorithm, Coverage, and Failure Handling
 - 6. Fare Data Model & Comparability
-- ContinuedSearch
+- .application
 - 11. Minimal Test Plan and Evaluation Matrix
 - 20. Mandatory Cross-Platform and Multi-Provider Acceptance Tests
 - 4. Architecture Proposal
@@ -121,23 +121,23 @@
 - Tfs
 - ItineraryInfo
 - store.rs
-- test_core_fixtures.py
+- p49_scheduler_comparison.py
 - Fli probe — P5.06 spikes S1 (iPhone) and S3 (Swift off-device)
-- FoundOffer
+- SearchRequest
 - money.rs
 - P7.4 Discover runtime Implementation Plan
 - FixtureTests
 - fli-wreq/build.sh
 - fli-wreq
-- create_app
-- sqlalchemy
+- Settings
+- repository.py
 - cheapwings-money-rs
 - cheapwings-money-rs
 - test_p57_engine.py
 - LocationCatalog
 - test_overlap_429_retry_after_and_independent_provider
 - fli-wreq/src/lib.rs
-- MCPClient
+- ProbeResult
 - ranking.rs
 - gen_core_fixtures.py
 - StoreError
@@ -148,102 +148,109 @@
 - ResumeTests
 - core-s5
 - SearchModel
-- shadow_money.py
+- Decodable
 - P5.06 — Native engine spikes (S1–S5)
 - cheapwings-core/src/lib.rs
 - cheapwings-core
 - cheapwings-ffi
 - cheapwings-py
-- pathlib
+- gen_discovery_sources_fixtures.py
 - CheapWingsCore
 - StoreError
 - money-pyo3/src/lib.rs
 - SkiplaggedProvider
-- p412_pool_benchmark.py
+- sys
 - catalog
-- verification.py
+- StatusVisuals.tsx
 - CoreError
 - cheapwings-core
 - ProviderFailure
-- decode_page
+- tests/discovery_sources.rs
 - Current phase tracker and owner approvals
 - skiplagged.rs
 - .note
 - src/discovery.rs
-- UnknownCurrencyError
+- database
 - LocalInstant
 - status_projection
 - NetworkMonitor
 - source-revision.sh
-- provider_probe_skiplagged.py
+- ProbeView
 - .discover
 - update-expected-revision.sh
 - .lane
-- instant
-- tests/discovery.rs
+- p46-browser.mjs
+- DiscoveryRequest
 - LocationTests
 - PlanError
 - P6 — Release acceptance
 - XCTestCase
 - .body
-- test_p74_discover_api.py
+- batch
 - Sendable
 - Decodable
 - cheapwings-store/tests/discovery.rs
-- P5.6 iPad Polish Implementation Plan
+- .urlSession
 - XCTestCase
 - cheapwings-store/src/lib.rs
-- MaxStops
-- skiplagged_cases
-- PR B: iPad runtime (Tasks 3–5)
+- SearchProvider.swift
+- .testGoogleStopHoldsFliButSkiplaggedResumesNow
+- DiscoverQuery
 - P7.1 — Discovery provider feasibility
-- DiscoveryRequest
+- DiscoveryResult
 - references/query.py
-- subprocess
+- p7-browser.mjs
 - references/catalog.py
 - compute_fingerprint
 - 08 — Starting Prompt for a Local Coding Agent
 - Implementation checklist and gates
-- P5.4 — Skiplagged on the iPad
+- SkiplaggedSearchProvider
 - test_real_providers.py
 - OfferDetailView
-- worker_pool
-- DispatchDeferred
+- scripts
+- StoredRequest
 - SourceOffer
 - P5.5 — iPad feature parity
-- PackageDescription
+- p45-browser.mjs
 - P7.2 / P7.3: Discover contract and shared Rust selection
+- ComboStatus
+- references/expansion.py
 - 05 — Web + Native iOS Client Implementation
 - DiscoverySnapshot
+- P5.8 — iPad parallel Fli pacing
 - Outcome
 - fingerprint.rs
-- ComboStatus
+- dependencies
+- P5.2 iPad App Shell Implementation Plan
+- Fli 0.25 s interval reliability (owner request, 2026-11-14)
+- SelfTest.swift
+- RouteDate
 - gen_fixtures.py
-- parity.py
+- money.py
 
 ## God Nodes (most connected - your core abstractions)
-1. `ProviderFailure` - 122 edges
-2. `Repository` - 116 edges
-3. `Registration` - 103 edges
-4. `FakeProvider` - 99 edges
+1. `Repository` - 138 edges
+2. `ProviderFailure` - 129 edges
+3. `FakeProvider` - 108 edges
+4. `Registration` - 103 edges
 5. `SearchSession` - 80 edges
-6. `JobRunner` - 78 edges
-7. `WORK_LOG.md — Current State (keep under ~80 lines)` - 48 edges
-8. `SearchModel` - 46 edges
-9. `FakeClock` - 46 edges
-10. `now_ms()` - 43 edges
+6. `JobRunner` - 80 edges
+7. `WORK_LOG.md — Current State (keep under ~80 lines)` - 49 edges
+8. `Offer` - 47 edges
+9. `SearchModel` - 46 edges
+10. `FakeClock` - 46 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `Final review (fresh subagent, Opus)` --references--> `SearchSession`  [INFERRED]
-  docs/log/p5.2.md → apps/ios/CheapWingsKit/Sources/CheapWingsKit/SearchSession.swift
-- `Verification` --references--> `SearchSession`  [INFERRED]
-  docs/log/p5.2.md → apps/ios/CheapWingsKit/Sources/CheapWingsKit/SearchSession.swift
-- `Out of this plan (next plans, after P7.1 go)` --references--> `SearchSession`  [INFERRED]
-  docs/log/p7-plan.md → apps/ios/CheapWingsKit/Sources/CheapWingsKit/SearchSession.swift
-- `1. Actual repository state and migration dependency` --references--> `PacedRunner`  [INFERRED]
-  docs/log/p7-handover.md → apps/ios/CheapWingsKit/Sources/CheapWingsKit/PacedRunner.swift
+- `Evidence (2026-11-21, worktree `CheapWings-p7`)` --references--> `DiscoveryFixtureTests`  [INFERRED]
+  docs/log/p7.3.md → apps/ios/CheapWingsCore/Tests/CheapWingsCoreTests/DiscoveryFixtureTests.swift
+- `Task 2: Bindings for Task 1 (iPad first, then Python)` --references--> `DiscoveryFixtureTests`  [INFERRED]
+  docs/log/p7.4-plan.md → apps/ios/CheapWingsCore/Tests/CheapWingsCoreTests/DiscoveryFixtureTests.swift
 - `Task 2: Picker speed and correctness (P5.5 deferred minors)` --references--> `ItineraryInfo`  [INFERRED]
   docs/log/p5.6-plan.md → apps/ios/CheapWingsKit/Sources/CheapWingsKit/ItineraryInfo.swift
+- `1. Actual repository state and migration dependency` --references--> `PacedRunner`  [INFERRED]
+  docs/log/p7-handover.md → apps/ios/CheapWingsKit/Sources/CheapWingsKit/PacedRunner.swift
+- `Rulings made during implementation` --references--> `FoundOffer`  [INFERRED]
+  docs/log/p5.2.md → apps/ios/CheapWingsKit/Sources/CheapWingsKit/SearchEngine.swift
 
 ## Import Cycles
 - 1-file cycle: `core/cheapwings-core/src/skiplagged.rs -> core/cheapwings-core/src/skiplagged.rs`
@@ -253,43 +260,43 @@
 - **Exact identity, exact money and unknown-safe rankings** — docs_03_providers_aggregation_pricing_itinerary_offer_identity, docs_03_providers_aggregation_pricing_decimal_money_fx, docs_01_product_requirements_ux_safe_and_advertised_rankings, docs_04_data_and_api_contracts_three_valued_unknowns [INFERRED 0.85]
 - **Canonical fare evidence remains conservative across adapters and clients** — docs_03_providers_aggregation_pricing_money, docs_04_data_and_api_contracts_three_valued, docs_log_p4_11_fare_limits, readme_safe_ranking [INFERRED 0.95]
 
-## Communities (254 total, 79 thin omitted)
+## Communities (226 total, 49 thin omitted)
 
 ### Community 0 - "test_scheduler.py"
-Cohesion: 0.11
-Nodes (35): DispatchFailure, JobRunner, Registration, test_short_source_expiry_preserves_other_source_and_running_job(), Logged, test_blocking_adapter_pool_sized_to_g_uses_real_threads(), search(), test_cooled_provider_stops_starting_and_others_take_the_pool() (+27 more)
+Cohesion: 0.10
+Nodes (41): JobRunner, test_fli_uses_durable_shared_fetch_cancel_fencing_and_cache(), fetch(), test_short_source_expiry_preserves_other_source_and_running_job(), Logged, test_blocking_adapter_pool_sized_to_g_uses_real_threads(), __init__(), search() (+33 more)
 
 ### Community 1 - "Sendable"
-Cohesion: 0.12
-Nodes (9): Decoded, DecodeError, .description, partialPayload, schemaChanged, Leg, Offer, Page (+1 more)
+Cohesion: 0.14
+Nodes (8): Decoded, DecodeError, .description, partialPayload, schemaChanged, Leg, Offer, Page
 
 ### Community 2 - ".get_job"
-Cohesion: 0.21
-Nodes (21): checker(), discoverer(), drain(), items(), observation_count(), test_auth_denied_stops_source(), refused(), test_cancel_during_discovery() (+13 more)
+Cohesion: 0.35
+Nodes (19): checker(), discoverer(), drain(), items(), observation_count(), test_auth_denied_stops_source(), test_cancel_during_discovery(), test_deadline_while_discovering_records_outcome() (+11 more)
 
 ### Community 3 - ".search"
-Cohesion: 0.23
-Nodes (13): WorkStatus, _entry(), test_failed_terminal_requires_error_code(), test_failure_is_not_counted_as_covered(), test_succeeded_empty_cannot_carry_error_code(), test_unique_covered_combinations_does_not_double_count_providers(), _query(), test_fake_provider_labels_prices_as_synthetic() (+5 more)
+Cohesion: 0.16
+Nodes (15): CoverageEntry, unique_covered_combinations(), WorkStatus, _entry(), test_failed_terminal_requires_error_code(), test_failure_is_not_counted_as_covered(), test_succeeded_empty_cannot_carry_error_code(), test_unique_covered_combinations_does_not_double_count_providers() (+7 more)
 
 ### Community 4 - "test_p49_review.py"
-Cohesion: 0.14
-Nodes (18): MeasuredProduction, ReviewDispatcher, ReviewRepository, TimedFake, drain(), max_overlap(), query(), test_cooldown_occupies_no_execution_slot() (+10 more)
+Cohesion: 0.17
+Nodes (17): ReviewDispatcher, ReviewRepository, TimedFake, drain(), max_overlap(), query(), test_cooldown_occupies_no_execution_slot(), test_database_failure_surfaces_instead_of_silent_worker_loss() (+9 more)
 
 ### Community 5 - "SearchEvent"
-Cohesion: 0.12
-Nodes (19): SearchEvent, comboFailed, item, offers, offersHidden, progress, providerStopped, started (+11 more)
+Cohesion: 0.11
+Nodes (20): SearchEvent, comboFailed, item, offers, offersHidden, progress, providerStopped, started (+12 more)
 
 ### Community 6 - "base"
 Cohesion: 0.06
 Nodes (34): CODE_SIGN_STYLE, CURRENT_PROJECT_VERSION, GENERATE_INFOPLIST_FILE, INFOPLIST_KEY_UILaunchScreen_Generation, INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad, INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone, MARKETING_VERSION, PRODUCT_BUNDLE_IDENTIFIER (+26 more)
 
 ### Community 7 - "06 — Worker Implementation Plan, Ordered Checkpoints, and Exit Criteria"
-Cohesion: 0.17
+Cohesion: 0.14
 Nodes (10): 06 — Worker Implementation Plan, Ordered Checkpoints, and Exit Criteria, Fundamental incompatibility escalation, Always-working fake vertical slice, Original P0 to P6 phase gates, Compact checkpoint evidence, Limitations, P7.0 — Discover readiness, Reuse map (P7.2/P7.3) (+2 more)
 
 ### Community 8 - "P46ResultsWorkspace.tsx"
-Cohesion: 0.15
-Nodes (27): PublicOffer, FareRiskNotice(), formatDuration(), ItineraryCard(), BAG_LABEL, COMPARISON_LABEL, describeLink(), OfferList() (+19 more)
+Cohesion: 0.14
+Nodes (28): PriceStatus, PublicOffer, FareRiskNotice(), formatDuration(), ItineraryCard(), BAG_LABEL, COMPARISON_LABEL, describeLink() (+20 more)
 
 ### Community 9 - "rust/src/lib.rs"
 Cohesion: 0.18
@@ -300,16 +307,16 @@ Cohesion: 0.22
 Nodes (13): payload(), provider(), query(), test_c3_real_threads_overlap_and_cancel_retains_physical_capacity(), fetch(), test_challenge_redirect_is_not_followed(), test_exact_prices_identity_and_conservative_evidence(), test_fetch_pins_http2_and_preserves_json_price_lexemes() (+5 more)
 
 ### Community 11 - "ProviderPacing"
-Cohesion: 0.05
-Nodes (35): FliSearchProvider, FliTransport, PacedRunner, OfflineErrors, ProviderPacing, SearchProvider, SkiplaggedFetch, outcome (+27 more)
+Cohesion: 0.09
+Nodes (23): FliSearchProvider, FliTransport, PacedRunner, ProviderPacing, InFlightCounter, SlowFakeProvider, Global Constraints, Out of scope (+15 more)
 
 ### Community 12 - "App.tsx"
-Cohesion: 0.13
-Nodes (24): api, ApiError, BASE_URL, request(), TERMINAL_STATUSES, errorMessage(), getOwnerToken(), setOwnerToken() (+16 more)
+Cohesion: 0.12
+Nodes (26): api, ApiError, BASE_URL, request(), TERMINAL_STATUSES, errorMessage(), getOwnerToken(), setOwnerToken() (+18 more)
 
 ### Community 13 - "Repository"
-Cohesion: 0.09
-Nodes (23): _exact_reprice_count(), cache_key(), CacheRepository, without_handles(), Base, DiscoveryObservationRow, FXRow, ItineraryRow (+15 more)
+Cohesion: 0.12
+Nodes (12): cache_key(), CacheRepository, without_handles(), Base, DiscoveryObservationRow, FXRow, ItineraryRow, OperationAttempt (+4 more)
 
 ### Community 14 - "04 — Data, Persistence, and REST API Contracts"
 Cohesion: 0.09
@@ -328,8 +335,8 @@ Cohesion: 0.05
 Nodes (37): ASSETCATALOG_COMPILER_APPICON_NAME, CODE_SIGN_STYLE, CURRENT_PROJECT_VERSION, GENERATE_INFOPLIST_FILE, INFOPLIST_KEY_CFBundleDisplayName, INFOPLIST_KEY_UILaunchScreen_Generation, INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad, INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone (+29 more)
 
 ### Community 18 - "DiscoveryOutcome"
-Cohesion: 0.16
-Nodes (8): DiscoveryOutcome, failed, page, retry, stop, DiscoveryProvider, SkiplaggedDiscoveryProvider, DiscoveryScript
+Cohesion: 0.19
+Nodes (6): DiscoveryOutcome, failed, page, retry, stop, SkiplaggedDiscoveryProvider
 
 ### Community 19 - "WORK_LOG.md — Current State (keep under ~80 lines)"
 Cohesion: 0.15
@@ -339,21 +346,21 @@ Nodes (11): Evidence and phase-history index, 2026-11-11 documentation cleanup, 
 Cohesion: 0.06
 Nodes (33): request_snapshot(), Cache and OctoTrip implementation kickoff (2026-11-10), Current code audit — implications for caching, Dated provider evaluation — primary sources, not production approval, Final live acceptance and handover — cache + OctoTrip, Hosted endpoint preflight — actual observations and limits, Implementation checkpoint — durable cache and backend selection (in progress), Live owner search — cross-provider overlap confirmed (2026-11-10) (+25 more)
 
-### Community 21 - "p48_throughput.py"
-Cohesion: 0.05
-Nodes (26): quantile(), live_guard(), batch(), emit(), Experiment, post(), wrap(), observed() (+18 more)
+### Community 21 - "Experiment"
+Cohesion: 0.12
+Nodes (7): Experiment, post(), wrap(), observed(), test_octotrip_three_sessions_share_one_http_gate(), test_response_timing_preserves_stream_bytes(), respond()
 
 ### Community 22 - "SearchSession"
 Cohesion: 0.07
-Nodes (22): DiscoverySummary, EmptyOutcome, formatChanged, noFlights, noneUnderBudget, noPrices, searchesFailed, sourceUnavailable (+14 more)
+Nodes (25): DiscoveryProvider, DiscoverySummary, EmptyOutcome, formatChanged, noFlights, noneUnderBudget, noPrices, searchesFailed (+17 more)
 
 ### Community 23 - "types.ts"
-Cohesion: 0.08
-Nodes (27): AirportTransfer, ComparisonStatus, Coverage, ExpiredObservation, IdentityConfidence, Job, JobPhase, JobStatus (+19 more)
+Cohesion: 0.10
+Nodes (18): AirportTransfer, ComparisonStatus, Coverage, DiscoverCreated, DiscoveryLead, DiscoveryStatus, ExpiredObservation, IdentityConfidence (+10 more)
 
 ### Community 24 - "SearchForm.tsx"
-Cohesion: 0.15
-Nodes (18): Currency, ProviderCapability, AirportMultiSelect(), Props, Props, SearchForm(), todayIso(), createLocationService() (+10 more)
+Cohesion: 0.17
+Nodes (20): Currency, DiscoverRequest, ProviderCapability, AirportMultiSelect(), Props, DiscoverForm(), Props, todayIso() (+12 more)
 
 ### Community 25 - "with"
 Cohesion: 0.05
@@ -368,24 +375,24 @@ Cohesion: 0.06
 Nodes (38): PRODUCT_BUNDLE_IDENTIFIER, platform, settings, sources, type, CODE_SIGNING_ALLOWED, GENERATE_INFOPLIST_FILE, INFOPLIST_KEY_UILaunchScreen_Generation (+30 more)
 
 ### Community 28 - "package.json"
-Cohesion: 0.08
-Nodes (30): dependencies, react@^19.3.1, react-dom@^19.3.1, devDependencies, oxlint@^1.90.0, @types/node@^24.19.2, @types/react@^19.3.0, @types/react-dom@^19.3.0 (+22 more)
+Cohesion: 0.13
+Nodes (20): devDependencies, oxlint@^1.90.0, playwright@^1.65.0, @types/node@^24.19.2, @types/react@^19.3.0, @types/react-dom@^19.3.0, typescript@~7.0.2, vite@^8.3.6 (+12 more)
 
 ### Community 29 - "compilerOptions"
 Cohesion: 0.10
 Nodes (19): compilerOptions, allowArbitraryExtensions, allowImportingTsExtensions, erasableSyntaxOnly, jsx, lib, module, moduleDetection (+11 more)
 
 ### Community 30 - "P5.05 — Native iOS search engine feasibility analysis"
-Cohesion: 0.09
-Nodes (21): ResultsExpired, 10. Sources, facts and open questions, 1. Executive verdict, 2. Provider compatibility matrix, 3. Native engine design and module ownership, 4. Port-vs-drop matrix, 5. Background / foreground behaviour (iOS), 6. Risk register (likelihood × impact, 1–5) (+13 more)
+Cohesion: 0.12
+Nodes (15): ResultsExpired, 10. Sources, facts and open questions, 1. Executive verdict, 2. Provider compatibility matrix, 3. Native engine design and module ownership, 4. Port-vs-drop matrix, 5. Background / foreground behaviour (iOS), 6. Risk register (likelihood × impact, 1–5) (+7 more)
 
 ### Community 31 - "test_search_cache.py"
-Cohesion: 0.17
-Nodes (24): ScriptedOutcome, ProviderResultCache, Counted, finish(), setup(), test_absolute_retention_deadline_expires_inherited_job_and_purges(), test_additive_migration_preserves_populated_work_attempt_and_quote_history(), test_cache_eviction_bytes_policy_revocation_and_filter_reapplication() (+16 more)
+Cohesion: 0.18
+Nodes (23): ProviderResultCache, Counted, finish(), setup(), test_absolute_retention_deadline_expires_inherited_job_and_purges(), test_additive_migration_preserves_populated_work_attempt_and_quote_history(), test_cache_eviction_bytes_policy_revocation_and_filter_reapplication(), test_cache_reuse_is_independent_of_other_selected_sources() (+15 more)
 
 ### Community 32 - "p46-browser.mjs"
-Cohesion: 0.08
-Nodes (23): playwright@^1.65.0, capabilities, dist, job, dist, evidence, shots, dist (+15 more)
+Cohesion: 0.14
+Nodes (11): capabilities, dist, job, dist, evidence, shots, dist, dist (+3 more)
 
 ### Community 33 - "compilerOptions"
 Cohesion: 0.12
@@ -396,24 +403,24 @@ Cohesion: 0.11
 Nodes (22): Airportsdata and mwgg Airports MIT attribution, MIT airport data license, Airportsdata and mwgg Airports MIT attribution, MIT airport data license, Exhaustive combination coverage, P4.10 historical offline acceptance, Backend authoritative Major resolution, Typed Major backend authority (+14 more)
 
 ### Community 35 - "pytest"
-Cohesion: 0.09
-Nodes (19): DiscoverQuery, QueryValidationError, SearchQuery, plan_scope(), discoverer(), query(), test_capacity_limits_apply(), test_creates_one_discover_item_per_call() (+11 more)
+Cohesion: 0.11
+Nodes (19): QueryValidationError, SearchQuery, worker_lock(), test_query_validates_through_the_core(), test_worker_exclusive_ownership_and_schema(), test_zero_routes_and_date_changes(), test_bad_json_is_value_error(), test_binding_exists() (+11 more)
 
 ### Community 36 - "View"
 Cohesion: 0.09
-Nodes (22): AirportPicker, .body, AirportToggleRow, .body, ChipLabelStyle, PlaceAirports, .body, PlaceLink (+14 more)
+Nodes (23): AirportPicker, .body, AirportToggleRow, .body, ChipLabelStyle, PlaceAirports, .body, PlaceLink (+15 more)
 
 ### Community 37 - "Repository"
-Cohesion: 0.11
-Nodes (31): FakeProvider, write_session(), CapacityExceeded, now_ms(), Repository, test_fli_uses_durable_shared_fetch_cancel_fencing_and_cache(), fetch(), test_actual_start_deadline_and_cooldown_survive_restart() (+23 more)
+Cohesion: 0.10
+Nodes (34): write_session(), ProviderState, SearchJob, WorkAttempt, WorkItem, now_ms(), Repository, test_actual_start_deadline_and_cooldown_survive_restart() (+26 more)
 
-### Community 38 - "plan_search"
-Cohesion: 0.67
-Nodes (3): plan_search(), PlanSearchError, Rejected
+### Community 38 - ".start"
+Cohesion: 0.15
+Nodes (3): .offer, DaySummaryTests, SearchSessionTests
 
-### Community 39 - "BoundedCall"
-Cohesion: 0.07
-Nodes (22): BoundedCall, __init__(), test_bounded_swoop_executor_c3_has_actual_overlap_and_no_queue(), __init__(), __init__(), __init__(), test_real_thread_slot_retained_on_cancellation(), 1. Architecture review — P4.9 admission as merged (+14 more)
+### Community 39 - "P4.12 — Shared global resource pool"
+Cohesion: 0.18
+Nodes (11): 2. Implementation, 3. Configuration review, 4. Regression tests, 6. Risk analysis, 7. Recommended production configuration, 8. Owner decisions, Conservative live Fli ladder (owner-approved), Follow-up — priority tiers and low-priority headroom (2026-11-12) (+3 more)
 
 ### Community 40 - "P4.11 — Fli as a fourth provider"
 Cohesion: 0.11
@@ -421,39 +428,39 @@ Nodes (19): Historical usable quote verification, P4.11 — Fli as a fourth prov
 
 ### Community 41 - "FlightSegment"
 Cohesion: 0.09
-Nodes (20): airport_transfers(), AirportTransfer, compute_fingerprint(), IdentityConfidence, Itinerary, FlightSegment, segments(), test_display_names_do_not_change_itinerary_fingerprint() (+12 more)
+Nodes (21): compute_fingerprint(), Itinerary, FlightSegment, segments(), test_display_names_do_not_change_itinerary_fingerprint(), test_explicit_airport_change_retains_flight_identity_without_fake_leg(), test_undeclared_or_mismatched_airport_changes_stay_invalid(), _seg() (+13 more)
 
 ### Community 42 - "SwiftCore"
-Cohesion: 0.18
+Cohesion: 0.21
 Nodes (8): FingerprintCase, Fixtures, Instant, MoneyCase, Offer, RankingCase, Segment, SwiftCore
 
 ### Community 43 - "WorkStatus"
-Cohesion: 0.14
-Nodes (19): main(), run_demo(), CoverageEntry, unique_covered_combinations(), Offer, build_itinerary(), ItineraryGroup, MatchEngine (+11 more)
+Cohesion: 0.12
+Nodes (26): main(), run_demo(), AirportTransfer, build_itinerary(), ItineraryGroup, MatchEngine, best_checked_deal(), lowest_advertised() (+18 more)
 
 ### Community 44 - "CheapWings — P7 Explore Anywhere / Discover"
 Cohesion: 0.11
 Nodes (18): 0. Read this first — non-negotiable owner intent, 10. Required agent output before coding, 1. Actual repository state and migration dependency, 2.1 Inputs, 2.2 Output and sorting, 2.3 Honest coverage, 2. Product definition, 3.1 Existing vs new responsibilities (+10 more)
 
-### Community 45 - "MCPReply"
-Cohesion: 0.17
-Nodes (6): MCPError, badReply, http, MCPReply, MCPTransport, URLSessionMCPTransport
+### Community 45 - "MCPClient"
+Cohesion: 0.11
+Nodes (13): TransportError, notHTTP, tooLarge, MCPClient, MCPError, badReply, http, MCPReply (+5 more)
 
 ### Community 46 - "P7 Discover — Readiness, Feasibility and Shared Rust Core Implementation Plan"
-Cohesion: 0.17
-Nodes (12): Global Constraints, Out of this plan (next plans, after P7.1 go), P7 Discover — Readiness, Feasibility and Shared Rust Core Implementation Plan, Phase A — P7.0 / P7.1 (docs and probe; no product code), Phase B — P7.2 / P7.3 (shared Rust core), Review Focus, Task 2: P7.1 desk feasibility matrix, Task 3: P7.1 approved probe and go/no-go (+4 more)
+Cohesion: 0.18
+Nodes (11): Global Constraints, Out of this plan (next plans, after P7.1 go), P7 Discover — Readiness, Feasibility and Shared Rust Core Implementation Plan, Phase A — P7.0 / P7.1 (docs and probe; no product code), Phase B — P7.2 / P7.3 (shared Rust core), Review Focus, Task 2: P7.1 desk feasibility matrix, Task 3: P7.1 approved probe and go/no-go (+3 more)
 
 ### Community 47 - "Theme.swift"
-Cohesion: 0.08
-Nodes (14): FliWreq, RustCore, SizeApp, .body, SizeApp, .body, SizeApp, .body (+6 more)
+Cohesion: 0.05
+Nodes (18): CheapWingsApp, .body, CryptoKit, FliProbe, FliWreq, Foundation, PackageDescription, RustCore (+10 more)
 
 ### Community 48 - "FliOffer"
-Cohesion: 0.11
-Nodes (27): airport_changes(), CheckedOffers, cross_check(), currency_from_token(), extract_ds1(), filter_offers(), FliOffer, FliPage (+19 more)
+Cohesion: 0.10
+Nodes (37): CheckedOffers, cross_check(), currency_from_token(), decode_page(), decode_row(), extract_ds1(), filter_offers(), FliError (+29 more)
 
 ### Community 49 - "DiscoverySessionTests"
-Cohesion: 0.21
-Nodes (4): DiscoverySessionTests, leads(), ScriptedDiscovery, Task 5: Discovery stage in `SearchSession`
+Cohesion: 0.17
+Nodes (4): DiscoveryScript, DiscoverySessionTests, leads(), ScriptedDiscovery
 
 ### Community 50 - "cheapwings-ffi/src/lib.rs"
 Cohesion: 0.10
@@ -469,11 +476,11 @@ Nodes (5): plugins, rules, react/only-export-components, react/rules-of-hooks, $
 
 ### Community 54 - "datetime"
 Cohesion: 0.09
-Nodes (15): _core_call(), minor_unit_exponent(), ProviderErrorCode, DiscoveryResult, ProviderCapabilities, decimal_value(), money(), obj_dict() (+7 more)
+Nodes (11): ProviderCapabilities, decimal_value(), exact_payload_json(), money(), obj_dict(), stable_id(), airport_zone(), _airports() (+3 more)
 
-### Community 55 - "contracts.py"
-Cohesion: 0.20
-Nodes (15): capabilities(), get_discovery_results(), AirportTransfer, Capabilities, Coverage, DTO, ExpiredObservation, Health (+7 more)
+### Community 55 - "search_service.py"
+Cohesion: 0.06
+Nodes (48): create_app(), cancel(), cancel_discovery(), capabilities(), create_discovery(), create_search(), get_discovery(), get_discovery_results() (+40 more)
 
 ### Community 56 - "FliPage"
 Cohesion: 0.29
@@ -496,20 +503,20 @@ Cohesion: 0.13
 Nodes (15): Claims vs observed, Claims vs observed, Combined P0 gate outcome, Fields present / absent (for canonical domain mapping), Follow-up probe items, Legal/compliance note (the real risk for swoop), Live sample (redacted selector/links kept short; full in fixture), Owner decisions (resolved 2026-11-09, per `docs/06` stop/escalation rule) (+7 more)
 
 ### Community 77 - "Money"
-Cohesion: 0.16
-Nodes (8): Money, test_cannot_compare_different_currencies(), test_fx_snapshot_converts(), test_idr_has_zero_minor_units(), test_money_rejects_float(), test_money_requires_known_currency_for_minor_units(), test_usd_has_two_minor_units(), Findings
+Cohesion: 0.06
+Nodes (35): Money, UnknownCurrencyError, _python_api_result(), test_beyond_28_digits_is_exact(), test_beyond_96_bit_raises_instead_of_rounding(), test_core_module_is_rust(), test_missing_core_module_names_the_fix(), test_money_fixtures_through_python_api() (+27 more)
 
 ### Community 78 - "FakeClock"
-Cohesion: 0.17
+Cohesion: 0.18
 Nodes (6): FakeClock, .sleep, .sleeps, FakeTransport, page(), SearchEngineTests
 
 ### Community 79 - "test_api.py"
-Cohesion: 0.08
-Nodes (43): Settings, default_registry(), client_for(), request_data(), test_api_scheduler_results_contract(), test_auth_and_remote_boundary(), test_baggage_eligibility_and_snapshot_cursor(), test_capabilities_report_default_source_selection() (+35 more)
+Cohesion: 0.09
+Nodes (50): DispatchDeferred, FakeProvider, Registration, client_for(), request_data(), test_api_scheduler_results_contract(), test_auth_and_remote_boundary(), test_baggage_eligibility_and_snapshot_cursor() (+42 more)
 
 ### Community 80 - "test_octotrip.py"
 Cohesion: 0.10
-Nodes (15): OctotripProvider, HttpStartGate, test_octotrip_429_stops_unsent_peer_http(), test_octotrip_gate_covers_initialization_across_three_sessions(), respond(), payload(), query(), test_bad_source_values_fail_or_disable_navigation() (+7 more)
+Nodes (16): ItinerarySummary, OctotripProvider, HttpStartGate, test_octotrip_429_stops_unsent_peer_http(), test_octotrip_gate_covers_initialization_across_three_sessions(), respond(), payload(), query() (+8 more)
 
 ### Community 81 - "P4.9 — Scheduler architecture, implementation and verification"
 Cohesion: 0.17
@@ -527,17 +534,17 @@ Nodes (12): Actual comparison, Current scheduler assessment and review findings,
 Cohesion: 0.18
 Nodes (10): 0. Instructions to the Reviewing Agent, 10. Provider Implementation Interface (Concept), 13. Key Risks, Challenges, and Mitigations, 14. Explicit Open Design Decisions for Reviewer, 16. Source Material (recheck before implementing), 21. Deliverables Required from Independent Reviewing Agent (V4 Addendum), 22. Copy-Paste Prompt to Launch Review (Current V4), 9. API / Events / Persistence Contract (Sketch) (+2 more)
 
-### Community 85 - "17. Mandatory Multi-Provider Aggregation Architecture (restored; mandatory)"
-Cohesion: 0.25
-Nodes (8): 17.1 Pipeline, 17.2 Separate itinerary from offer, 17.3 Provider interface and capabilities, 17.4 Aggregation and ranking rules, 17.5 Isolation, compliance, and extensibility, 17.6 Additional independent reviewer deliverables, 17.7 Acceptance checkpoints, 17. Mandatory Multi-Provider Aggregation Architecture (restored; mandatory)
+### Community 85 - "discover.ts"
+Cohesion: 0.16
+Nodes (18): DiscoverJob, DiscoveryOutcome, JobStatus, PublicItinerary, DiscoverView(), LABEL, compareDecimal(), dayNumber() (+10 more)
 
 ### Community 86 - "12. MVP Milestones and Checkpoints"
 Cohesion: 0.29
 Nodes (7): 12. MVP Milestones and Checkpoints, P0 — Provider Feasibility Gate (reviewer first), P1 — CLI / Engine Baseline, P2 — Provider Aggregation and Repricing, P3 — Web UI on versioned backend API, P4 — Reliability and Validation, P5 — Native iOS App (after backend/API is stable)
 
-### Community 87 - "View"
-Cohesion: 0.19
-Nodes (9): RouteHeader, .arrow, .body, SearchView, .body, SignButton, .body, Theme (+1 more)
+### Community 87 - "P7.5 / P7.6 Discover UI Implementation Plan"
+Cohesion: 0.14
+Nodes (14): .body, Theme, Global Constraints, Out of scope, P7.5 / P7.6 Discover UI Implementation Plan, PR P7.5: web, PR P7.6: iPad, Task 1: Shortlist in the Discover status (+6 more)
 
 ### Community 88 - "DaySummary"
 Cohesion: 0.09
@@ -571,10 +578,6 @@ Nodes (5): 5.1 Expand combinations, 5.2 Calendar use, 5.3 Job lifecycle and prov
 Cohesion: 0.40
 Nodes (5): 6.1 Canonical search query (illustrative), 6.2 Canonical quote/itinerary fields (minimum), 6.3 Trip identity vs quote identity, 6.4 Comparable-price policy, 6. Fare Data Model & Comparability
 
-### Community 96 - "ContinuedSearch"
-Cohesion: 0.11
-Nodes (4): AppDelegate, CheapWingsApp, .body, ContinuedSearch
-
 ### Community 97 - "11. Minimal Test Plan and Evaluation Matrix"
 Cohesion: 0.50
 Nodes (4): 11.1 Disposable PoC (before app implementation), 11.2 Test cases, 11.3 Quality bar / acceptance criteria, 11. Minimal Test Plan and Evaluation Matrix
@@ -597,91 +600,91 @@ Nodes (4): 8. Filtering and Travel Risks, Basic economy / low-cost carriers, Hid
 
 ### Community 105 - "fixtures.rs"
 Cohesion: 0.05
-Nodes (38): airport_lookup_has_timezone(), catalog(), CATALOG, fingerprint_matches_python(), FingerprintCase, Fixtures, fixtures(), FIXTURES (+30 more)
+Nodes (42): airport_changes(), airport_changes_detects_nrt_hnd(), airport_lookup_has_timezone(), catalog(), CATALOG, FingerprintCase, Fixtures, fixtures() (+34 more)
 
 ### Community 106 - "cheapwings-py/src/lib.rs"
 Cohesion: 0.10
 Nodes (20): as_minor_units(), catalog_error(), cheapwings_core(), discovery_calls(), fingerprint(), fli_extract_ds1(), fli_parse(), from_minor_units() (+12 more)
 
 ### Community 107 - "fake.py"
-Cohesion: 0.16
-Nodes (21): shortlist(), ComparisonStatus, LinkScope, PriceStatus, ThreeValued, best_checked_deal(), _is_safe_for_default_ranking(), lowest_advertised() (+13 more)
+Cohesion: 0.10
+Nodes (21): shortlist(), ComparisonStatus, LinkScope, Offer, PriceStatus, ProviderErrorCode, ThreeValued, ProviderSearchResult (+13 more)
 
 ### Community 108 - "03 — Provider Feasibility, Multi-Provider Aggregation, and Fare Accuracy"
 Cohesion: 0.10
 Nodes (23): Accessible responsive UI, 01 — Product Requirements, Rules, and UX Acceptance, One-way adult economy flight finder, Flexible one-way finder scope, Query coverage differs from inventory completeness, Conservative fare ranking, Safe Best checked and Lowest advertised views, Honest results states (+15 more)
 
 ### Community 109 - "p49_scheduler_comparison.py"
-Cohesion: 0.06
-Nodes (15): test_anywhere_case(), test_discovery_calls_case(), test_bad_json_is_value_error(), test_fixture_case(), test_plan_search_unchanged(), main(), main(), main() (+7 more)
+Cohesion: 0.07
+Nodes (18): test_anywhere_case(), test_discovery_calls_case(), main(), emit(), main(), main(), build(), main() (+10 more)
 
 ### Community 110 - "AirlineNames"
-Cohesion: 0.14
-Nodes (8): .content, .detailLine, .flights, CarriersLine, .body, AirlineNames, Carrier, AirlineNamesTests
+Cohesion: 0.17
+Nodes (4): .flights, AirlineNames, Carrier, AirlineNamesTests
 
 ### Community 112 - "ItineraryInfo"
-Cohesion: 0.16
-Nodes (3): ItineraryInfo, Layover, ItineraryInfoTests
+Cohesion: 0.15
+Nodes (5): .summary, .detailLine, ItineraryInfo, Layover, ItineraryInfoTests
 
 ### Community 113 - "store.rs"
-Cohesion: 0.16
+Cohesion: 0.20
 Nodes (17): combos(), failed_combo_keeps_its_code(), finish_combo_is_idempotent(), fli_offer(), offer(), open(), pending_lists_unfinished_in_order(), provider_stops_round_trip() (+9 more)
 
-### Community 114 - "test_core_fixtures.py"
-Cohesion: 0.23
-Nodes (8): _python_api_result(), test_beyond_28_digits_is_exact(), test_core_module_is_rust(), test_missing_core_module_names_the_fix(), test_money_fixtures_through_python_api(), test_unknown_currency_raises_unknown_currency_error(), Task 4: Python backend uses Rust money (PyO3), Rulings made during implementation
+### Community 114 - "p49_scheduler_comparison.py"
+Cohesion: 0.13
+Nodes (10): append_result(), main(), MeasuredProduction, migrated(), quantile(), replay_latencies(), run_trial(), admit() (+2 more)
 
 ### Community 115 - "Fli probe — P5.06 spikes S1 (iPhone) and S3 (Swift off-device)"
 Cohesion: 0.33
 Nodes (5): Fli probe — P5.06 spikes S1 (iPhone) and S3 (Swift off-device), Offline check (no network), S1 — physical iPhone (needs full Xcode, owner-approved live requests), S3 — Swift off-device (macOS pre-check), What this does not do
 
-### Community 116 - "FoundOffer"
-Cohesion: 0.05
-Nodes (15): .offer, .stored, FoundOffer, .providerID, .shownPrice, Kind, discover, search (+7 more)
+### Community 116 - "SearchRequest"
+Cohesion: 0.13
+Nodes (7): .stored, Kind, discover, search, SearchRequest, .country, .discoveryQuery
 
 ### Community 117 - "money.rs"
-Cohesion: 0.18
+Cohesion: 0.23
 Nodes (13): as_minor_units(), EXPONENTS, from_minor_units(), fx_convert(), minor_unit_exponent(), MoneyError, InvalidDecimal, NotWholeMinorUnits (+5 more)
 
 ### Community 118 - "P7.4 Discover runtime Implementation Plan"
-Cohesion: 0.18
-Nodes (11): Global Constraints, Out of this plan, P7.4 Discover runtime Implementation Plan, PR A: shared core, PR C: web runtime, Review Focus, Task 10: API and status projection, Task 1: Skiplagged anywhere parser and discovery call planner (Rust) (+3 more)
+Cohesion: 0.29
+Nodes (7): Global Constraints, Out of this plan, P7.4 Discover runtime Implementation Plan, PR A: shared core, Review Focus, Task 1: Skiplagged anywhere parser and discovery call planner (Rust), Task 2: Bindings for Task 1 (iPad first, then Python)
 
 ### Community 119 - "FixtureTests"
-Cohesion: 0.14
+Cohesion: 0.11
 Nodes (22): FingerprintCase, Fixtures, FixtureTests, InstantJ, LegJ, MoneyCase, OfferExpectJ, OfferJ (+14 more)
 
 ### Community 120 - "fli-wreq/build.sh"
 Cohesion: 0.33
 Nodes (5): DEVELOPER_DIR, IPHONEOS_DEPLOYMENT_TARGET, MACOSX_DEPLOYMENT_TARGET, PATH, build.sh script
 
-### Community 123 - "create_app"
-Cohesion: 0.13
-Nodes (11): create_app(), cancel(), cancel_discovery(), get_discovery(), get_job(), get_results(), lifespan(), DiscoveryStatus (+3 more)
+### Community 123 - "Settings"
+Cohesion: 0.18
+Nodes (13): Settings, default_registry(), main(), test_fli_real_normalization_api_prices_and_cache(), transport(), test_fourth_registration_configuration_and_no_false_capabilities(), test_missing_fli_payload_is_failure_and_never_cached(), test_missing_optional_fli_is_disabled_with_install_reason() (+5 more)
 
-### Community 124 - "sqlalchemy"
-Cohesion: 0.12
-Nodes (8): upgrade(), upgrade(), upgrade(), upgrade(), upgrade(), upgrade(), upgrade(), upgrade()
+### Community 124 - "repository.py"
+Cohesion: 0.05
+Nodes (22): upgrade(), upgrade(), upgrade(), upgrade(), upgrade(), upgrade(), upgrade(), upgrade() (+14 more)
 
 ### Community 127 - "test_p57_engine.py"
-Cohesion: 0.13
-Nodes (10): catalog(), plan_scope(), test_catalog_major_messages_and_order(), test_catalog_preserves_complete_records_and_order(), test_catalog_unicode_casefold_matches_reference(), test_fingerprint_matches_frozen_reference(), test_fixture_generators_do_not_call_rust_engine(), test_invalid_ranking_amount_raises() (+2 more)
+Cohesion: 0.18
+Nodes (9): catalog(), test_catalog_major_messages_and_order(), test_catalog_preserves_complete_records_and_order(), test_catalog_unicode_casefold_matches_reference(), test_fingerprint_matches_frozen_reference(), test_fixture_generators_do_not_call_rust_engine(), test_invalid_ranking_amount_raises(), test_python_whitespace_semantics_for_catalog_and_scope() (+1 more)
 
 ### Community 128 - "LocationCatalog"
 Cohesion: 0.16
 Nodes (6): CatalogError, Failed, Location, LocationCatalog, MajorResolution, SearchPage
 
 ### Community 129 - "test_overlap_429_retry_after_and_independent_provider"
-Cohesion: 0.15
-Nodes (19): FareQuote, test_recorded_real_adapters_api_summary_fx_and_expiry(), claim(), engine(), migrate(), reg(), drain(), record() (+11 more)
+Cohesion: 0.22
+Nodes (15): FareQuote, reg(), drain(), record(), short(), test_actual_worker_process_kill_and_recovery(), recover(), test_concurrent_claims_under_real_sqlite_lock() (+7 more)
 
 ### Community 130 - "fli-wreq/src/lib.rs"
 Cohesion: 0.21
 Nodes (7): MAX_BODY, wreq_fetch(), WreqError, Build, Request, TooLarge, WreqResponse
 
-### Community 131 - "MCPClient"
-Cohesion: 0.29
-Nodes (3): MCPClient, MCPConcurrencyTests, RoutingMCPTransport
+### Community 131 - "ProbeResult"
+Cohesion: 0.22
+Nodes (9): FliProbe, ProbeResult, .summary, UserAgentMode, chromeDesktop, .header, safariIOS, safariIPad (+1 more)
 
 ### Community 132 - "ranking.rs"
 Cohesion: 0.31
@@ -692,8 +695,8 @@ Cohesion: 0.16
 Nodes (19): currency_token(), expected_offer(), fingerprint_cases(), fli_leg(), fli_page_cases(), fli_row(), fli_tfs_cases(), instant() (+11 more)
 
 ### Community 134 - "StoreError"
-Cohesion: 0.11
-Nodes (16): combo_from_store(), HiddenCount, items_to_store(), ProviderStop, route_from_core(), route_to_core(), RouteDate, SearchStore (+8 more)
+Cohesion: 0.13
+Nodes (11): HiddenCount, items_to_store(), ProviderStop, SearchStore, store::StoredRequest, StoredOffer, StoredRequest, StoredSearch (+3 more)
 
 ### Community 135 - "expand_routes_and_dates"
 Cohesion: 0.35
@@ -711,149 +714,145 @@ Nodes (5): DEVELOPER_DIR, IPHONEOS_DEPLOYMENT_TARGET, MACOSX_DEPLOYMENT_TARGET, 
 Cohesion: 0.33
 Nodes (5): DEVELOPER_DIR, IPHONEOS_DEPLOYMENT_TARGET, MACOSX_DEPLOYMENT_TARGET, PATH, build.sh script
 
-### Community 142 - "SearchModel"
-Cohesion: 0.08
-Nodes (8): .dayShift, SearchModel, .canResume, .canSearch, .plan, .planSummary, .searchTitle, .selectedSources
+### Community 139 - "ResumeTests"
+Cohesion: 0.14
+Nodes (6): FoundOffer, .providerID, .shownPrice, ResumeTests, Tfs, Task 2: Session checkpointing and resume (CheapWingsKit)
 
-### Community 144 - "shadow_money.py"
-Cohesion: 0.23
-Nodes (6): pytest_configure(), as_minor_units(), convert(), from_minor_units(), minor_unit_exponent(), _shadow()
+### Community 142 - "SearchModel"
+Cohesion: 0.07
+Nodes (14): .dayShift, SearchModel, .canResume, .canSearch, .plan, .planSummary, .searchTitle, .selectedSources (+6 more)
+
+### Community 144 - "Decodable"
+Cohesion: 0.37
+Nodes (9): CaseJ, CountsJ, DiscoveryFixtureTests, ExpectJ, Fixtures, FxJ, LeadJ, ObservationJ (+1 more)
 
 ### Community 145 - "P5.06 — Native engine spikes (S1–S5)"
-Cohesion: 0.33
-Nodes (6): Decision status, Owner decision (2026-11-13, after S5), P5.06 — Native engine spikes (S1–S5), Reproduce, Results, S5 — Rust core vs Swift core on iPad (follow-up, same day)
+Cohesion: 0.29
+Nodes (7): Decision status, Findings, Owner decision (2026-11-13, after S5), P5.06 — Native engine spikes (S1–S5), Reproduce, Results, S5 — Rust core vs Swift core on iPad (follow-up, same day)
 
-### Community 150 - "pathlib"
-Cohesion: 0.07
-Nodes (21): database(), require_current_schema(), main(), worker_lock(), fixture(), engine(), engine(), config() (+13 more)
+### Community 150 - "gen_discovery_sources_fixtures.py"
+Cohesion: 0.09
+Nodes (9): test_guard_keeps_sdk_priced_offer_construction(), Measurements, ObservedProvider, observers(), make_send(), observed(), post(), utc() (+1 more)
 
 ### Community 151 - "CheapWingsCore"
-Cohesion: 0.10
-Nodes (9): BackgroundTasks, CheapWingsCore, CheapWingsKit, CryptoKit, FliProbe, Foundation, os, UIKit (+1 more)
+Cohesion: 0.13
+Nodes (5): ContinuedSearch, BackgroundTasks, CheapWingsCore, CheapWingsKit, XCTest
 
 ### Community 152 - "StoreError"
-Cohesion: 0.16
-Nodes (10): from_json(), json(), sql(), Store, StoreError, AlreadyCommitted, NotFound, Open (+2 more)
+Cohesion: 0.21
+Nodes (9): from_json(), Store, StoredCombo, StoredOffer, StoredSearch, StoreError, AlreadyCommitted, NotFound (+1 more)
 
 ### Community 153 - "money-pyo3/src/lib.rs"
-Cohesion: 0.26
+Cohesion: 0.20
 Nodes (8): as_minor_units(), cheapwings_money_rs(), exponent(), EXPONENTS, from_minor_units(), fx_convert(), minor_unit_exponent(), parse()
 
 ### Community 154 - "SkiplaggedProvider"
-Cohesion: 0.10
-Nodes (13): ItinerarySummary, FXSnapshot, aware_iso(), exact_payload_json(), SkiplaggedProvider, SkiplaggedProvider, recorded_payload(), test_capability_flag_is_last_with_default() (+5 more)
+Cohesion: 0.28
+Nodes (4): aware_iso(), SkiplaggedProvider, skiplagged_cases(), case()
 
-### Community 155 - "p412_pool_benchmark.py"
-Cohesion: 0.17
-Nodes (10): main(), peak(), query(), scenario(), summarize(), threads(), cell(), fmt() (+2 more)
+### Community 155 - "sys"
+Cohesion: 0.22
+Nodes (5): test_generator_money_reference_runs_without_rust_core(), cell(), fmt(), load(), main()
 
 ### Community 156 - "catalog"
-Cohesion: 0.08
-Nodes (13): resolve_location(), catalog(), LocationCatalog, MajorResolution, MajorSelection, selection(), test_ambiguous_cities_keep_distinct_ids_and_geography(), test_boundary_and_overlap_match_expansion() (+5 more)
+Cohesion: 0.06
+Nodes (16): resolve_location(), MaxStops, plan_scope(), catalog(), LocationCatalog, MajorResolution, MajorSelection, CapacityExceeded (+8 more)
 
-### Community 157 - "verification.py"
-Cohesion: 0.23
-Nodes (6): ProviderSearchResult, RepriceRequest, SearchProvider, SingleDateRouteQuery, offer_from_row(), VerificationRepository
+### Community 157 - "StatusVisuals.tsx"
+Cohesion: 0.27
+Nodes (10): ProviderProgress, WorkerPool, LABEL, P46SearchProgress(), PoolGauge(), ProviderBars(), SEGMENTS, SOURCE_NAMES (+2 more)
 
 ### Community 158 - "CoreError"
 Cohesion: 0.29
 Nodes (6): as_minor_units(), CoreError, Invalid, from_minor_units(), fx_convert(), minor_unit_exponent()
 
 ### Community 160 - "ProviderFailure"
-Cohesion: 0.07
-Nodes (32): ProviderFailure, SourceEvidence, json_payload(), exact_http_client(), observe(), ExactCapture, _codes(), FliProvider (+24 more)
+Cohesion: 0.05
+Nodes (39): ProviderFailure, airport_transfers(), json_payload(), exact_http_client(), observe(), ExactCapture, _codes(), FliProvider (+31 more)
 
-### Community 161 - "decode_page"
-Cohesion: 0.22
-Nodes (14): decode_page(), decode_row(), FliError, AuthDenied, PartialPayload, SchemaChanged, local_time(), page_rows() (+6 more)
+### Community 161 - "tests/discovery_sources.rs"
+Cohesion: 0.26
+Nodes (8): anywhere_fixture_cases(), AnywhereCase, CallsCase, CallsExpect, discovery_call_cases(), Fixtures, fixtures(), FIXTURES
 
 ### Community 162 - "Current phase tracker and owner approvals"
 Cohesion: 0.29
 Nodes (7): Dated history is evidence rather than active instructions, Current documentation authority, Compact current work-log template, WORK_LOG.md — Current State Template, Initialization-only work-log template, Current phase tracker and owner approvals, Planned SwiftUI iOS requires full Xcode
 
 ### Community 163 - "skiplagged.rs"
-Cohesion: 0.16
-Nodes (24): FliLeg, Card, cards(), completeness(), days_from_civil(), decimal_text(), decode_card(), fli_source_offer() (+16 more)
+Cohesion: 0.15
+Nodes (25): skiplagged_anywhere(), FliLeg, Card, cards(), completeness(), days_from_civil(), decimal_text(), decode_card() (+17 more)
 
 ### Community 164 - ".note"
-Cohesion: 0.17
-Nodes (10): .priceText, .body, .body, CarrierPlate, .body, CompactPrice, FxText, SourcePlate (+2 more)
+Cohesion: 0.12
+Nodes (15): .priceText, .body, .content, .body, CarrierPlate, .body, CarriersLine, .body (+7 more)
 
 ### Community 165 - "src/discovery.rs"
-Cohesion: 0.09
-Nodes (34): BUDGET_HEADROOM, code(), DiscoveryError, InvalidBudget, InvalidCurrency, Plan, DiscoveryObservation, DiscoveryQuery (+26 more)
+Cohesion: 0.08
+Nodes (43): BUDGET_HEADROOM, code(), DiscoveryCounts, DiscoveryError, InvalidBudget, InvalidCurrency, Plan, DiscoveryObservation (+35 more)
 
-### Community 167 - "UnknownCurrencyError"
-Cohesion: 0.20
-Nodes (8): UnknownCurrencyError, Global Constraints, Out of scope (later phases), P5.1 Shared Rust Core Implementation Plan, Review Focus, Task 2: Fingerprint and ranking, Task 3: Fli `tfs` encoder and `ds:1` page decoder, Task 6: Phase close
+### Community 167 - "database"
+Cohesion: 0.27
+Nodes (8): database(), fixture(), engine(), engine(), engine(), migrate(), query(), migrated()
 
 ### Community 168 - "LocalInstant"
 Cohesion: 0.50
 Nodes (4): fingerprint(), fp::LocalInstant, LocalInstant, Segment
 
 ### Community 169 - "status_projection"
-Cohesion: 0.18
-Nodes (11): status_projection(), test_airport_change_never_claims_ground_cost_is_known_on_reprice(), reprice(), search(), test_skiplagged_names_stay_summary_metadata_without_invented_flights(), test_surface_change_and_carriers_survive_worker_storage_api(), search(), CheckingFake (+3 more)
+Cohesion: 0.17
+Nodes (12): payload(), test_airport_change_never_claims_ground_cost_is_known_on_reprice(), reprice(), search(), test_skiplagged_names_stay_summary_metadata_without_invented_flights(), test_surface_change_and_carriers_survive_worker_storage_api(), search(), zones() (+4 more)
 
 ### Community 170 - "NetworkMonitor"
-Cohesion: 0.17
-Nodes (9): NetworkMonitor, Final review (fresh subagent, Opus), Next, P5.6 — iPad polish, Rulings made during implementation, Verification, What exists now, Network (+1 more)
+Cohesion: 0.10
+Nodes (18): NetworkMonitor, Final review (fresh subagent, Opus), Next, P5.6 — iPad polish, Design direction (frontend-design pass, owner request 2026-11-14), Global Constraints, Out of scope, P5.6 iPad Polish Implementation Plan (+10 more)
 
-### Community 172 - "provider_probe_skiplagged.py"
-Cohesion: 0.17
-Nodes (6): build(), main(), _redact(), run(), run_calls(), _utc_now_iso()
+### Community 172 - "ProbeView"
+Cohesion: 0.24
+Nodes (4): WreqProbe, .body, ProbeView, .body
 
 ### Community 176 - ".lane"
-Cohesion: 0.16
-Nodes (5): LanePause, .remaining, RunEmitter, StopFlag, .isSet
+Cohesion: 0.08
+Nodes (17): .isGoogleStop, LanePause, .remaining, RunEmitter, StopFlag, .isSet, .isProviderStop, .storedText (+9 more)
 
-### Community 177 - "instant"
+### Community 177 - "p46-browser.mjs"
+Cohesion: 0.28
+Nodes (6): all, dist, job, offer(), richEntries, trip()
+
+### Community 178 - "DiscoveryRequest"
 Cohesion: 0.25
-Nodes (6): create_discovery(), DiscoverCreated, DiscoverRequest, PublicOffer, instant(), public_offer()
-
-### Community 178 - "tests/discovery.rs"
-Cohesion: 0.18
-Nodes (17): DiscoveryCounts, DiscoveryPlan, SelectedLead, Case, cases(), check(), check_named(), empty_input_is_empty_plan() (+9 more)
+Nodes (3): DispatchFailure, DiscoveryRequest, Task 9: Runner and finalize: discovering → checking in one transaction
 
 ### Community 179 - "LocationTests"
-Cohesion: 0.15
+Cohesion: 0.13
 Nodes (8): Expect, error, ids, Fixtures, LocationTests, MajorCase, MajorExpect, SearchCase
 
 ### Community 180 - "PlanError"
-Cohesion: 0.17
-Nodes (17): civil_from_days(), days_from_civil(), format_date(), normalize(), parse_date(), plan_search(), PlanError, DatesReversed (+9 more)
+Cohesion: 0.18
+Nodes (15): civil_from_days(), days_from_civil(), format_date(), parse_date(), plan_search(), PlanError, DatesReversed, InvalidAirport (+7 more)
 
 ### Community 181 - "P6 — Release acceptance"
 Cohesion: 0.20
 Nodes (10): Live provider canary, Live web Fli acceptance, Local transport diagnostics, Offline checkpoint, Open release items, Owner-approved Fli retry, P6 — Release acceptance, Paired live transport check (+2 more)
 
 ### Community 182 - "XCTestCase"
-Cohesion: 0.04
-Nodes (40): .isGoogleStop, StoreTests, Date, .milliseconds, SearchPersistence, SearchStore, .isProviderStop, .storedText (+32 more)
+Cohesion: 0.07
+Nodes (21): StoreTests, Date, .milliseconds, SearchPersistence, SearchStore, SearchModelDates, Final review (fresh subagent, Opus), Next (+13 more)
 
 ### Community 183 - ".body"
 Cohesion: 0.16
 Nodes (10): OfferRow, .codesLine, .hasLegs, .spoken, .stopsText, ResultsView, .body, .session (+2 more)
 
-### Community 184 - "test_p74_discover_api.py"
-Cohesion: 0.35
-Nodes (7): client_for(), discover_data(), registry(), test_discover_create_poll_results(), test_discover_validation_and_cancel(), test_no_discovery_source_is_422(), test_search_status_body_unchanged()
-
 ### Community 185 - "Sendable"
-Cohesion: 0.04
-Nodes (34): .accessibilityText, .price, FetchedPage, isAllowedFliRedirect(), RedirectPolicy, .refused, TransportError, notHTTP (+26 more)
+Cohesion: 0.05
+Nodes (25): .accessibilityText, .price, FetchedPage, isAllowedFliRedirect(), RedirectPolicy, .refused, URLSessionFliTransport, PriceText (+17 more)
 
 ### Community 186 - "Decodable"
-Cohesion: 0.17
-Nodes (19): CaseJ, CountsJ, DiscoveryFixtureTests, ExpectJ, Fixtures, FxJ, LeadJ, ObservationJ (+11 more)
+Cohesion: 0.25
+Nodes (10): AnywhereCase, AnywhereExpect, CallJ, CallsCase, CallsExpect, DiscoverySourcesTests, Fixtures, FxJ (+2 more)
 
 ### Community 187 - "cheapwings-store/tests/discovery.rs"
-Cohesion: 0.24
-Nodes (12): StoredRequest, commit_discovery_is_once(), commit_to_unknown_search_changes_nothing(), discover_request(), discovery_starts_without_items(), empty_commit_records_unavailable_discovery(), items(), latest_returns_observations() (+4 more)
-
-### Community 188 - "P5.6 iPad Polish Implementation Plan"
-Cohesion: 0.67
-Nodes (3): Global Constraints, Out of scope, P5.6 iPad Polish Implementation Plan
+Cohesion: 0.22
+Nodes (11): commit_discovery_is_once(), commit_to_unknown_search_changes_nothing(), discover_request(), discovery_starts_without_items(), empty_commit_records_unavailable_discovery(), items(), latest_returns_observations(), observation() (+3 more)
 
 ### Community 189 - "XCTestCase"
 Cohesion: 0.33
@@ -861,34 +860,26 @@ Nodes (4): coreRevisionError(), verifyCoreRevision(), CoreRevisionTests, cheapwi
 
 ### Community 190 - "cheapwings-store/src/lib.rs"
 Cohesion: 0.11
-Nodes (13): ComboStatus, Done, Failed, Pending, DiscoveryMeta, KEEP_SEARCHES, MIGRATE_V2, MIGRATE_V3 (+5 more)
+Nodes (9): DiscoveryMeta, json(), KEEP_SEARCHES, MIGRATE_V2, MIGRATE_V3, SCHEMA_V1, SCHEMA_VERSION, sql() (+1 more)
 
-### Community 191 - "MaxStops"
-Cohesion: 0.29
-Nodes (4): create_search(), Created, SearchRequest, MaxStops
-
-### Community 192 - "skiplagged_cases"
-Cohesion: 0.40
-Nodes (4): health(), skiplagged_cases(), case(), text()
-
-### Community 193 - "PR B: iPad runtime (Tasks 3–5)"
-Cohesion: 0.25
-Nodes (6): DiscoverJob, Final whole-plan review, P7.4: Discover runtime, PR A: shared core (Tasks 1–2), PR B: iPad runtime (Tasks 3–5), PR C: web runtime (Tasks 6–10)
+### Community 193 - "DiscoverQuery"
+Cohesion: 0.13
+Nodes (10): DiscoverQuery, Final whole-plan review, P7.4: Discover runtime, PR C: web runtime, Task 10: API and status projection, Task 7: Migration: `kind` and the observations table, Task 8: Repository: create a Discover job, PR A: shared core (Tasks 1–2) (+2 more)
 
 ### Community 194 - "P7.1 — Discovery provider feasibility"
 Cohesion: 0.18
 Nodes (11): Desk matrix (no provider calls made), Detailed check (`sk_flights_search`, `sort=price`), Exact-date bridge (Skiplagged), Fli Explore addendum (owner-approved, 2026-11-21), Go / no-go, Limitations, P7.1 — Discovery provider feasibility, Probe request (needs owner approval) (+3 more)
 
-### Community 196 - "references/query.py"
-Cohesion: 0.24
-Nodes (3): expand_routes_and_dates(), RouteDateCombo, MaxStops
-
-### Community 197 - "subprocess"
+### Community 195 - "DiscoveryResult"
 Cohesion: 0.22
-Nodes (7): test_generator_money_reference_runs_without_rust_core(), test_beyond_96_bit_raises_instead_of_rounding(), Behaviour changes, Not in P5.1 (next phases), P5.1 — Shared Rust core, Verification (fresh runs at phase close), What exists now
+Nodes (3): DiscoveryResult, test_fake_discovery_is_scripted_and_synthetic(), Task 6: Discovery capability and Skiplagged web adapter
+
+### Community 197 - "p7-browser.mjs"
+Cohesion: 0.29
+Nodes (5): dist, djob(), lead(), sin, unavailable
 
 ### Community 198 - "references/catalog.py"
-Cohesion: 0.19
+Cohesion: 0.18
 Nodes (7): fold(), LocationCatalog, MajorResolution, MajorSelection, test_fold_matches_assigned_python_unicode(), location_major_cases(), case()
 
 ### Community 200 - "08 — Starting Prompt for a Local Coding Agent"
@@ -899,33 +890,41 @@ Nodes (5): Authorized task boundaries, Preserve current baseline, 08 — Startin
 Cohesion: 0.29
 Nodes (7): 1. Correct documentation and record the plan, 2. Connect existing Rust engine rules to Python, 3. Connect Fli and Skiplagged parsing, Deferred work, Design and boundaries, Implementation checklist and gates, P5.7 — Move the web backend onto the shared Rust core
 
-### Community 202 - "P5.4 — Skiplagged on the iPad"
-Cohesion: 0.33
-Nodes (6): Final review (fresh subagent, Opus), Next, P5.4 — Skiplagged on the iPad, Rulings made during implementation, Verification, What exists now
+### Community 202 - "SkiplaggedSearchProvider"
+Cohesion: 0.13
+Nodes (10): SkiplaggedFetch, outcome, page, SkiplaggedSearchProvider, Final review (fresh subagent, Opus), Next, P5.4 — Skiplagged on the iPad, Rulings made during implementation (+2 more)
 
 ### Community 203 - "test_real_providers.py"
-Cohesion: 0.20
-Nodes (12): ProviderRepriceResult, SwoopProvider, load(), query(), test_missing_zone_retains_unmatched_summary(), test_skiplagged_exact_money_unknown_fields_and_no_fake_segments(), test_skiplagged_request_filters_and_fail_closed(), test_swoop_p0_timezone_identity_and_unknown_risk() (+4 more)
+Cohesion: 0.12
+Nodes (21): SourceEvidence, FXSnapshot, ProviderRepriceResult, SkiplaggedProvider, SwoopProvider, recorded_payload(), test_malformed_reply_is_schema_changed(), test_recorded_reply_becomes_observations() (+13 more)
 
 ### Community 204 - "OfferDetailView"
-Cohesion: 0.07
-Nodes (23): Array, OfferDetailView, .steps, .summary, Step, airport, change, flight (+15 more)
+Cohesion: 0.08
+Nodes (22): Array, OfferDetailView, .steps, Step, airport, change, flight, layover (+14 more)
 
-### Community 205 - "worker_pool"
-Cohesion: 0.50
-Nodes (3): worker_pool(), PoolProvider, WorkerPool
+### Community 205 - "scripts"
+Cohesion: 0.29
+Nodes (7): scripts, build, dev, lint, preview, test, test:browser
 
 ### Community 207 - "SourceOffer"
-Cohesion: 0.18
+Cohesion: 0.20
 Nodes (8): FxNote, skiplagged_parse(), skiplagged::SourceOffer, skiplagged_tool_payload(), SkiplaggedError, Failed, SkiplaggedPage, SourceOffer
 
 ### Community 208 - "P5.5 — iPad feature parity"
 Cohesion: 0.33
 Nodes (6): Final review (fresh subagent, Opus), Next, P5.5 — iPad feature parity, Picker UX (owner decision during the device check), Rulings made during implementation, Verification
 
+### Community 209 - "p45-browser.mjs"
+Cohesion: 0.33
+Nodes (5): baseJob, commonOffer, dist, itinerary, query
+
 ### Community 210 - "P7.2 / P7.3: Discover contract and shared Rust selection"
 Cohesion: 0.40
 Nodes (5): Evidence (2026-11-21, worktree `CheapWings-p7`), Limitations, Owner decisions (Task 4 gate, 2026-11-21), P7.2 / P7.3: Discover contract and shared Rust selection, What exists now
+
+### Community 211 - "ComboStatus"
+Cohesion: 0.33
+Nodes (4): ComboStatus, Done, Failed, Pending
 
 ### Community 213 - "05 — Web + Native iOS Client Implementation"
 Cohesion: 0.29
@@ -935,45 +934,61 @@ Nodes (7): 05 — Web + Native iOS Client Implementation, Polling and recovery d
 Cohesion: 0.16
 Nodes (14): AnywherePage, core_query(), discovery_calls(), discovery::DiscoveryObservation, DiscoveryCall, DiscoveryObservation, DiscoveryPlanError, Rejected (+6 more)
 
+### Community 215 - "P5.8 — iPad parallel Fli pacing"
+Cohesion: 0.40
+Nodes (5): Final review (fresh subagent, Opus), Next, P5.8 — iPad parallel Fli pacing, Rulings made during implementation, Verification
+
 ### Community 216 - "Outcome"
-Cohesion: 0.08
-Nodes (19): FliProbe, isAllowedRedirect(), Outcome, blockedRedirect, blockedSorry, blockedTraffic, crossCheckFailed, httpError (+11 more)
+Cohesion: 0.17
+Nodes (12): Outcome, blockedRedirect, blockedSorry, blockedTraffic, crossCheckFailed, httpError, .mustStop, networkError (+4 more)
 
 ### Community 217 - "fingerprint.rs"
-Cohesion: 0.33
-Nodes (5): fingerprint(), isoformat(), LocalInstant, Segment, isoformat_matches_python_shapes()
+Cohesion: 0.29
+Nodes (6): fingerprint(), isoformat(), LocalInstant, Segment, fingerprint_matches_python(), isoformat_matches_python_shapes()
 
-### Community 222 - "ComboStatus"
+### Community 218 - "dependencies"
 Cohesion: 0.50
-Nodes (4): ComboStatus, Done, Failed, Pending
+Nodes (4): dependencies, react@^19.3.1, react-dom@^19.3.1, react-dom
+
+### Community 219 - "P5.2 iPad App Shell Implementation Plan"
+Cohesion: 0.67
+Nodes (3): Global Constraints, Out of scope (later phases), P5.2 iPad App Shell Implementation Plan
+
+### Community 220 - "Fli 0.25 s interval reliability (owner request, 2026-11-14)"
+Cohesion: 0.67
+Nodes (3): Fli 0.25 s interval reliability (owner request, 2026-11-14), Owner decision (2026-11-14), What 0.25 s means on each client
+
+### Community 222 - "RouteDate"
+Cohesion: 0.17
+Nodes (12): combo_from_store(), ComboStatus, Done, Failed, Pending, plan_search(), PlanSearchError, Rejected (+4 more)
 
 ### Community 225 - "gen_fixtures.py"
-Cohesion: 0.17
-Nodes (7): parse_search_response(), search(), test_adapter_rejects_short_error_before_normalization(), test_guard_keeps_sdk_priced_offer_construction(), test_missing_or_malformed_payload_is_not_empty_success(), test_short_rpc_error_is_not_empty_success(), test_valid_empty_with_metadata_frame_is_preserved()
+Cohesion: 0.23
+Nodes (6): parse_search_response(), search(), test_adapter_rejects_short_error_before_normalization(), test_missing_or_malformed_payload_is_not_empty_success(), test_short_rpc_error_is_not_empty_success(), test_valid_empty_with_metadata_frame_is_preserved()
 
-### Community 241 - "parity.py"
-Cohesion: 0.47
-Nodes (3): check(), py_convert(), same()
+### Community 241 - "money.py"
+Cohesion: 0.14
+Nodes (9): _core_call(), minor_unit_exponent(), fingerprint_cases(), instant(), money_cases(), outcome(), check(), py_convert() (+1 more)
 
 ## Knowledge Gaps
-- **267 isolated node(s):** `noFlights`, `formatChanged`, `searchesFailed`, `sourceUnavailable`, `noPrices` (+262 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1446 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **79 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **268 isolated node(s):** `.majorCodes`, `.body`, `.foreground`, `Network`, `airport` (+263 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1431 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **49 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `P4.12 — Shared global resource pool` connect `BoundedCall` to `WORK_LOG.md — Current State (keep under ~80 lines)`, `Repository`, `types.ts`?**
-  _High betweenness centrality (0.123) - this node is a cross-community bridge._
-- **Are the 52 inferred relationships involving `ProviderFailure` (e.g. with `FliProvider` and `OctotripProvider`) actually correct?**
-  _`ProviderFailure` has 52 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `noFlights`, `formatChanged`, `searchesFailed` to the rest of the system?**
-  _267 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Why does `SearchSession` connect `SearchSession` to `.testGoogleStopHoldsFliButSkiplaggedResumesNow`, `Repository`, `.start`, `ResumeTests`, `ProviderPacing`, `SearchModel`, `P7 Discover — Readiness, Feasibility and Shared Rust Core Implementation Plan`, `.lane`, `DiscoverySessionTests`, `XCTestCase`, `.body`, `Sendable`?**
+  _High betweenness centrality (0.149) - this node is a cross-community bridge._
+- **Are the 108 inferred relationships involving `Repository` (e.g. with `AirportTransfer` and `IdentityConfidence`) actually correct?**
+  _`Repository` has 108 INFERRED edges - model-reasoned connections that need verification._
+- **What connects `.majorCodes`, `.body`, `.foreground` to the rest of the system?**
+  _268 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `test_scheduler.py` be split into smaller, more focused modules?**
-  _Cohesion score 0.11412429378531073 - nodes in this community are weakly interconnected._
-- **Why does `SearchSession` connect `SearchSession` to `ResumeTests`, `ProviderPacing`, `Repository`, `SearchModel`, `P7 Discover — Readiness, Feasibility and Shared Rust Core Implementation Plan`, `DiscoverySessionTests`, `DiscoveryOutcome`, `FoundOffer`, `XCTestCase`, `.body`, `Sendable`, `Decodable`?**
-  _High betweenness centrality (0.121) - this node is a cross-community bridge._
-- **Are the 86 inferred relationships involving `Repository` (e.g. with `test_pagination_freezes_incremental_quote_set()` and `test_worker_pool_status_counts_shared_once_and_flags_cooldown()`) actually correct?**
-  _`Repository` has 86 INFERRED edges - model-reasoned connections that need verification._
+  _Cohesion score 0.10259122157588578 - nodes in this community are weakly interconnected._
+- **Why does `WorkItem` connect `Repository` to `.get_job`, `test_p49_review.py`, `fake.py`, `Repository`, `test_api.py`, `DiscoveryRequest`, `search_service.py`, `repository.py`, `test_search_cache.py`?**
+  _High betweenness centrality (0.078) - this node is a cross-community bridge._
+- **Are the 56 inferred relationships involving `ProviderFailure` (e.g. with `JobRunner` and `ExactCapture`) actually correct?**
+  _`ProviderFailure` has 56 INFERRED edges - model-reasoned connections that need verification._
 - **Should `Sendable` be split into smaller, more focused modules?**
-  _Cohesion score 0.12258064516129032 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.1354679802955665 - nodes in this community are weakly interconnected._

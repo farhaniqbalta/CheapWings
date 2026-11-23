@@ -1208,6 +1208,58 @@
         "title": "DiscoverRequest",
         "description": "P7.4 Discover: origins and a departure window; a discovery source suggests destinations."
       },
+      "DiscoveryLead": {
+        "properties": {
+          "origin": {
+            "type": "string",
+            "title": "Origin"
+          },
+          "destination": {
+            "type": "string",
+            "title": "Destination"
+          },
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "comparable_amount": {
+            "type": "string",
+            "title": "Comparable Amount"
+          },
+          "checked_amount": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checked Amount"
+          },
+          "checked_itinerary_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checked Itinerary Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "origin",
+          "destination",
+          "date",
+          "comparable_amount"
+        ],
+        "title": "DiscoveryLead",
+        "description": "A shortlisted destination: the discovery price is provisional until a check confirms it."
+      },
       "DiscoveryStatus": {
         "properties": {
           "calls_planned": {
@@ -1268,6 +1320,13 @@
             },
             "type": "array",
             "title": "Stopped Providers"
+          },
+          "shortlist": {
+            "items": {
+              "$ref": "#/components/schemas/DiscoveryLead"
+            },
+            "type": "array",
+            "title": "Shortlist"
           }
         },
         "additionalProperties": false,

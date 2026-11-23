@@ -360,7 +360,12 @@ class Repository(CacheRepository, VerificationRepository):
             outcome = "planned"
         else:
             outcome = "none_under_budget" if counts["over_budget"] else "no_prices"
-        job.discovery_json = {**summary, "counts": counts, "outcome": outcome}
+        job.discovery_json = {
+            **summary,
+            "counts": counts,
+            "outcome": outcome,
+            "selected": plan["selected"],
+        }
         checkers = [p for p in job.provider_ids or [] if p not in stopped]
         # shortcut: checks run as direct work items (no shared provider cache: finalize has no
         # registry); route them through prepare_cached_work if Discover checks should hit the cache.

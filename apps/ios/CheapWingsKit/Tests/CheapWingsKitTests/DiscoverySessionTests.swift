@@ -88,6 +88,7 @@ final class DiscoverySessionTests: XCTestCase {
         XCTAssertEqual(summary.leads.count, 3)
         XCTAssertEqual(summary.counts?.selected, 2)
         XCTAssertEqual(summary.counts?.superseded, 1)
+        XCTAssertEqual(summary.selected.map(\.destination), ["DPS", "SIN"])
         XCTAssertEqual(session.planned.map { "\($0.provider) \($0.routeDate.destination) \($0.routeDate.date)" },
                        ["fli DPS 2027-03-01", "fli SIN 2027-03-01"])
         XCTAssertEqual(session.phase, .stopped(.finished))
@@ -219,6 +220,7 @@ final class DiscoverySessionTests: XCTestCase {
         let session = session(discovery, checks: checker(["2027-03-01": "700000"]), store: store)
         session.restoreLatest()
         XCTAssertEqual(session.discovery?.counts?.selected, 1, "counts recomputed from the snapshot")
+        XCTAssertEqual(session.discovery?.selected.map(\.destination), ["DPS"], "shortlist recomputed on restore")
         XCTAssertTrue(session.canResume)
         session.resume()
         try await waitUntilStopped(session)

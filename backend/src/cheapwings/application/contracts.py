@@ -110,6 +110,15 @@ class DiscoverCreated(DTO):
     job_status_url: str
 
 
+class DiscoveryLead(DTO):
+    """A shortlisted destination: the discovery price is provisional until a check confirms it."""
+
+    origin: str
+    destination: str
+    date: str
+    comparable_amount: str
+
+
 class DiscoveryStatus(DTO):
     calls_planned: int
     calls_done: int
@@ -124,6 +133,8 @@ class DiscoveryStatus(DTO):
     ) = None
     # Sources that refused us or asked for too long a wait during discovery (not used for checks).
     stopped_providers: list[str] = Field(default_factory=list)
+    # The checked shortlist in plan order (cheapest discovery price first), display currency.
+    shortlist: list[DiscoveryLead] = Field(default_factory=list)
 
 
 class Created(DTO):

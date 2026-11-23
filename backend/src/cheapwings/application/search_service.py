@@ -202,6 +202,15 @@ def discover_projection(repo, job_id):
             counts=summary.get("counts"),
             outcome=outcome,
             stopped_providers=summary.get("stopped_providers", []),
+            shortlist=[
+                dto.DiscoveryLead(
+                    origin=s["origin"],
+                    destination=s["destination"],
+                    date=s["date"],
+                    comparable_amount=s["comparable_amount"],
+                )
+                for s in summary.get("selected", [])
+            ],
         ),
         total_checks=len(detailed),
         succeeded_checks=sum(counts[k] for k in SUCCESS),

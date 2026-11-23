@@ -49,6 +49,9 @@ def test_discover_create_poll_results(engine):
         assert (job.checked_route_dates, job.total_checks, job.succeeded_checks) == (2, 2, 2)
         assert any("2 discovered destinations" in w for w in job.warnings)
         assert job.query.origins == ["CGK"]
+        # P7.5: the shortlist in plan order, comparable amounts in the display currency (40/50 USD × 16000).
+        assert [(l.destination, l.date, l.comparable_amount) for l in d.shortlist] == [
+            ("DPS", "2027-03-01", "640000"), ("SIN", "2027-03-01", "800000")]
         results = dto.Results.model_validate_json(client.get(f"/api/v1/discover/{created.job_id}/results").text)
         assert {i.destination for i in results.itineraries} >= {"DPS", "SIN"}
         # A Discover job is not a Search job, and the other way round.

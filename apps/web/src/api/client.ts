@@ -3,6 +3,9 @@ import { getOwnerToken } from "./session";
 import type {
   Capabilities,
   Created,
+  DiscoverCreated,
+  DiscoverJob,
+  DiscoverRequest,
   HTTPValidationError,
   Job,
   Results,
@@ -66,6 +69,19 @@ export const api = {
 
   cancelSearch: (jobId: string) =>
     request<Job>(`/api/v1/searches/${encodeURIComponent(jobId)}/cancel`, { method: "POST" }),
+
+  createDiscovery: (body: DiscoverRequest) =>
+    request<DiscoverCreated>("/api/v1/discover", { method: "POST", body: JSON.stringify(body) }),
+
+  getDiscovery: (jobId: string) => request<DiscoverJob>(`/api/v1/discover/${encodeURIComponent(jobId)}`),
+
+  getDiscoveryResults: (jobId: string, sort: SortMode) => {
+    const params = new URLSearchParams({ sort, limit: "100" });
+    return request<Results>(`/api/v1/discover/${encodeURIComponent(jobId)}/results?${params.toString()}`);
+  },
+
+  cancelDiscovery: (jobId: string) =>
+    request<DiscoverJob>(`/api/v1/discover/${encodeURIComponent(jobId)}/cancel`, { method: "POST" }),
 };
 
 export const TERMINAL_STATUSES = new Set(["completed", "partial", "failed", "cancelled"]);

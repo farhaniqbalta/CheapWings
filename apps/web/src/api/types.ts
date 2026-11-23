@@ -283,3 +283,63 @@ export interface ValidationError {
 export interface HTTPValidationError {
   detail: ValidationError[];
 }
+
+// ---------- P7 Discover ----------
+
+export type DiscoveryOutcome = "planned" | "no_prices" | "none_under_budget" | "unavailable" | "timed_out";
+
+export interface DiscoverRequest {
+  provider_ids?: string[] | null;
+  origins: string[];
+  departure_date_from: string;
+  departure_date_through: string;
+  display_currency?: Currency;
+  budget?: string | null; // decimal string in display_currency
+  max_stops?: 0 | 1 | 2 | null;
+}
+
+export interface DiscoverCreated {
+  job_id: string;
+  status: JobStatus;
+  created_at: string;
+  discovery_calls: number;
+  enabled_detailed_providers: string[];
+  job_status_url: string;
+}
+
+export interface DiscoveryLead {
+  origin: string;
+  destination: string;
+  date: string;
+  comparable_amount: string; // provisional discovery price, display currency
+}
+
+export interface DiscoveryStatus {
+  calls_planned: number;
+  calls_done: number;
+  calls_failed: number;
+  unpriced: number;
+  discovered_destinations: number;
+  counts: Record<string, number> | null;
+  outcome: DiscoveryOutcome | null;
+  stopped_providers: string[];
+  shortlist: DiscoveryLead[];
+}
+
+export interface DiscoverJob {
+  provider_ids: string[];
+  job_id: string;
+  query: DiscoverRequest;
+  status: JobStatus;
+  phase: "discovering" | "searching" | "verifying" | "done";
+  cancel_requested: boolean;
+  created_at: string;
+  updated_at: string;
+  discovery: DiscoveryStatus;
+  total_checks: number;
+  succeeded_checks: number;
+  failed_checks: number;
+  checked_route_dates: number;
+  provider_status: ProviderProgress[];
+  warnings: string[];
+}

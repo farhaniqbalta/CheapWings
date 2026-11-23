@@ -11,6 +11,15 @@ import UIKit
 final class SearchModel {
     static let currencies = ["IDR", "USD", "AUD", "JPY"]
 
+    /// P7.6: Search (route × dates) or Discover (destinations found by Skiplagged, then checked).
+    enum Mode: String, CaseIterable, Identifiable {
+        case search = "Search", discover = "Discover"
+        var id: String { rawValue }
+    }
+    var mode = Mode.search
+    /// Discover budget in `currency`; empty means no budget.
+    var budgetText = ""
+
     /// Typed-code fallback, used only if the airport catalog failed to load.
     var originsText = "CGK"
     var destinationsText = "DPS"
@@ -61,7 +70,7 @@ final class SearchModel {
             openError = "Search history unavailable: \(error)"
         }
         historyError = openError
-        session = SearchSession(engine: engine, store: store)
+        session = SearchSession(engine: engine, store: store, discovery: SkiplaggedDiscoveryProvider())
         session.onStop = { [weak self] in self?.searchStopped() }
         session.restoreLatest()
         if let request = session.request { fillForm(from: request) }
@@ -110,6 +119,44 @@ final class SearchModel {
         session.start(request, combos: combos)
         requestContinuedProcessing()
     }
+
+    // MARK: - Discover (P7.6)
+
+    /// From airports only; destinations come from the discovery source, the selected sources check them.
+    func makeDiscoverRequest() -> SearchRequest {
+        let origins = catalog != nil ? codes(origin) : Self.codes(originsText)
+        let budget = budgetText.trimmingCharacters(in: .whitespaces)
+        return SearchRequest(origins: origins, destinations: [], dateFrom: Self.ymd(dateFrom), dateThrough: Self.ymd(dateThrough),
+                             currency: currency, maxStops: maxStops, originMajorIDs: [], destinationMajorIDs: [],
+                             providers: selectedSources, kind: .discover, budget: budget.isEmpty ? nil : budget)
+    }
+
+    /// The discovery calls the Rust core would make (validates codes, dates, currency, budget, the 31-call cap).
+    var discoverPlan: Result<[DiscoveryCall], Error> { Result { try discoveryCalls(query: makeDiscoverRequest().discoveryQuery) } }
+
+    var discoverSummary: String {
+        if !network.isOnline && !session.isRunning { return "You're offline. Connect to the internet to discover." }
+        if sources.isEmpty { return "Choose at least one source to check fares." }
+        switch discoverPlan {
+        case .success(let calls):
+            let names = selectedSources.map(Sources.name).joined(separator: " and ")
+            return "\(calls.count) discovery call\(calls.count == 1 ? "" : "s") to Skiplagged (max 31), then fares checked on \(names)"
+        case .failure(DiscoveryPlanError.Rejected(_, let detail)):
+            return detail.prefix(1).uppercased() + detail.dropFirst()
+        case .failure(let error): return "\(error)"
+        }
+    }
+
+    var canDiscover: Bool { network.isOnline && !session.isRunning && !sources.isEmpty && (try? discoverPlan.get()) != nil }
+
+    func startDiscover() {
+        guard canDiscover else { return }
+        do { try session.startDiscover(makeDiscoverRequest()) } catch { return }
+        requestContinuedProcessing()
+    }
+
+    /// The detail column follows the search being shown; before any search, the chosen mode.
+    var showsDiscover: Bool { session.request.map { $0.kind == .discover } ?? (mode == .discover) }
 
     /// "Tokyo (Major), CGK" — or a prompt when empty.
     /// The airport codes a side resolves to (shown large in the route header).
@@ -187,7 +234,7 @@ final class SearchModel {
     private func requestContinuedProcessing() {
         guard #available(iOS 26.0, *), let running = session.request,
               case .running(let done, let total) = session.phase else { return }
-        let route = "\(running.origins.joined(separator: ","))→\(running.destinations.joined(separator: ","))"
+        let route = "\(running.origins.joined(separator: ","))→\(running.kind == .discover ? "anywhere" : running.destinations.joined(separator: ","))"
         _ = ContinuedSearch.submit(title: "Searching \(route)", subtitle: "\(done) of \(total) route/date searches")
     }
 
@@ -214,6 +261,8 @@ final class SearchModel {
         destination = AirportSelection.restore(codes: request.destinations, majorIDs: request.destinationMajorIDs, catalog: catalog)
         maxStops = request.maxStops
         sources = Set(request.providers)
+        mode = request.kind == .discover ? .discover : .search
+        budgetText = request.budget ?? ""
         currency = request.currency
         if let from = Self.date(request.dateFrom), let through = Self.date(request.dateThrough) {
             dateFrom = from

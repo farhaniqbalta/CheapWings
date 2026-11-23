@@ -246,4 +246,39 @@ final class DiscoverySessionTests: XCTestCase {
         bad.dateThrough = "2027-04-30"
         XCTAssertThrowsError(try session(ScriptedDiscovery([:])).startDiscover(bad))
     }
+
+    // Final review: a stopped only checker is not "no flights"; a pause on the last call keeps the run.
+
+    func testStoppedOnlyCheckerIsUnavailable() async throws {
+        var skiplaggedOnly = request
+        skiplaggedOnly.providers = ["skiplagged"]
+        let discovery = ScriptedDiscovery(["2027-03-01": [leads("2027-03-01", [("DPS", "46")])],
+                                           "2027-03-02": [.stop(.blocked("http_403"))]])
+        let session = session(discovery)
+        try session.startDiscover(skiplaggedOnly)
+        try await waitUntilStopped(session)
+        XCTAssertEqual(session.discovery?.counts?.selected, 1)
+        XCTAssertTrue(session.planned.isEmpty)
+        XCTAssertEqual(session.emptyOutcome, .sourceUnavailable)
+    }
+
+    func testPauseOnLastCallCommitsThenResumesChecks() async throws {
+        var oneDay = request
+        oneDay.dateThrough = "2027-03-01"
+        let store = try store()
+        let discovery = ScriptedDiscovery(["2027-03-01": [leads("2027-03-01", [("DPS", "46")])]])
+        let session = session(discovery, checks: checker(["2027-03-01": "700000"]), store: store)
+        try session.startDiscover(oneDay)
+        session.pauseAfterCurrentRequest()
+        try await waitUntilStopped(session)
+        XCTAssertEqual(session.phase, .stopped(.backgrounded))
+        XCTAssertEqual(session.discovery?.committed, true)
+        XCTAssertEqual(try store.latest()?.stage, "checking")
+        XCTAssertTrue(session.canResume)
+        session.resume()
+        try await waitUntilStopped(session)
+        XCTAssertEqual(session.offers.count, 1)
+        let calls = await discovery.script.calls
+        XCTAssertEqual(calls, ["2027-03-01"], "resume runs the checks, not discovery again")
+    }
 }

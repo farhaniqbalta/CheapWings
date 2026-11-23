@@ -40,7 +40,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | P5.4 Skiplagged on iPad | Done; [PR #19](https://github.com/farhaniqbalta/CheapWings/pull/19) merged `bc4f5b2`; owner device checks passed. OctoTrip on iPad deferred until further notice (owner 2026-11-14) | [P5.4](docs/log/p5.4.md), [plan](docs/log/p5.4-plan.md) |
 | P5.7 Web backend onto the Rust core | Done; all three checkpoints merged | [Plan](docs/log/p5.7-plan.md), [execution](docs/log/p5.7.md) |
 | P6 Release acceptance | Acceptance passed locally | [P6 evidence](docs/log/p6.md). Signed iPad checks and live web Fli fares verified. |
-| P7 Discover (Explore Anywhere / Surprise Me) | **P7.2/P7.3 done in PR #26** (contract + shared Rust selection, iPad and web bindings); P7.1 GO: Skiplagged primary, Fli Explore opportunistic | [P7.3](docs/log/p7.3.md), [P7.1](docs/log/p7.1.md), [P7.0](docs/log/p7.0.md), [plan](docs/log/p7-plan.md), [handover](docs/log/p7-handover.md) |
+| P7 Discover (Explore Anywhere / Surprise Me) | **P7.4 runtime**: core + iPad merged (#27, #28); web runtime in PR C. P7.2/P7.3 merged (#26) | [P7.4](docs/log/p7.4.md), [P7.4 plan](docs/log/p7.4-plan.md), [P7.3](docs/log/p7.3.md), [P7.1](docs/log/p7.1.md), [P7.0](docs/log/p7.0.md) |
 
 ## Provider decision ledger
 | Provider | Decision | Key limits (details in provider-feasibility-evidence / research logs) |
@@ -56,7 +56,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 - P6 follow-up: assess the 4 MB Fli web body cap. See the [P6 evidence](docs/log/p6.md) for coverage limits and remaining items.
 
 ## Next task
-P7.4 PR A (#27) and PR B (iPad runtime) in review; then PR C (web runtime) per [p7.4-plan](docs/log/p7.4-plan.md).
+P7.4 PR C (web runtime) in review. After merge: plan P7.5 (web Discover UI) and P7.6 (iPad Discover UI); Fli Explore pin bump is a separate owner decision.
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

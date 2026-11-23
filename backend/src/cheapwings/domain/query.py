@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import re
 from datetime import date
+from decimal import Decimal
 from enum import Enum
 
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -110,3 +112,51 @@ class SearchQuery(BaseModel):
     def combination_count(self) -> int:
         return plan_scope(self.origins, self.destinations, self.departure_date_from,
                           self.departure_date_through)["combinations"]
+
+
+class DiscoverQuery(BaseModel):
+    """P7.4 Discover: origins and a departure window; destinations come from a discovery source.
+
+    Validation (codes, dates, currency, budget, the 31-call cap) is the shared Rust core's
+    `discovery_calls`. The fixed Search fields are kept so detailed checks, cache keys and result
+    storage read a Discover job exactly like a Search job.
+    """
+
+    origins: list[str]
+    departure_date_from: date
+    departure_date_through: date
+    display_currency: str
+    budget: Decimal | None = None
+    max_stops: MaxStops = MaxStops.ANY
+    include_hidden_city: bool = False
+    trip_type: str = "one_way"
+    adults: int = 1
+    cabin: str = "economy"
+    include_basic_economy: bool = True
+    checked_bags_required: bool = False
+    point_of_sale_country: str | None = None
+
+    def core_query(self) -> dict:
+        return {
+            "origins": self.origins,
+            "date_from": self.departure_date_from.isoformat(),
+            "date_through": self.departure_date_through.isoformat(),
+            "display_currency": self.display_currency,
+            "budget": None if self.budget is None else str(self.budget),
+            "include_hidden_city": self.include_hidden_city,
+        }
+
+    def calls(self) -> list[dict]:
+        """`[{origin, date}]`: one discovery call per origin and day."""
+        from cheapwings._core import core
+
+        try:
+            return json.loads(core.discovery_calls(json.dumps(self.core_query())))
+        except ValueError as exc:
+            raise QueryValidationError(str(exc)) from None
+
+    @model_validator(mode="after")
+    def _validate_in_core(self) -> DiscoverQuery:
+        calls = self.calls()
+        self.origins = list(dict.fromkeys(c["origin"] for c in calls))
+        return self

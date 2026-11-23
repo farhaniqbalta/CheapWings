@@ -7,7 +7,7 @@ from time import monotonic
 
 from cheapwings.domain.coverage import WorkStatus
 from cheapwings.domain.evidence import ProviderFailure
-from cheapwings.providers.base import SingleDateRouteQuery
+from cheapwings.providers.base import DiscoveryRequest, SingleDateRouteQuery
 from cheapwings.providers.rate_limit import provider_failure
 
 log = logging.getLogger(__name__)
@@ -70,11 +70,16 @@ class JobRunner:
         self._starting.discard(pid)
         if item.work_type == "reprice":
             return await registration.provider.reprice(request)
+        if item.work_type == "discover":
+            return await registration.provider.discover(request)
         return await registration.provider.search(request)
 
     @staticmethod
     def validate_result(item, request, result):
-        if item.work_type != "reprice":
+        if item.work_type == "discover":
+            if result.provider_id != item.provider_id or result.request != request:
+                raise ProviderFailure("schema_changed")
+        elif item.work_type != "reprice":
             if result.provider_id != item.provider_id or result.requested != request:
                 raise ProviderFailure("schema_changed")
             if result.status == WorkStatus.FAILED_TERMINAL:
@@ -86,19 +91,24 @@ class JobRunner:
                     raise ProviderFailure("schema_changed")
 
     async def execute(self, registration, item, query):
-        request = (
-            self.repo.reprice_request(item)
-            if item.work_type == "reprice"
-            else SingleDateRouteQuery(
-                item.origin,
-                item.destination,
-                date.fromisoformat(item.departure_date),
-                query.include_basic_economy,
-                query.include_hidden_city,
-                query.display_currency,
-                query.point_of_sale_country,
+        if item.work_type == "discover":
+            request = DiscoveryRequest(
+                item.origin, date.fromisoformat(item.departure_date), query.display_currency
             )
-        )
+        else:
+            request = (
+                self.repo.reprice_request(item)
+                if item.work_type == "reprice"
+                else SingleDateRouteQuery(
+                    item.origin,
+                    item.destination,
+                    date.fromisoformat(item.departure_date),
+                    query.include_basic_economy,
+                    query.include_hidden_city,
+                    query.display_currency,
+                    query.point_of_sale_country,
+                )
+            )
         started = monotonic()
         result, error, retry_after = None, None, 0
         call = asyncio.create_task(self.invoke(registration, item, request))

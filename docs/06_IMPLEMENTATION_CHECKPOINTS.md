@@ -133,7 +133,7 @@ flags, new provider defaults, or P6/P7 product work.
 
 ## P7 — Explore Anywhere (Proposed / Not started)
 
-> **Status: P7.3 in review** ([p7.3](log/p7.3.md); P7.0 [readiness](log/p7.0.md), P7.1 [GO](log/p7.1.md), [handover](log/p7-handover.md), [plan](log/p7-plan.md)). P7.4 needs its own plan.
+> **Status: P7.4 runtime in review** ([p7.4](log/p7.4.md), [plan](log/p7.4-plan.md); P7.3 [log](log/p7.3.md), P7.1 [GO](log/p7.1.md), [handover](log/p7-handover.md)). Next: P7.5 web UI, P7.6 iPad UI.
 > Checkpoints follow the [handover §8](log/p7-handover.md#8-implementation-checkpoints-and-merge-gates): P7.0 readiness → P7.1 feasibility (go/no-go) → P7.2 contract → P7.3 shared Rust selection (iPad binding before Python) → P7.4 runtime/persistence → P7.5 web UI → P7.6 native UI → P7.7 acceptance.
 > Spec: [01](01_PRODUCT_REQUIREMENTS_UX.md#proposed-feature-explore-anywhere-and-surprise-me-p7--proposed--not-started) ·
 > Architecture: [02](02_SYSTEM_ARCHITECTURE.md#proposed-destination-discovery-layer-p7--not-approved) ·

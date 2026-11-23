@@ -126,6 +126,8 @@ public final class SearchSession {
         guard phase == .stopped(.finished), offers.isEmpty else { return nil }
         if let found = discovery, found.committed {
             if found.callsPlanned > 0 && found.callsFailed == found.callsPlanned { return .sourceUnavailable }
+            // Leads were selected but every checking source had stopped us: not "no flights".
+            if (found.counts?.selected ?? 0) > 0 && planned.isEmpty { return .sourceUnavailable }
             if let counts = found.counts, counts.selected == 0 { return counts.overBudget > 0 ? .noneUnderBudget : .noPrices }
         }
         if failures.isEmpty { return .noFlights }
@@ -261,7 +263,8 @@ public final class SearchSession {
                 }
                 discovery?.callsDone = index + 1
                 phase = .running(done: index + 1, total: calls.count)
-                if pauseRequested { return stopForBackground() }
+                // After the last call the snapshot is committed first; commitDiscovery honours the pause.
+                if pauseRequested && index + 1 < calls.count { return stopForBackground() }
             }
             commitDiscovery(request, observations: observations, fx: fx)
         }
@@ -296,6 +299,13 @@ public final class SearchSession {
             total = 0
             phase = .running(done: 0, total: 0)
             return finish(.finished)
+        }
+        if pauseRequested {
+            // Backgrounded during the last discovery call: saved, checks wait for Resume.
+            total = items.count
+            doneBefore = 0
+            phase = .running(done: 0, total: items.count)
+            return finish(.backgrounded)
         }
         launch(request, run: items.enumerated().map { (UInt32($0.offset), $0.element) }, total: items.count, doneBefore: 0)
     }

@@ -19,6 +19,8 @@ from cheapwings.domain.offer import (
 )
 from cheapwings.domain.segments import FlightSegment
 from cheapwings.providers.base import (
+    DiscoveryRequest,
+    DiscoveryResult,
     ProviderCapabilities,
     ProviderSearchResult,
     SingleDateRouteQuery,
@@ -51,6 +53,43 @@ class FakeProvider:
         )
     )
     scripted_outcomes: dict[tuple[str, str, str], ScriptedOutcome] = field(default_factory=dict)
+    # P7.4 discovery: synthetic USD leads per call unless scripted per (origin, date).
+    discovery_destinations: tuple[str, ...] = ("DPS", "SIN")
+    discovery_script: dict[tuple[str, str], object] = field(default_factory=dict)
+
+    def script_discovery(self, origin: str, departure_date, outcome) -> None:
+        """`outcome` is a DiscoveryResult, a list of (destination, usd) pairs, or a ProviderFailure to raise."""
+        self.discovery_script[(origin, str(departure_date))] = outcome
+
+    async def discover(self, request: DiscoveryRequest) -> DiscoveryResult:
+        scripted = self.discovery_script.get((request.origin, request.departure_date.isoformat()))
+        if isinstance(scripted, Exception):
+            raise scripted
+        if isinstance(scripted, DiscoveryResult):
+            return scripted
+        pairs = scripted if scripted is not None else [
+            (dest, str(40 + 10 * i)) for i, dest in enumerate(self.discovery_destinations)
+        ]
+        now = datetime.now(UTC)
+        observations = tuple(
+            {
+                "origin": request.origin,
+                "destination": dest,
+                "departure_date": request.departure_date.isoformat(),
+                "amount": usd,
+                "currency": "USD",
+                "source_id": self.provider_id,
+                "observed_at": None,
+                "fetched_at": now.isoformat(),
+                "price_kind": "indicative",
+                "hidden_city": "no",
+                "source_reference": None,
+            }
+            for dest, usd in pairs
+        )
+        return DiscoveryResult(
+            self.provider_id, request, observations, ({"currency": "USD", "rate": "16000"},), 0, now
+        )
 
     def script(
         self,

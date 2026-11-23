@@ -36,6 +36,8 @@ public struct DiscoverySummary: Equatable, Sendable {
     public var unpriced = 0
     /// Selection counts once the snapshot is committed (recomputed from it on restore).
     public var counts: DiscoveryCounts?
+    /// The shortlist in plan order, with comparable (display-currency) discovery prices.
+    public var selected: [SelectedLead] = []
     public var leads: [DiscoveryObservation] = []
     /// False while discovering or after a stop before the snapshot was saved: Resume re-runs discovery.
     public var committed = false
@@ -285,6 +287,7 @@ public final class SearchSession {
         let items = request.items(combos).filter { providerStops[$0.provider] == nil }
         found.leads = observations
         found.counts = plan.counts
+        found.selected = plan.selected
         found.committed = true
         discovery = found
         if let store, let id = searchID {
@@ -348,8 +351,10 @@ public final class SearchSession {
                 found.callsFailed = Int(snapshot.callsFailed)
                 found.unpriced = Int(snapshot.unpriced)
                 found.leads = snapshot.observations
-                found.counts = try? selectDiscoveryPlan(observations: snapshot.observations, query: request.discoveryQuery,
-                                                        fx: snapshot.fx, maxRouteDates: SearchRequest.maxCombinations).counts
+                let plan = try? selectDiscoveryPlan(observations: snapshot.observations, query: request.discoveryQuery,
+                                                    fx: snapshot.fx, maxRouteDates: SearchRequest.maxCombinations)
+                found.counts = plan?.counts
+                found.selected = plan?.selected ?? []
                 found.committed = true
             }
             discovery = found

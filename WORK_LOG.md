@@ -56,7 +56,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 - P6 follow-up: assess the 4 MB Fli web body cap. See the [P6 evidence](docs/log/p6.md) for coverage limits and remaining items.
 
 ## Next task
-P7.4 PR C (web runtime) in review. After merge: plan P7.5 (web Discover UI) and P7.6 (iPad Discover UI); Fli Explore pin bump is a separate owner decision.
+P7.4 web (#29) and P7.5 web Discover UI in review; P7.6 iPad Discover UI next per [p7.5-p7.6-plan](docs/log/p7.5-p7.6-plan.md).
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

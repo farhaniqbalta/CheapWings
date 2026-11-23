@@ -14,16 +14,29 @@ struct SearchView: View {
 
     var body: some View {
         Form {
-            Section("Route") {
+            Section {
+                Picker("Mode", selection: $model.mode) {
+                    ForEach(SearchModel.Mode.allCases) { Text($0.rawValue).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .disabled(model.session.isRunning)
+            } footer: {
+                if model.mode == .discover {
+                    Text("Discover finds destinations from your airports with Skiplagged, then checks the cheapest ones.")
+                }
+            }
+            Section(model.mode == .discover ? "From" : "Route") {
                 if model.catalog != nil {
-                    RouteHeader(model: model, disabled: model.session.isRunning) { picking = $0 }
+                    RouteHeader(model: model, disabled: model.session.isRunning, originOnly: model.mode == .discover) { picking = $0 }
                 } else {
                     TextField("From (e.g. CGK, HLP)", text: $model.originsText)
                         .textInputAutocapitalization(.characters)
                         .autocorrectionDisabled()
-                    TextField("To (e.g. DPS)", text: $model.destinationsText)
-                        .textInputAutocapitalization(.characters)
-                        .autocorrectionDisabled()
+                    if model.mode == .search {
+                        TextField("To (e.g. DPS)", text: $model.destinationsText)
+                            .textInputAutocapitalization(.characters)
+                            .autocorrectionDisabled()
+                    }
                     if let note = model.catalogError { Text(note).font(.caption).foregroundStyle(.secondary) }
                 }
             }
@@ -35,7 +48,7 @@ struct SearchView: View {
                         .disabled(model.session.isRunning)
                 }
             } header: {
-                Text("Sources")
+                Text(model.mode == .discover ? "Check fares with" : "Sources")
             } footer: {
                 Text("Skiplagged prices are in US dollars, converted with Skiplagged's own rate. Hidden-city fares are left out.")
             }
@@ -58,14 +71,28 @@ struct SearchView: View {
                 }
                 .pickerStyle(.segmented)
             }
+            if model.mode == .discover {
+                Section {
+                    TextField("No limit", text: $model.budgetText)
+                        .keyboardType(.decimalPad)
+                        .disabled(model.session.isRunning)
+                } header: {
+                    Text("Budget (\(model.currency), optional)")
+                } footer: {
+                    Text("Leads slightly over budget are still checked; only checked fares count as within budget.")
+                }
+            }
             Section {
                 if model.session.isRunning {
                     SignButton(title: "Cancel search", enabled: true, action: model.session.cancel)
+                } else if model.mode == .discover {
+                    SignButton(title: "Discover", enabled: model.canDiscover, action: model.startDiscover)
                 } else {
                     SignButton(title: model.searchTitle, enabled: model.canSearch, action: model.start)
                 }
-                Text(model.planSummary)
-                    .foregroundStyle(model.canSearch || model.session.isRunning ? AnyShapeStyle(.secondary) : AnyShapeStyle(Theme.hold))
+                let ok = model.mode == .discover ? model.canDiscover : model.canSearch
+                Text(model.mode == .discover ? model.discoverSummary : model.planSummary)
+                    .foregroundStyle(ok || model.session.isRunning ? AnyShapeStyle(.secondary) : AnyShapeStyle(Theme.hold))
                     .font(.footnote)
             } footer: {
                 Text("Searches Google Flights from this iPad while the app is open. Prices are indicative.")
@@ -96,12 +123,19 @@ struct SearchView: View {
 struct RouteHeader: View {
     let model: SearchModel
     let disabled: Bool
+    var originOnly = false
     let pick: (SearchView.Side) -> Void
 
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .top, spacing: 14) { side(.origin); arrow; side(.destination) }
-            VStack(alignment: .leading, spacing: 10) { side(.origin); side(.destination) }
+        Group {
+            if originOnly {
+                side(.origin)
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .top, spacing: 14) { side(.origin); arrow; side(.destination) }
+                    VStack(alignment: .leading, spacing: 10) { side(.origin); side(.destination) }
+                }
+            }
         }
         .padding(.vertical, 6)
     }

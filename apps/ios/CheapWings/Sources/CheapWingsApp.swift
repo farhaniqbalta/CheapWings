@@ -24,7 +24,9 @@ struct CheapWingsApp: App {
                 SearchView(model: model)
             } detail: {
                 // Own stack so opening a flight pushes details with a Back button.
-                NavigationStack { ResultsView(model: model) }
+                NavigationStack {
+                    if model.showsDiscover { DiscoverResultsView(model: model) } else { ResultsView(model: model) }
+                }
             }
             .onChange(of: model.session.isRunning) { _, running in
                 if running { compactColumn = .detail }

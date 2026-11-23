@@ -1,4 +1,4 @@
-import type { DiscoverJob, DiscoveryOutcome, JobStatus, PublicItinerary } from "../api/types";
+import type { DiscoverJob, DiscoveryOutcome, JobStatus } from "../api/types";
 
 /** Same cap as the shared Rust core's `MAX_DISCOVERY_CALLS` (owner-approved). */
 export const MAX_DISCOVERY_CALLS = 31;
@@ -27,8 +27,12 @@ export function outcomeMessage(outcome: DiscoveryOutcome | null, status: JobStat
   }
 }
 
-/** Compares non-negative decimal strings exactly (no float round-trip). */
+const DECIMAL = /^\d+(\.\d+)?$/;
+
+/** Compares non-negative decimal strings exactly (no float round-trip); malformed text sorts last. */
 export function compareDecimal(a: string, b: string): number {
+  const okA = DECIMAL.test(a), okB = DECIMAL.test(b);
+  if (!okA || !okB) return okA === okB ? 0 : okA ? -1 : 1;
   const [ai, af = ""] = a.split("."), [bi, bf = ""] = b.split(".");
   const width = Math.max(af.length, bf.length);
   const x = BigInt(ai + af.padEnd(width, "0")), y = BigInt(bi + bf.padEnd(width, "0"));
@@ -45,26 +49,15 @@ export interface DiscoverRow {
   state: "checked" | "checking" | "no_fare";
 }
 
-/** One row per shortlisted destination; checked fares first (by checked price), then leads. */
-export function discoverRows(job: DiscoverJob, itineraries: PublicItinerary[]): DiscoverRow[] {
-  const currency = job.query.display_currency ?? "IDR";
+/** One row per shortlisted destination; checked fares first (by checked price), then leads.
+ *  The checked fare is the server's cheapest stored quote for that route/date (all pages). */
+export function discoverRows(job: DiscoverJob): DiscoverRow[] {
   const finished = ["completed", "partial", "failed", "cancelled"].includes(job.status);
-  const rows = job.discovery.shortlist.map((lead): DiscoverRow => {
-    let best: { amount: string; id: string } | null = null;
-    for (const itinerary of itineraries) {
-      if (itinerary.origin !== lead.origin || itinerary.destination !== lead.destination) continue;
-      if (!itinerary.departure_local.startsWith(lead.date)) continue;
-      for (const offer of itinerary.offers) {
-        if (!offer.comparable_amount || offer.comparable_currency !== currency) continue;
-        if (!best || compareDecimal(offer.comparable_amount, best.amount) < 0) best = { amount: offer.comparable_amount, id: itinerary.itinerary_id };
-      }
-    }
-    return {
-      origin: lead.origin, destination: lead.destination, date: lead.date, leadAmount: lead.comparable_amount,
-      checkedAmount: best?.amount ?? null, checkedItineraryId: best?.id ?? null,
-      state: best ? "checked" : finished ? "no_fare" : "checking",
-    };
-  });
+  const rows = job.discovery.shortlist.map((lead): DiscoverRow => ({
+    origin: lead.origin, destination: lead.destination, date: lead.date, leadAmount: lead.comparable_amount,
+    checkedAmount: lead.checked_amount ?? null, checkedItineraryId: lead.checked_itinerary_id ?? null,
+    state: lead.checked_amount ? "checked" : finished ? "no_fare" : "checking",
+  }));
   const checked = rows.filter(r => r.checkedAmount).sort((x, y) => compareDecimal(x.checkedAmount!, y.checkedAmount!));
   const rest = rows.filter(r => !r.checkedAmount).sort((x, y) => compareDecimal(x.leadAmount, y.leadAmount));
   return [...checked, ...rest];

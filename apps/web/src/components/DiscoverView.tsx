@@ -1,4 +1,4 @@
-import type { DiscoverJob, Results } from "../api/types";
+import type { DiscoverJob } from "../api/types";
 import { discoverRows, outcomeMessage } from "../lib/discover";
 import { formatMoney } from "../lib/money";
 
@@ -8,13 +8,13 @@ const LABEL: Record<DiscoverJob["status"], string> = {
 };
 
 /** P7.5: discovery progress, honest coverage, provisional leads and checked fares per destination. */
-export function DiscoverView({ job, results, onCancel, cancelling }: {
-  job: DiscoverJob; results: Results | null; onCancel: () => void; cancelling: boolean;
+export function DiscoverView({ job, onCancel, cancelling }: {
+  job: DiscoverJob; onCancel: () => void; cancelling: boolean;
 }) {
   const d = job.discovery;
   const currency = job.query.display_currency ?? "IDR";
   const active = job.status === "queued" || job.status === "running";
-  const rows = discoverRows(job, results?.itineraries ?? []);
+  const rows = discoverRows(job);
   const message = outcomeMessage(d.outcome, job.status);
   const stage = job.phase === "discovering" ? "Finding destinations" : job.phase === "searching" ? "Checking fares" : "Finished";
   return (

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { MAX_DISCOVERY_CALLS, compareDecimal, discoverRows, discoveryCallCount, outcomeMessage } from "../src/lib/discover.ts";
-import type { DiscoverJob, PublicItinerary } from "../src/api/types.ts";
+import type { DiscoverJob } from "../src/api/types.ts";
 
 test("discovery call count is origins × inclusive days, 0 when invalid", () => {
   assert.equal(MAX_DISCOVERY_CALLS, 31);
@@ -27,35 +27,31 @@ test("decimal comparison never goes through floats", () => {
   assert.equal(compareDecimal("1.50", "1.5"), 0);
 });
 
-const job = (status: DiscoverJob["status"], shortlist: [string, string, string][]): DiscoverJob => ({
+const job = (status: DiscoverJob["status"], shortlist: [string, string, string, string?][]): DiscoverJob => ({
   job_id: "d1", provider_ids: ["fli"], status, phase: status === "running" ? "searching" : "done", cancel_requested: false,
   created_at: "2027-02-20T00:00:00Z", updated_at: "2027-02-20T00:00:00Z",
   query: { origins: ["CGK"], departure_date_from: "2027-03-01", departure_date_through: "2027-03-02", display_currency: "IDR", budget: null, max_stops: null },
   discovery: { calls_planned: 2, calls_done: 2, calls_failed: 0, unpriced: 0, discovered_destinations: shortlist.length, counts: null,
                outcome: "planned", stopped_providers: [],
-               shortlist: shortlist.map(([destination, date, comparable_amount]) => ({ origin: "CGK", destination, date, comparable_amount })) },
+               shortlist: shortlist.map(([destination, date, comparable_amount, checked]) => ({ origin: "CGK", destination, date, comparable_amount,
+                 checked_amount: checked ?? null, checked_itinerary_id: checked ? `${destination}-it` : null })) },
   total_checks: 2, succeeded_checks: 1, failed_checks: 0, checked_route_dates: 1, provider_status: [], warnings: [],
 });
 
-const itinerary = (destination: string, date: string, amount: string, id = destination): PublicItinerary => ({
-  itinerary_id: id, identity_confidence: "insufficient_identity", origin: "CGK", destination,
-  departure_local: `${date}T07:00:00+07:00`, arrival_local: `${date}T10:00:00+08:00`, duration_minutes: 120, stops: 0, segments: [],
-  ranked_quote_id: "q", offers: [{ quote_id: "q", provider_id: "fli", seller: null, fare_family: null, cabin: "economy", basic_economy: null,
-    amount_original: amount, currency_original: "IDR", comparable_amount: amount, comparable_currency: "IDR", comparison_status: "extra_cost_unknown",
-    checked_bag: "unknown", hidden_city: "no", self_transfer: "no", price_status: "indicative", is_estimate: true,
-    retrieved_at: "2027-02-20T00:00:00Z", repriced_at: null, link: null, link_scope: "unavailable", warnings: [] }],
-});
-
 test("a lead without a checked fare stays provisional", () => {
-  const rows = discoverRows(job("running", [["DPS", "2027-03-01", "640000"]]), []);
+  const rows = discoverRows(job("running", [["DPS", "2027-03-01", "640000"]]));
   assert.deepEqual(rows.map(r => [r.destination, r.leadAmount, r.checkedAmount, r.state]), [["DPS", "640000", null, "checking"]]);
-  assert.equal(discoverRows(job("completed", [["DPS", "2027-03-01", "640000"]]), [])[0].state, "no_fare");
+  assert.equal(discoverRows(job("completed", [["DPS", "2027-03-01", "640000"]]))[0].state, "no_fare");
 });
 
-test("checked fares rank first by checked price; only the lead's date counts", () => {
-  const rows = discoverRows(job("completed", [["DPS", "2027-03-01", "640000"], ["SIN", "2027-03-01", "800000"], ["BKK", "2027-03-02", "900000"]]),
-    [itinerary("SIN", "2027-03-01", "750000"), itinerary("SIN", "2027-03-01", "990000", "SIN-2"), itinerary("DPS", "2027-03-02", "100")]);
+test("checked fares (server-computed, every page) rank first by checked price", () => {
+  const rows = discoverRows(job("completed", [["DPS", "2027-03-01", "640000"], ["SIN", "2027-03-01", "800000", "750000"], ["BKK", "2027-03-02", "900000", "1200000"]]));
   assert.deepEqual(rows.map(r => [r.destination, r.checkedAmount, r.state]),
-    [["SIN", "750000", "checked"], ["DPS", null, "no_fare"], ["BKK", null, "no_fare"]]);
-  assert.equal(rows[0].checkedItineraryId, "SIN");
+    [["SIN", "750000", "checked"], ["BKK", "1200000", "checked"], ["DPS", null, "no_fare"]]);
+  assert.equal(rows[0].checkedItineraryId, "SIN-it");
+});
+
+test("odd decimal text never crashes ordering", () => {
+  assert.equal(compareDecimal("1E+3", "5"), 1);
+  assert.equal(compareDecimal("abc", "5"), 1);
 });

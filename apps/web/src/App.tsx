@@ -31,7 +31,6 @@ export default function App() {
   const [jobId, setJobId] = useState<string | null>(jobIdFromUrl);
   // P7.5: Discover is a separate mode with its own job id (?discover=<id>).
   const [discoverId, setDiscoverId] = useState<string | null>(() => jobIdFromUrl("discover"));
-  const [mode, setMode] = useState<"search" | "discover">(() => jobIdFromUrl("discover") ? "discover" : "search");
   const [discoverSubmitting, setDiscoverSubmitting] = useState(false);
   const [discoverError, setDiscoverError] = useState<Error | null>(null);
   const [discoverCancelling, setDiscoverCancelling] = useState(false);
@@ -43,7 +42,8 @@ export default function App() {
 
   const { createSearch, submitting, error: createError } = useCreateSearch();
   const { cancelSearch, cancelling, error: cancelError, clearError: clearCancelError } = useCancelSearch();
-  const { job, results, error: pollError, loadMore, loadingMore, retry } = useJobPolling(jobId, sort, accessVersion);
+  const [mode, setMode] = useState<"search" | "discover">(() => jobIdFromUrl("discover") ? "discover" : "search");
+  const { job, results, error: pollError, loadMore, loadingMore, retry } = useJobPolling(mode === "search" ? jobId : null, sort, accessVersion);
 
   useEffect(() => {
     let alive = true;
@@ -82,10 +82,9 @@ export default function App() {
     catch (err) { setDiscoverError(err instanceof Error ? err : new Error(String(err))); }
     finally { setDiscoverCancelling(false); }
   };
+  // Each mode keeps its own job; switching only changes which one is shown.
   const chooseMode = (next: "search" | "discover") => {
-    setMode(next);
-    setJobId(null);
-    setDiscoverId(null);
+    if (next !== mode) setMode(next);
   };
 
   const handleSubmit = async (request: SearchRequest) => {
@@ -173,7 +172,7 @@ export default function App() {
           {(discover.error || discoverError) && <div role="alert">{(discover.error ?? discoverError)!.message}
             <button type="button" onClick={() => { setDiscoverError(null); discover.retry(); }}>Retry Discover status</button></div>}
           {!discover.job && !discover.error && <p aria-live="polite" role="status">Restoring Discover…</p>}
-          {discover.job && <DiscoverView job={discover.job} results={discover.results} onCancel={cancelDiscover} cancelling={discoverCancelling} />}
+          {discover.job && <DiscoverView job={discover.job} onCancel={cancelDiscover} cancelling={discoverCancelling} />}
           {discover.results && discover.results.itineraries.length > 0 && (
             <section className="results-section" aria-labelledby="discover-results-heading">
               <div className="results-heading-row">

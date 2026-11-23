@@ -4,6 +4,7 @@ import base64
 import json
 from collections import Counter
 from datetime import UTC, datetime
+from decimal import Decimal
 from urllib.parse import urlsplit
 
 from sqlalchemy import func, select
@@ -167,6 +168,18 @@ def discover_projection(repo, job_id):
             )
         }
     checked = {(i.origin, i.destination, i.departure_date) for i in detailed if i.status in SUCCESS}
+    # Cheapest checked fare per route/date from every stored quote, so a row never says "no checked
+    # fare" just because its itinerary is beyond the first results page.
+    route_of = {i.id: (i.origin, i.destination, i.departure_date) for i in detailed}
+    cheapest = {}
+    with Session(repo.engine) as s:
+        for quote in s.scalars(select(FareQuote).where(FareQuote.job_id == job_id)):
+            key = route_of.get(quote.work_item_id)
+            text = quote.comparable_amount_decimal_text
+            if key is None or text is None or quote.comparable_currency != job.query_json["display_currency"]:
+                continue
+            if key not in cheapest or Decimal(text) < Decimal(cheapest[key][0]):
+                cheapest[key] = (text, quote.itinerary_id)
     outcome = summary.get("outcome")
     warnings = [
         f"Lowest fares found among {len(destinations)} discovered destinations; "
@@ -208,6 +221,8 @@ def discover_projection(repo, job_id):
                     destination=s["destination"],
                     date=s["date"],
                     comparable_amount=s["comparable_amount"],
+                    checked_amount=cheapest.get((s["origin"], s["destination"], s["date"]), (None,))[0],
+                    checked_itinerary_id=cheapest.get((s["origin"], s["destination"], s["date"]), (None, None))[1],
                 )
                 for s in summary.get("selected", [])
             ],

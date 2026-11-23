@@ -1225,6 +1225,28 @@
           "comparable_amount": {
             "type": "string",
             "title": "Comparable Amount"
+          },
+          "checked_amount": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checked Amount"
+          },
+          "checked_itinerary_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checked Itinerary Id"
           }
         },
         "additionalProperties": false,

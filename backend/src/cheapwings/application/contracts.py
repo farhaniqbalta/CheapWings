@@ -117,6 +117,9 @@ class DiscoveryLead(DTO):
     destination: str
     date: str
     comparable_amount: str
+    # Cheapest checked comparable fare for this route/date across every stored quote, if any.
+    checked_amount: str | None = None
+    checked_itinerary_id: str | None = None
 
 
 class DiscoveryStatus(DTO):

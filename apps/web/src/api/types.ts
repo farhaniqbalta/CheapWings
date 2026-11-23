@@ -313,6 +313,8 @@ export interface DiscoveryLead {
   destination: string;
   date: string;
   comparable_amount: string; // provisional discovery price, display currency
+  checked_amount?: string | null; // cheapest checked fare for this route/date (server-computed)
+  checked_itinerary_id?: string | null;
 }
 
 export interface DiscoveryStatus {

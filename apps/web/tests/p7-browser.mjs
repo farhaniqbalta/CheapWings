@@ -5,10 +5,10 @@ import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright';
 const dist=fileURLToPath(new URL('../dist/',import.meta.url));
 const now='2027-02-20T00:00:00Z';
-const lead=(destination,comparable_amount)=>({origin:'CGK',destination,date:'2027-03-01',comparable_amount});
+const lead=(destination,comparable_amount,checked_amount=null)=>({origin:'CGK',destination,date:'2027-03-01',comparable_amount,checked_amount,checked_itinerary_id:checked_amount?'sin1':null});
 const djob=(job_id,status,extra={})=>({job_id,provider_ids:['fli','skiplagged'],status,phase:status==='running'?'searching':'done',cancel_requested:false,
  created_at:now,updated_at:now,query:{origins:['CGK'],departure_date_from:'2027-03-01',departure_date_through:'2027-03-02',display_currency:'IDR',budget:null,max_stops:null},
- discovery:{calls_planned:2,calls_done:2,calls_failed:0,unpriced:3,discovered_destinations:2,counts:{selected:2},outcome:'planned',stopped_providers:[],shortlist:[lead('DPS','640000'),lead('SIN','800000')]},
+ discovery:{calls_planned:2,calls_done:2,calls_failed:0,unpriced:3,discovered_destinations:2,counts:{selected:2},outcome:'planned',stopped_providers:[],shortlist:status==='running'?[lead('DPS','640000'),lead('SIN','800000')]:[lead('DPS','640000'),lead('SIN','800000','750000')]},
  total_checks:4,succeeded_checks:status==='running'?1:4,failed_checks:0,checked_route_dates:status==='running'?0:2,provider_status:[],
  warnings:['Lowest fares found among 2 discovered destinations; 1 checked. Not every destination in the world was searched.'],...extra});
 const offer=amount=>({quote_id:'q',provider_id:'fli',seller:'SYNTHETIC',fare_family:null,cabin:'economy',basic_economy:null,amount_original:amount,currency_original:'IDR',
@@ -69,6 +69,13 @@ try {
   const firstRow=page.locator('.discover-row').first();
   await firstRow.getByText('SIN').waitFor();await firstRow.getByText('Checked fare').waitFor();checks++;
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth),`no horizontal overflow at ${width}`);checks++;
+  // Review fix: the pressed toggle does nothing, and switching modes and back keeps the Discover run.
+  await page.getByRole('button',{name:'Discover',exact:true}).click();
+  await page.waitForURL(/discover=d1/);checks++;
+  await page.getByRole('button',{name:'Search',exact:true}).click();
+  await page.getByRole('form',{name:'Flight search'}).waitFor();checks++;
+  await page.getByRole('button',{name:'Discover',exact:true}).click();
+  await page.getByText('Lowest fares found among 2 discovered destinations; 1 checked.',{exact:false}).waitFor();checks++;
   await page.goto('http://localhost:5173/?discover=dfail');
   await page.getByText('could not be reached',{exact:false}).waitFor();checks++;
   assert.equal(await page.locator('.discover-row').count(),0,'no rows when the source was unavailable');checks++;

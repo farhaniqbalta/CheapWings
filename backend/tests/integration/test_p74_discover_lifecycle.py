@@ -331,3 +331,21 @@ async def test_failed_checks_are_reported_per_lead(engine):
     assert by_dest == {"DPS": "checked", "SIN": "failed"}
     assert status.failed_checks == 2
     assert any("2 checks failed" in w for w in status.warnings)
+
+
+async def test_expired_discovery_observations_are_purged(engine):
+    """Provider retention: discovered leads (prices, deep links) go with the rest of the fare data."""
+    from sqlalchemy import update
+
+    repo = Repository(engine)
+    regs = [discoverer(), checker()]
+    job = repo.create_discovery_job(QUERY, regs)
+    await drain(JobRunner(repo, regs), repo, job.id)
+    assert observation_count(engine, job.id) == 4
+    with write_session(engine) as s:
+        s.execute(update(WorkItem).where(WorkItem.job_id == job.id).values(data_expires_at=1))
+    repo.purge_expired(now=2)
+    assert observation_count(engine, job.id) == 0
+    job, _ = repo.get_job(job.id)
+    assert "selected" not in job.discovery_json  # shortlist prices are fare data too
+    assert job.discovery_json["counts"]["selected"] == 2  # coverage metadata stays

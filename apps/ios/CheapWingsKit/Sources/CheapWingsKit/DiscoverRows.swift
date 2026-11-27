@@ -4,7 +4,7 @@ import Foundation
 /// One shortlisted destination on the Discover screen: the provisional discovery price and, once a
 /// check came back, the cheapest checked fare for that exact route and date.
 public struct DiscoverRow: Identifiable, Sendable {
-    public enum State: Sendable, Equatable { case checked, checking, noFare }
+    public enum State: Sendable, Equatable { case checked, checking, noFare, checkFailed }
 
     public let origin: String
     public let destination: String
@@ -20,14 +20,18 @@ public struct DiscoverRow: Identifiable, Sendable {
 private func decimal(_ text: String) -> Decimal? { Decimal(string: text, locale: Locale(identifier: "en_US_POSIX")) }
 
 /// Rows for the shortlist; checked fares first (by checked price), then leads by discovery price.
-public func discoverRows(summary: DiscoverySummary, offers: [FoundOffer], currency: String, finished: Bool) -> [DiscoverRow] {
+public func discoverRows(summary: DiscoverySummary, offers: [FoundOffer], currency: String, finished: Bool,
+                         failed: Set<RouteDate> = []) -> [DiscoverRow] {
     let rows = summary.selected.map { lead -> DiscoverRow in
         let best = offers
             .filter { $0.routeDate.origin == lead.origin && $0.routeDate.destination == lead.destination && $0.routeDate.date == lead.date }
             .filter { $0.offer.priceComparable != nil && $0.shownPrice.currency == currency }
             .min { (decimal($0.offer.priceComparable!) ?? .greatestFiniteMagnitude) < (decimal($1.offer.priceComparable!) ?? .greatestFiniteMagnitude) }
         return DiscoverRow(origin: lead.origin, destination: lead.destination, date: lead.date, leadAmount: lead.comparableAmount,
-                           checkedOffer: best, state: best != nil ? .checked : finished ? .noFare : .checking)
+                           checkedOffer: best,
+                           state: best != nil ? .checked
+                               : failed.contains(RouteDate(origin: lead.origin, destination: lead.destination, date: lead.date)) ? .checkFailed
+                               : finished ? .noFare : .checking)
     }
     let amount = { (text: String) in decimal(text) ?? .greatestFiniteMagnitude }
     let checked = rows.filter { $0.checkedOffer != nil }
@@ -43,4 +47,12 @@ public func discoverCoverage(summary: DiscoverySummary, finished: Set<WorkItem>,
     let failed = Set(failures.map { WorkItem(provider: $0.provider, routeDate: $0.routeDate) })
     let checked = Set(finished.subtracting(failed).map(\.routeDate.destination))
     return (Set(summary.leads.map(\.destination)).count, checked.count)
+}
+
+/// Route/dates whose every planned check finished and failed (no source answered for them).
+public func failedRouteDates(planned: [WorkItem], finished: Set<WorkItem>, failures: [SkippedSearch]) -> Set<RouteDate> {
+    let failed = Set(failures.map { WorkItem(provider: $0.provider, routeDate: $0.routeDate) })
+    return Set(Dictionary(grouping: planned, by: \.routeDate)
+        .filter { _, items in items.allSatisfy { finished.contains($0) && failed.contains($0) } }
+        .keys)
 }

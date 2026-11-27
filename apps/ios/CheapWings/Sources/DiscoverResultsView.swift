@@ -11,7 +11,9 @@ struct DiscoverResultsView: View {
     var body: some View {
         let summary = session.discovery
         let finished = !session.isRunning
-        let rows = summary.map { discoverRows(summary: $0, offers: session.offers, currency: session.currency, finished: finished) } ?? []
+        let failed = failedRouteDates(planned: session.planned, finished: session.finished, failures: session.failures)
+        let rows = summary.map { discoverRows(summary: $0, offers: session.offers, currency: session.currency, finished: finished,
+                                              failed: failed) } ?? []
         List {
             if let info = session.resumable, !session.isRunning {
                 Section {
@@ -41,6 +43,10 @@ struct DiscoverResultsView: View {
                     }
                     if summary.callsFailed > 0 {
                         Text("\(summary.callsFailed) discovery call\(summary.callsFailed == 1 ? "" : "s") failed; destinations from those days may be missing.")
+                            .font(.footnote).foregroundStyle(Theme.warn)
+                    }
+                    if summary.committed && !session.failures.isEmpty {
+                        Text("\(session.failures.count) check\(session.failures.count == 1 ? "" : "s") failed (source errors or limits); those destinations show a discovery price only.")
                             .font(.footnote).foregroundStyle(Theme.warn)
                     }
                     if summary.unpriced > 0 {
@@ -110,7 +116,8 @@ private struct DestinationRow: View {
                     Text(PriceText.display(found.shownPrice.amount, currency: found.shownPrice.currency))
                         .font(.headline.monospacedDigit())
                 } else {
-                    Text(row.state == .checking ? "Checking…" : "No checked fare").font(.caption).foregroundStyle(.secondary)
+                    Text(row.state == .checking ? "Checking…" : row.state == .checkFailed ? "Check failed" : "No checked fare")
+                        .font(.caption).foregroundStyle(row.state == .checkFailed ? AnyShapeStyle(Theme.warn) : AnyShapeStyle(.secondary))
                 }
                 Text("Discovery price (provisional) \(PriceText.display(row.leadAmount, currency: currency))")
                     .font(.caption2).foregroundStyle(.secondary).italic()

@@ -41,7 +41,6 @@ export function DiscoverView({ job, onCancel, cancelling }: {
       </div>
       <div className="p46-job-foot">
         {job.warnings.map((w, i) => <span key={i}>{w}</span>)}
-        {d.calls_failed > 0 && <span className="p46-job-caution">{d.calls_failed} discovery calls failed</span>}
         {d.unpriced > 0 && <span>{d.unpriced} destinations had no price and were left out</span>}
         {d.stopped_providers.length > 0 && <span className="p46-job-caution">Stopped by the source: {d.stopped_providers.join(", ")}</span>}
       </div>

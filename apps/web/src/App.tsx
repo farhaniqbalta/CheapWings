@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./p46.css";
 import { api } from "./api/client";
 import { setOwnerToken } from "./api/session";
@@ -61,6 +61,8 @@ export default function App() {
   useEffect(() => {
     setJobIdInUrl(discoverId, "discover");
   }, [discoverId]);
+  const modeRef = useRef(mode);
+  useEffect(() => { modeRef.current = mode; }, [mode]);
   const discover = useDiscoverPolling(mode === "discover" ? discoverId : null, sort, accessVersion);
 
   const handleDiscover = async (request: DiscoverRequest) => {
@@ -68,7 +70,8 @@ export default function App() {
     setDiscoverError(null);
     try {
       const created = await api.createDiscovery(request);
-      setDiscoverId(created.job_id);
+      // Switched to Search while starting: don't jump back (the run continues on the server).
+      if (modeRef.current === "discover") setDiscoverId(created.job_id);
     } catch (err) {
       setDiscoverError(err instanceof Error ? err : new Error(String(err)));
     } finally {
@@ -164,6 +167,7 @@ export default function App() {
           error={discoverError}
           providers={capabilities?.providers ?? []}
           supportedCurrencies={capabilities?.supported_currencies ?? ["IDR", "USD", "AUD", "JPY"]}
+          sourcesKnown={capabilities !== null}
         />
       )}
 

@@ -18,7 +18,7 @@ const sin={itinerary_id:'sin1',identity_confidence:'insufficient_identity',origi
  arrival_local:'2027-03-01T10:00:00+08:00',duration_minutes:120,stops:0,segments:[],carrier_names:['Synthetic Air'],offers:[offer('750000')],ranked_quote_id:'q'};
 const results=(job_id,itineraries)=>({job_id,sort:'lowest_advertised',status:'completed',as_of:now,next_cursor:null,itineraries,expired_observations:[],warnings:[]});
 const unavailable=djob('dfail','failed',{discovery:{calls_planned:2,calls_done:2,calls_failed:2,unpriced:0,discovered_destinations:0,counts:null,outcome:'unavailable',stopped_providers:['skiplagged'],shortlist:[]},
- total_checks:0,succeeded_checks:0,checked_route_dates:0,warnings:['Lowest fares found among 0 discovered destinations; 0 checked. Not every destination in the world was searched.']});
+ total_checks:0,succeeded_checks:0,checked_route_dates:0,warnings:['Lowest fares found among 0 discovered destinations; 0 checked. Not every destination in the world was searched.','Some discovery calls failed; destinations from those days may be missing.']});
 const browser=await chromium.launch();
 let checks=0;
 try {
@@ -80,6 +80,7 @@ try {
   await page.getByText('Lowest fares found among 2 discovered destinations; 1 checked.',{exact:false}).waitFor();checks++;
   await page.goto('http://localhost:5173/?discover=dfail');
   await page.getByText('could not be reached',{exact:false}).waitFor();checks++;
+  assert.ok(await page.getByText(/discovery calls? failed/i).count()<=1,'failed-call count shown once');checks++;
   assert.equal(await page.locator('.discover-row').count(),0,'no rows when the source was unavailable');checks++;
   assert.deepEqual(errors,[]);checks++;
   await context.close();

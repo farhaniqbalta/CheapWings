@@ -9,7 +9,8 @@ const MAX_INTERVAL_MS = 10000;
 export function useDiscoverPolling(jobId: string | null, sort: SortMode, accessVersion = 0) {
   const [job, setJob] = useState<DiscoverJob | null>(null);
   const [results, setResults] = useState<Results | null>(null);
-  const [error, setError] = useState<Error | null>(null);
+  // Errors are kept with the job they belong to, so a previous job's error never shows on this one.
+  const [failure, setFailure] = useState<{ jobId: string; error: Error } | null>(null);
   const [revision, setRevision] = useState(0);
 
   useEffect(() => {
@@ -22,10 +23,10 @@ export function useDiscoverPolling(jobId: string | null, sort: SortMode, accessV
         const next = await api.getDiscovery(jobId);
         if (!alive) return;
         setJob(next);
-        setError(null);
+        setFailure(null);
         if (TERMINAL_STATUSES.has(next.status)) return;
       } catch (err) {
-        if (alive) setError(err instanceof Error ? err : new Error(String(err)));
+        if (alive) setFailure({ jobId, error: err instanceof Error ? err : new Error(String(err)) });
       }
       if (!alive) return;
       interval = Math.min(interval + 1000, MAX_INTERVAL_MS);
@@ -43,14 +44,14 @@ export function useDiscoverPolling(jobId: string | null, sort: SortMode, accessV
     let alive = true;
     if (!jobId || !status) return;
     api.getDiscoveryResults(jobId, sort).then(r => { if (alive) setResults(r); })
-      .catch(err => { if (alive) setError(err instanceof Error ? err : new Error(String(err))); });
+      .catch(err => { if (alive) setFailure({ jobId, error: err instanceof Error ? err : new Error(String(err)) }); });
     return () => { alive = false; };
   }, [jobId, sort, updatedAt, status, polls, accessVersion, revision]);
 
   return {
     job: current,
     results: results?.job_id === jobId ? results : null,
-    error,
+    error: failure?.jobId === jobId ? failure.error : null,
     retry: () => setRevision(value => value + 1),
   };
 }

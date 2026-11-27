@@ -13,12 +13,14 @@ interface Props {
   error: ApiError | Error | null;
   supportedCurrencies: string[];
   providers: ProviderCapability[];
+  /** False until capabilities have loaded (or after they failed). */
+  sourcesKnown: boolean;
 }
 
 function todayIso() { return new Date().toISOString().slice(0, 10); }
 
 /** P7.5: origins and a departure window; a discovery source suggests destinations, sources check them. */
-export function DiscoverForm({ onSubmit, submitting, error, supportedCurrencies, providers }: Props) {
+export function DiscoverForm({ onSubmit, submitting, error, supportedCurrencies, providers, sourcesKnown }: Props) {
   const [locations, setLocations] = useState<LocationService | null>(null);
   useEffect(() => {
     let active = true;
@@ -89,7 +91,7 @@ export function DiscoverForm({ onSubmit, submitting, error, supportedCurrencies,
           </div>
         </div>
         <p className="discover-sources">
-          Destinations from: <b>{discoverers.map(p => sourceName(p.provider_id)).join(", ") || "no discovery source enabled"}</b>.
+          Destinations from: <b>{sourcesKnown ? discoverers.map(p => sourceName(p.provider_id)).join(", ") || "no discovery source enabled" : "loading sources…"}</b>.
           {" "}Checked with: <b>{checkers.map(p => sourceName(p.provider_id)).join(", ") || "none"}</b>.
         </p>
         <div className="p46-search-footer">

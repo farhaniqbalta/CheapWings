@@ -349,3 +349,27 @@ async def test_expired_discovery_observations_are_purged(engine):
     job, _ = repo.get_job(job.id)
     assert "selected" not in job.discovery_json  # shortlist prices are fare data too
     assert job.discovery_json["counts"]["selected"] == 2  # coverage metadata stays
+
+
+async def test_planning_uses_the_last_non_empty_rate(engine):
+    """A later call without pricing.rate must not erase the rate an earlier call gave."""
+    from cheapwings.providers.base import DiscoveryResult
+
+    repo = Repository(engine)
+    disc = discoverer()
+    original = disc.provider.discover
+
+    async def no_rate_on_day_two(request):
+        result = await original(request)
+        if request.departure_date.isoformat() == "2027-03-02":
+            return DiscoveryResult(result.provider_id, result.request, result.observations, (), 0, result.retrieved_at)
+        return result
+
+    disc.provider.discover = no_rate_on_day_two
+    disc = replace(disc, minimum_interval_seconds=0.05)  # day 1 then day 2, in order
+    regs = [disc, checker()]
+    job = repo.create_discovery_job(QUERY, regs)
+    await drain(JobRunner(repo, regs), repo, job.id)
+    job, _ = repo.get_job(job.id)
+    assert job.discovery_json["outcome"] == "planned"
+    assert job.discovery_json["counts"]["no_fx"] == 0

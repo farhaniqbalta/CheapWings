@@ -336,8 +336,8 @@ class Repository(CacheRepository, VerificationRepository):
             .where(DiscoveryObservationRow.job_id == job.id)
             .order_by(DiscoveryObservationRow.id)
         ).all()
-        # Rows are written in finish order, so the last row carries the last successful call's rate.
-        fx = rows[-1].fx_json if rows else []
+        # Rows are written in finish order: the last call that gave a rate (like the iPad) wins.
+        fx = next((r.fx_json for r in reversed(rows) if r.fx_json), [])
         query = DiscoverQuery.model_validate(job.query_json)
         plan = json.loads(
             core.select_discovery_plan(

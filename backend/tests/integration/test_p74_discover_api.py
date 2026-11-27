@@ -64,6 +64,7 @@ def test_discover_create_poll_results(engine):
         assert {i.destination for i in results.itineraries} >= {"DPS", "SIN"}
         # A Discover job is not a Search job, and the other way round.
         assert client.get(f"/api/v1/searches/{created.job_id}").status_code == 404
+        assert client.get(f"/api/v1/searches/{created.job_id}/results").status_code == 404
 
 
 def test_discover_validation_and_cancel(engine):

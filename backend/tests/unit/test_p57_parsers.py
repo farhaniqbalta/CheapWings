@@ -74,7 +74,7 @@ def outcome(provider, payload, q):
         "zero",
         "unpriced",
         "bad_currency",
-        "mixed_currency",
+        # "mixed_currency" left the reference in P7.8: see test_p78_fli_currency.py
         "currency_then_malformed",
         "row_limit",
         "bad_route",

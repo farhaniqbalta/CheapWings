@@ -125,10 +125,10 @@ final class SearchModel {
     /// From airports only; destinations come from the discovery source, the selected sources check them.
     func makeDiscoverRequest() -> SearchRequest {
         let origins = catalog != nil ? codes(origin) : Self.codes(originsText)
-        let budget = budgetText.trimmingCharacters(in: .whitespaces)
         return SearchRequest(origins: origins, destinations: [], dateFrom: Self.ymd(dateFrom), dateThrough: Self.ymd(dateThrough),
-                             currency: currency, maxStops: maxStops, originMajorIDs: [], destinationMajorIDs: [],
-                             providers: selectedSources, kind: .discover, budget: budget.isEmpty ? nil : budget)
+                             currency: currency, maxStops: maxStops, originMajorIDs: catalog != nil ? origin.majorIDs : [],
+                             destinationMajorIDs: [], providers: selectedSources, kind: .discover,
+                             budget: BudgetText.normalize(budgetText, currency: currency))
     }
 
     /// The discovery calls the Rust core would make (validates codes, dates, currency, budget, the 31-call cap).

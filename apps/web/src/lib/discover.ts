@@ -46,7 +46,7 @@ export interface DiscoverRow {
   leadAmount: string;               // provisional discovery price
   checkedAmount: string | null;     // cheapest checked comparable fare for this route and date
   checkedItineraryId: string | null;
-  state: "checked" | "checking" | "no_fare";
+  state: "checked" | "checking" | "no_fare" | "check_failed";
 }
 
 /** One row per shortlisted destination; checked fares first (by checked price), then leads.
@@ -56,7 +56,7 @@ export function discoverRows(job: DiscoverJob): DiscoverRow[] {
   const rows = job.discovery.shortlist.map((lead): DiscoverRow => ({
     origin: lead.origin, destination: lead.destination, date: lead.date, leadAmount: lead.comparable_amount,
     checkedAmount: lead.checked_amount ?? null, checkedItineraryId: lead.checked_itinerary_id ?? null,
-    state: lead.checked_amount ? "checked" : finished ? "no_fare" : "checking",
+    state: lead.checked_amount ? "checked" : lead.check_status === "failed" ? "check_failed" : finished ? "no_fare" : "checking",
   }));
   const checked = rows.filter(r => r.checkedAmount).sort((x, y) => compareDecimal(x.checkedAmount!, y.checkedAmount!));
   const rest = rows.filter(r => !r.checkedAmount).sort((x, y) => compareDecimal(x.leadAmount, y.leadAmount));

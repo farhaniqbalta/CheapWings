@@ -477,3 +477,4 @@ button:disabled { cursor: not-allowed; opacity: .62; }
 .discover-checked b { font-size: 1.1em; }
 .discover-lead { opacity: 0.8; margin-left: auto; }
 .discover-checked + .discover-lead, .discover-pending + .discover-lead { font-style: italic; }
+.discover-view .p46-job-counts { flex-wrap: wrap; min-width: 0; }

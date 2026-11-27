@@ -7,8 +7,15 @@ public enum BudgetText {
     public static func normalize(_ text: String, currency: String) -> String? {
         let trimmed = text.trimmingCharacters(in: .whitespaces)
         if trimmed.isEmpty { return nil }
-        let kept = trimmed.filter { $0.isASCII && ($0.isNumber || $0 == "." || $0 == ",") }
-        guard kept.contains(where: \.isNumber) else { return trimmed }
+        // Drop only spaces and a leading currency marker; anything else unusual goes to the core as typed.
+        var body = trimmed.replacingOccurrences(of: " ", with: "")
+        for marker in ["Rp", "IDR", "USD", "AUD", "A$", "JPY", "$", "¥"] where body.uppercased().hasPrefix(marker.uppercased()) {
+            body = String(body.dropFirst(marker.count))
+            break
+        }
+        guard !body.isEmpty, body.allSatisfy({ $0.isASCII && ($0.isNumber || $0 == "." || $0 == ",") }),
+              body.contains(where: \.isNumber) else { return trimmed }
+        let kept = body
         // Currencies without minor units (IDR, JPY): every separator is grouping.
         if (try? minorUnitExponent(currency: currency)) == 0 { return kept.filter(\.isNumber) }
         guard let last = kept.lastIndex(where: { $0 == "." || $0 == "," }) else { return kept }

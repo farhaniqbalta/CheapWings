@@ -81,4 +81,20 @@ final class DiscoverRowsTests: XCTestCase {
         XCTAssertEqual(rows.map(\.state), [.noFare, .checkFailed])
         XCTAssertTrue(failedRouteDates(planned: planned, finished: [], failures: failures).isEmpty, "unfinished is not failed")
     }
+
+    // Review fix: a source that stopped us leaves its later checks unfinished; they count as failed.
+
+    func testStoppedSourceChecksCountAsFailed() {
+        let sin = RouteDate(origin: "CGK", destination: "SIN", date: "2027-03-01")
+        let fli = WorkItem(provider: "fli", routeDate: sin)
+        let skip = WorkItem(provider: "skiplagged", routeDate: sin)
+        let failures = [SkippedSearch(routeDate: sin, code: "network", provider: "fli"),
+                        SkippedSearch(routeDate: sin, code: "http_rate_limited", provider: "fli")]  // a retry event too
+        let failed = failedRouteDates(planned: [fli, skip], finished: [fli], failures: failures, stopped: ["skiplagged"])
+        XCTAssertEqual(failed, [sin], "Fli failed and Skiplagged stopped before checking")
+        XCTAssertEqual(failedCheckCount(planned: [fli, skip], finished: [fli], failures: failures, stopped: ["skiplagged"]), 2,
+                       "unique checks, not events")
+        XCTAssertTrue(failedRouteDates(planned: [fli, skip], finished: [fli], failures: failures, stopped: []).isEmpty,
+                      "without a stop, the Skiplagged check is still pending")
+    }
 }

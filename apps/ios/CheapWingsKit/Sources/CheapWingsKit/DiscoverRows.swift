@@ -49,10 +49,25 @@ public func discoverCoverage(summary: DiscoverySummary, finished: Set<WorkItem>,
     return (Set(summary.leads.map(\.destination)).count, checked.count)
 }
 
-/// Route/dates whose every planned check finished and failed (no source answered for them).
-public func failedRouteDates(planned: [WorkItem], finished: Set<WorkItem>, failures: [SkippedSearch]) -> Set<RouteDate> {
+/// Checks that failed: finished with a failure, or never run because their source stopped us
+/// (the runner leaves a stopped lane's later items unfinished). Unique work items, not events.
+private func failedChecks(planned: [WorkItem], finished: Set<WorkItem>, failures: [SkippedSearch],
+                          stopped: Set<String>) -> Set<WorkItem> {
     let failed = Set(failures.map { WorkItem(provider: $0.provider, routeDate: $0.routeDate) })
-    return Set(Dictionary(grouping: planned, by: \.routeDate)
-        .filter { _, items in items.allSatisfy { finished.contains($0) && failed.contains($0) } }
-        .keys)
+    return Set(planned.filter { item in
+        finished.contains(item) ? failed.contains(item) : stopped.contains(item.provider)
+    })
+}
+
+/// Route/dates where every planned check failed (no source answered for them).
+public func failedRouteDates(planned: [WorkItem], finished: Set<WorkItem>, failures: [SkippedSearch],
+                             stopped: Set<String> = []) -> Set<RouteDate> {
+    let bad = failedChecks(planned: planned, finished: finished, failures: failures, stopped: stopped)
+    return Set(Dictionary(grouping: planned, by: \.routeDate).filter { _, items in items.allSatisfy(bad.contains) }.keys)
+}
+
+/// The failed-check count shown on the Discover screen (matches the web's count of failed work items).
+public func failedCheckCount(planned: [WorkItem], finished: Set<WorkItem>, failures: [SkippedSearch],
+                             stopped: Set<String> = []) -> Int {
+    failedChecks(planned: planned, finished: finished, failures: failures, stopped: stopped).count
 }

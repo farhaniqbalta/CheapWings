@@ -11,7 +11,9 @@ struct DiscoverResultsView: View {
     var body: some View {
         let summary = session.discovery
         let finished = !session.isRunning
-        let failed = failedRouteDates(planned: session.planned, finished: session.finished, failures: session.failures)
+        let stopped = Set(session.providerStops.keys)
+        let failed = failedRouteDates(planned: session.planned, finished: session.finished, failures: session.failures, stopped: stopped)
+        let failedCount = failedCheckCount(planned: session.planned, finished: session.finished, failures: session.failures, stopped: stopped)
         let rows = summary.map { discoverRows(summary: $0, offers: session.offers, currency: session.currency, finished: finished,
                                               failed: failed) } ?? []
         List {
@@ -45,8 +47,8 @@ struct DiscoverResultsView: View {
                         Text("\(summary.callsFailed) discovery call\(summary.callsFailed == 1 ? "" : "s") failed; destinations from those days may be missing.")
                             .font(.footnote).foregroundStyle(Theme.warn)
                     }
-                    if summary.committed && !session.failures.isEmpty {
-                        Text("\(session.failures.count) check\(session.failures.count == 1 ? "" : "s") failed (source errors or limits); those destinations show a discovery price only.")
+                    if summary.committed && failedCount > 0 {
+                        Text("\(failedCount) check\(failedCount == 1 ? "" : "s") failed (source errors or limits); those destinations show a discovery price only.")
                             .font(.footnote).foregroundStyle(Theme.warn)
                     }
                     if summary.unpriced > 0 {

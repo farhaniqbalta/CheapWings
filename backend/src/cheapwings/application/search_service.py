@@ -193,7 +193,10 @@ def discover_projection(repo, job_id):
             return "not_checked"
         if any(st in ("pending", "running", "retry_wait") for st in statuses):
             return "pending"
-        return "no_fare" if any(st in SUCCESS for st in statuses) else "failed"
+        if any(st in SUCCESS for st in statuses):
+            return "no_fare"
+        # Only a real check failure counts; cancelled or skipped checks were never answered.
+        return "failed" if "failed_terminal" in statuses else "not_checked"
 
     warnings = [
         f"Lowest fares found among {len(destinations)} discovered destinations; "

@@ -373,3 +373,25 @@ async def test_planning_uses_the_last_non_empty_rate(engine):
     job, _ = repo.get_job(job.id)
     assert job.discovery_json["outcome"] == "planned"
     assert job.discovery_json["counts"]["no_fx"] == 0
+
+
+async def test_cancelled_checks_are_not_reported_as_failed(engine):
+    from cheapwings.application.search_service import discover_projection
+
+    repo = Repository(engine)
+    regs = [discoverer(), checker()]
+    job = repo.create_discovery_job(QUERY, regs)
+    from datetime import date as _date
+
+    from cheapwings.providers.base import DiscoveryRequest
+
+    disc = regs[0]
+    while repo.get_job(job.id)[0].phase == "discovering":  # run only the discovery calls
+        item, _ = repo.claim(disc)
+        result = await disc.provider.discover(
+            DiscoveryRequest(item.origin, _date.fromisoformat(item.departure_date), "IDR"))
+        repo.finish(item.id, item.lease_token, result)
+    repo.cancel(job.id)  # every check is still queued
+    status = discover_projection(repo, job.id)
+    assert {lead.check_status for lead in status.discovery.shortlist} == {"not_checked"}
+    assert status.failed_checks == 0

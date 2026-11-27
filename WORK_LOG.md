@@ -56,7 +56,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 - P6 follow-up: assess the 4 MB Fli web body cap. See the [P6 evidence](docs/log/p6.md) for coverage limits and remaining items.
 
 ## Next task
-In review: P7.4 web (#29), P7.5 web Discover UI (#30), P7.6 iPad Discover UI. Then P7.7 acceptance (owner device check, approved live canary).
+P7.8 fixes from the P7.7 live run in review ([P7.8](docs/log/p7.8.md)); then merge P7.7 (#32) and open the p7-implementation → main PR. Open: Fli curl_code=35 live diagnosis (needs approval).
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

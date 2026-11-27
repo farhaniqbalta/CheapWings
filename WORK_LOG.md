@@ -40,7 +40,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | P5.4 Skiplagged on iPad | Done; [PR #19](https://github.com/farhaniqbalta/CheapWings/pull/19) merged `bc4f5b2`; owner device checks passed. OctoTrip on iPad deferred until further notice (owner 2026-11-14) | [P5.4](docs/log/p5.4.md), [plan](docs/log/p5.4-plan.md) |
 | P5.7 Web backend onto the Rust core | Done; all three checkpoints merged | [Plan](docs/log/p5.7-plan.md), [execution](docs/log/p5.7.md) |
 | P6 Release acceptance | Acceptance passed locally | [P6 evidence](docs/log/p6.md). Signed iPad checks and live web Fli fares verified. |
-| P7 Discover (Explore Anywhere / Surprise Me) | **P7.6 iPad UI** in review; P7.5 web UI #30, P7.4 web #29 in review; core/iPad runtime #27/#28 and P7.2/P7.3 #26 merged | [P7.6](docs/log/p7.6.md), [P7.5](docs/log/p7.5.md), [P7.4](docs/log/p7.4.md), [P7.3](docs/log/p7.3.md), [P7.1](docs/log/p7.1.md) |
+| P7 Discover (Explore Anywhere / Surprise Me) | **P7.7 acceptance**: iPad owner check passed; live web discovery accepted, checks limited by Skiplagged 429 and Fli TLS; P7.2–P7.6 merged into `p7-implementation` (#26–#31) | [P7.7](docs/log/p7.7.md), [P7.6](docs/log/p7.6.md), [P7.5](docs/log/p7.5.md), [P7.4](docs/log/p7.4.md), [P7.1](docs/log/p7.1.md) |
 
 ## Provider decision ledger
 | Provider | Decision | Key limits (details in provider-feasibility-evidence / research logs) |
@@ -56,7 +56,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 - P6 follow-up: assess the 4 MB Fli web body cap. See the [P6 evidence](docs/log/p6.md) for coverage limits and remaining items.
 
 ## Next task
-In review: P7.4 web (#29), P7.5 web Discover UI (#30), P7.6 iPad Discover UI. Then P7.7 acceptance (owner device check, approved live canary).
+P7.7: owner iPad check passed; live web run: discovery accepted, checks limited upstream ([P7.7](docs/log/p7.7.md)). Owner: decide follow-ups (failed-check UI, Skiplagged check pacing, Fli TLS) and the p7-implementation → main PR.
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

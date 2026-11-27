@@ -1247,6 +1247,18 @@
               }
             ],
             "title": "Checked Itinerary Id"
+          },
+          "check_status": {
+            "type": "string",
+            "enum": [
+              "checked",
+              "pending",
+              "no_fare",
+              "failed",
+              "not_checked"
+            ],
+            "title": "Check Status",
+            "default": "not_checked"
           }
         },
         "additionalProperties": false,

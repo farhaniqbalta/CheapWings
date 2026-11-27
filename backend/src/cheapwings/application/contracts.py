@@ -120,6 +120,9 @@ class DiscoveryLead(DTO):
     # Cheapest checked comparable fare for this route/date across every stored quote, if any.
     checked_amount: str | None = None
     checked_itinerary_id: str | None = None
+    # checked (a fare) | pending (checks still running) | no_fare (checked, nothing matched)
+    # | failed (every check for this route/date failed) | not_checked (no check was planned)
+    check_status: Literal["checked", "pending", "no_fare", "failed", "not_checked"] = "not_checked"
 
 
 class DiscoveryStatus(DTO):

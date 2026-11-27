@@ -277,3 +277,57 @@ async def test_deadline_with_nothing_found_is_unavailable(engine):
     repo.sweep(now=job.deadline_at + 1)
     job, _ = repo.get_job(job.id)
     assert (job.status, job.discovery_json["outcome"]) == ("failed", "unavailable")
+
+
+# --- P7.8: normal retries for checks, and failed checks reported per lead ---
+
+
+async def test_rate_limited_check_is_retried_normally(engine):
+    repo = Repository(engine)
+    check = checker()
+    calls = {"n": 0}
+    original = check.provider.search
+
+    async def limited_once(query):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise ProviderFailure("http_rate_limited", 0.01)
+        return await original(query)
+
+    check.provider.search = limited_once
+    regs = [discoverer(discovery_destinations=("DPS",)), check]
+    job = repo.create_discovery_job(QUERY, regs)
+    await drain(JobRunner(repo, regs), repo, job.id)  # default 3 attempts, no extra pacing
+    job, _ = repo.get_job(job.id)
+    assert job.status == "completed"
+    assert {i.status for i in items(engine, job.id, "detailed")} == {"succeeded_results"}
+    assert calls["n"] == 2
+
+
+async def test_failed_checks_are_reported_per_lead(engine):
+    from cheapwings.application.search_service import discover_projection
+
+    repo = Repository(engine)
+    disc = discoverer(discovery_destinations=("DPS", "SIN"))
+    check = checker()
+
+    def sin_fails(provider):
+        original = provider.search
+
+        async def search(query):
+            if query.destination == "SIN":
+                raise ProviderFailure("schema_changed")
+            return await original(query)
+
+        provider.search = search
+
+    sin_fails(check.provider)
+    sin_fails(disc.provider)
+    regs = [disc, check]
+    job = repo.create_discovery_job(QUERY, regs)
+    await drain(JobRunner(repo, regs), repo, job.id)
+    status = discover_projection(repo, job.id)
+    by_dest = {lead.destination: lead.check_status for lead in status.discovery.shortlist}
+    assert by_dest == {"DPS": "checked", "SIN": "failed"}
+    assert status.failed_checks == 2
+    assert any("2 checks failed" in w for w in status.warnings)

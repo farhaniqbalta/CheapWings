@@ -181,10 +181,30 @@ def discover_projection(repo, job_id):
             if key not in cheapest or Decimal(text) < Decimal(cheapest[key][0]):
                 cheapest[key] = (text, quote.itinerary_id)
     outcome = summary.get("outcome")
+    by_route = {}
+    for i in detailed:
+        by_route.setdefault((i.origin, i.destination, i.departure_date), []).append(i.status)
+
+    def check_status(key):
+        statuses = by_route.get(key, [])
+        if key in cheapest:
+            return "checked"
+        if not statuses:
+            return "not_checked"
+        if any(st in ("pending", "running", "retry_wait") for st in statuses):
+            return "pending"
+        return "no_fare" if any(st in SUCCESS for st in statuses) else "failed"
+
     warnings = [
         f"Lowest fares found among {len(destinations)} discovered destinations; "
         f"{len({d for _, d, _ in checked})} checked. Not every destination in the world was searched."
     ]
+    failed_checks = sum(i.status == "failed_terminal" for i in detailed)
+    if failed_checks:
+        warnings.append(
+            f"{failed_checks} checks failed (source errors or limits); those destinations show a "
+            "discovery price only."
+        )
     if outcome == "unavailable":
         warnings.append("The destination source could not be reached; no destinations were found.")
     if any(i.status not in SUCCESS for i in calls if i.status not in ("pending", "running", "retry_wait")):
@@ -223,6 +243,7 @@ def discover_projection(repo, job_id):
                     comparable_amount=s["comparable_amount"],
                     checked_amount=cheapest.get((s["origin"], s["destination"], s["date"]), (None,))[0],
                     checked_itinerary_id=cheapest.get((s["origin"], s["destination"], s["date"]), (None, None))[1],
+                    check_status=check_status((s["origin"], s["destination"], s["date"])),
                 )
                 for s in summary.get("selected", [])
             ],

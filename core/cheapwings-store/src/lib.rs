@@ -2,6 +2,7 @@
 //! its work items (provider × route/date), per-item outcome and the exact offers found. One
 //! transaction per finished item, so a killed app never loses what was already shown.
 
+use cheapwings_core::discovery::{DiscoveryObservation, FxRate};
 use cheapwings_core::fli::{FliLeg, FliOffer};
 use cheapwings_core::planning::RouteDate;
 use cheapwings_core::skiplagged::{fli_source_offer, SourceOffer};
@@ -10,8 +11,9 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::sync::Mutex;
 
-/// 1 = P5.3–P5.8 (Fli only); 2 = P5.4 (provider per work item, neutral offers, provider stops).
-const SCHEMA_VERSION: i64 = 2;
+/// 1 = P5.3–P5.8 (Fli only); 2 = P5.4 (provider per work item, neutral offers, provider stops);
+/// 3 = P7.4 (Discover stage and observation snapshot).
+const SCHEMA_VERSION: i64 = 3;
 const KEEP_SEARCHES: i64 = 10;
 
 fn default_providers() -> Vec<String> {
@@ -36,6 +38,31 @@ pub struct StoredRequest {
     /// P5.4: selected sources; searches stored before P5.4 were Fli only.
     #[serde(default = "default_providers")]
     pub providers: Vec<String>,
+    /// P7.4: `"discover"`, or empty for Search (every search stored before P7.4).
+    #[serde(default)]
+    pub kind: String,
+    /// P7.4 Discover budget in `currency`; None means no budget.
+    #[serde(default)]
+    pub budget: Option<String>,
+}
+
+/// The discovery stage's result, saved with the planned work items in one transaction.
+/// Selection counts are not stored: `select_discovery_plan` recomputes them from this snapshot.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DiscoverySnapshot {
+    pub observations: Vec<DiscoveryObservation>,
+    pub fx: Vec<FxRate>,
+    pub calls_planned: u32,
+    pub calls_failed: u32,
+    pub unpriced: u32,
+}
+
+#[derive(Serialize, Deserialize)]
+struct DiscoveryMeta {
+    fx: Vec<FxRate>,
+    calls_planned: u32,
+    calls_failed: u32,
+    unpriced: u32,
 }
 
 #[cfg(test)]
@@ -115,6 +142,10 @@ pub struct StoredSearch {
     pub offers: Vec<StoredOffer>,
     /// Hidden-offer reasons summed over the search, sorted by reason.
     pub hidden: Vec<(String, u32)>,
+    /// P7.4: None for Search; `discovering` until the snapshot is committed, then `checking`.
+    pub stage: Option<String>,
+    /// P7.4: the committed discovery snapshot.
+    pub discovery: Option<DiscoverySnapshot>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -122,6 +153,8 @@ pub enum StoreError {
     Open(String),
     Sql(String),
     NotFound(i64),
+    /// The search is not in its discovery stage (already committed, or a Search).
+    AlreadyCommitted(i64),
 }
 
 impl StoreError {
@@ -130,6 +163,7 @@ impl StoreError {
             Self::Open(_) => "open",
             Self::Sql(_) => "sql",
             Self::NotFound(_) => "not_found",
+            Self::AlreadyCommitted(_) => "already_committed",
         }
     }
 }
@@ -140,6 +174,7 @@ impl fmt::Display for StoreError {
             Self::Open(why) => write!(f, "could not open the search store: {why}"),
             Self::Sql(why) => write!(f, "search store error: {why}"),
             Self::NotFound(id) => write!(f, "search {id} not found"),
+            Self::AlreadyCommitted(id) => write!(f, "search {id} has no discovery stage to commit"),
         }
     }
 }
@@ -205,6 +240,18 @@ ALTER TABLE offers ADD COLUMN offer_json TEXT;
 ALTER TABLE searches ADD COLUMN provider_stops TEXT;
 ";
 
+/// Version 2 → 3: Discover stage, discovery metadata (FX, call counts) and observations.
+const MIGRATE_V3: &str = "
+ALTER TABLE searches ADD COLUMN stage TEXT;
+ALTER TABLE searches ADD COLUMN discovery_meta TEXT;
+CREATE TABLE IF NOT EXISTS observations (
+    search_id INTEGER NOT NULL REFERENCES searches(id) ON DELETE CASCADE,
+    idx INTEGER NOT NULL,
+    observation TEXT NOT NULL,
+    PRIMARY KEY (search_id, idx)
+);
+";
+
 /// Thread-safe handle; every method is one short transaction.
 pub struct Store {
     conn: Mutex<Connection>,
@@ -225,6 +272,9 @@ impl Store {
         tx.execute_batch(SCHEMA_V1).map_err(open)?;
         if version < 2 {
             tx.execute_batch(MIGRATE_V2).map_err(open)?;
+        }
+        if version < 3 {
+            tx.execute_batch(MIGRATE_V3).map_err(open)?;
         }
         tx.pragma_update(None, "user_version", SCHEMA_VERSION)
             .map_err(open)?;
@@ -248,32 +298,34 @@ impl Store {
         items: &[WorkItem],
         now_ms: i64,
     ) -> Result<i64, StoreError> {
+        self.create(request, None, items, now_ms)
+    }
+
+    /// P7.4: a Discover search in its `discovering` stage, with no work items yet.
+    pub fn create_discovery(
+        &self,
+        request: &StoredRequest,
+        now_ms: i64,
+    ) -> Result<i64, StoreError> {
+        self.create(request, Some("discovering"), &[], now_ms)
+    }
+
+    fn create(
+        &self,
+        request: &StoredRequest,
+        stage: Option<&str>,
+        items: &[WorkItem],
+        now_ms: i64,
+    ) -> Result<i64, StoreError> {
         let mut conn = self.lock();
         let tx = conn.transaction().map_err(sql)?;
         tx.execute(
-            "INSERT INTO searches (request, created_at_ms, updated_at_ms) VALUES (?1, ?2, ?2)",
-            params![json(request)?, now_ms],
+            "INSERT INTO searches (request, created_at_ms, updated_at_ms, stage) VALUES (?1, ?2, ?2, ?3)",
+            params![json(request)?, now_ms, stage],
         )
         .map_err(sql)?;
         let id = tx.last_insert_rowid();
-        {
-            let mut insert = tx
-                .prepare("INSERT INTO combos (search_id, idx, provider, origin, destination, date, status) VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'pending')")
-                .map_err(sql)?;
-            for (index, item) in items.iter().enumerate() {
-                let rd = &item.route_date;
-                insert
-                    .execute(params![
-                        id,
-                        index as i64,
-                        item.provider,
-                        rd.origin,
-                        rd.destination,
-                        rd.date
-                    ])
-                    .map_err(sql)?;
-            }
-        }
+        Self::insert_combos(&tx, id, items)?;
         tx.execute(
             "DELETE FROM searches WHERE id NOT IN (SELECT id FROM searches ORDER BY id DESC LIMIT ?1)",
             params![KEEP_SEARCHES],
@@ -281,6 +333,77 @@ impl Store {
         .map_err(sql)?;
         tx.commit().map_err(sql)?;
         Ok(id)
+    }
+
+    fn insert_combos(conn: &Connection, id: i64, items: &[WorkItem]) -> Result<(), StoreError> {
+        let mut insert = conn
+            .prepare("INSERT INTO combos (search_id, idx, provider, origin, destination, date, status) VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'pending')")
+            .map_err(sql)?;
+        for (index, item) in items.iter().enumerate() {
+            let rd = &item.route_date;
+            insert
+                .execute(params![
+                    id,
+                    index as i64,
+                    item.provider,
+                    rd.origin,
+                    rd.destination,
+                    rd.date
+                ])
+                .map_err(sql)?;
+        }
+        Ok(())
+    }
+
+    /// P7.4: one transaction saves the snapshot and the planned work items and moves the search
+    /// to `checking`. Only a search in `discovering` can commit, so a restart never enqueues twice.
+    pub fn commit_discovery(
+        &self,
+        search_id: i64,
+        snapshot: &DiscoverySnapshot,
+        items: &[WorkItem],
+        now_ms: i64,
+    ) -> Result<(), StoreError> {
+        let mut conn = self.lock();
+        let tx = conn.transaction().map_err(sql)?;
+        let stage: Option<Option<String>> = tx
+            .query_row(
+                "SELECT stage FROM searches WHERE id = ?1",
+                params![search_id],
+                |r| r.get(0),
+            )
+            .optional()
+            .map_err(sql)?;
+        match stage {
+            None => return Err(StoreError::NotFound(search_id)),
+            Some(Some(stage)) if stage == "discovering" => {}
+            Some(_) => return Err(StoreError::AlreadyCommitted(search_id)),
+        }
+        {
+            let mut insert = tx
+                .prepare(
+                    "INSERT INTO observations (search_id, idx, observation) VALUES (?1, ?2, ?3)",
+                )
+                .map_err(sql)?;
+            for (index, observation) in snapshot.observations.iter().enumerate() {
+                insert
+                    .execute(params![search_id, index as i64, json(observation)?])
+                    .map_err(sql)?;
+            }
+        }
+        Self::insert_combos(&tx, search_id, items)?;
+        let meta = DiscoveryMeta {
+            fx: snapshot.fx.clone(),
+            calls_planned: snapshot.calls_planned,
+            calls_failed: snapshot.calls_failed,
+            unpriced: snapshot.unpriced,
+        };
+        tx.execute(
+            "UPDATE searches SET stage = 'checking', discovery_meta = ?2, updated_at_ms = ?3 WHERE id = ?1",
+            params![search_id, json(&meta)?, now_ms],
+        )
+        .map_err(sql)?;
+        tx.commit().map_err(sql)
     }
 
     /// One transaction per finished work item. Re-finishing replaces that item's data.
@@ -448,16 +571,26 @@ impl Store {
         let conn = self.lock();
         let row = conn
             .query_row(
-                "SELECT id, request, created_at_ms, updated_at_ms, stop_reason, provider_stops FROM searches ORDER BY id DESC LIMIT 1",
+                "SELECT id, request, created_at_ms, updated_at_ms, stop_reason, provider_stops, stage, discovery_meta FROM searches ORDER BY id DESC LIMIT 1",
                 [],
                 |r| {
                     Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?, r.get(2)?, r.get(3)?, r.get(4)?,
-                        r.get::<_, Option<String>>(5)?))
+                        r.get::<_, Option<String>>(5)?, r.get::<_, Option<String>>(6)?,
+                        r.get::<_, Option<String>>(7)?))
                 },
             )
             .optional()
             .map_err(sql)?;
-        let Some((id, request, created_at_ms, updated_at_ms, stop_reason, provider_stops)) = row
+        let Some((
+            id,
+            request,
+            created_at_ms,
+            updated_at_ms,
+            stop_reason,
+            provider_stops,
+            stage,
+            meta,
+        )) = row
         else {
             return Ok(None);
         };
@@ -476,7 +609,35 @@ impl Store {
             combos: Self::combos(&conn, id)?,
             offers,
             hidden: Self::hidden(&conn, id)?,
+            discovery: match meta {
+                Some(text) => {
+                    let meta: DiscoveryMeta = from_json(&text)?;
+                    Some(DiscoverySnapshot {
+                        observations: Self::observations(&conn, id)?,
+                        fx: meta.fx,
+                        calls_planned: meta.calls_planned,
+                        calls_failed: meta.calls_failed,
+                        unpriced: meta.unpriced,
+                    })
+                }
+                None => None,
+            },
+            stage,
         }))
+    }
+
+    fn observations(
+        conn: &Connection,
+        search_id: i64,
+    ) -> Result<Vec<DiscoveryObservation>, StoreError> {
+        let mut stmt = conn
+            .prepare("SELECT observation FROM observations WHERE search_id = ?1 ORDER BY idx")
+            .map_err(sql)?;
+        let rows = stmt
+            .query_map(params![search_id], |r| r.get::<_, String>(0))
+            .map_err(sql)?;
+        rows.map(|r| r.map_err(sql).and_then(|text| from_json(&text)))
+            .collect()
     }
 
     fn require(conn: &Connection, search_id: i64) -> Result<(), StoreError> {

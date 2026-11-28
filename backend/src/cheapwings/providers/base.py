@@ -25,6 +25,8 @@ class ProviderCapabilities:
     has_booking_link: bool
     has_hidden_city_flag: bool
     has_baggage_details: bool
+    # P7.4, last and defaulted: adapters build this positionally.
+    destination_discovery: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,6 +38,28 @@ class SingleDateRouteQuery:
     include_hidden_city: bool
     display_currency: str
     point_of_sale_country: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class DiscoveryRequest:
+    """P7.4: every destination from `origin` on `departure_date` (one discovery call)."""
+
+    origin: str
+    departure_date: date
+    display_currency: str
+
+
+@dataclass(frozen=True, slots=True)
+class DiscoveryResult:
+    """Observations in the shared Rust contract shape (JSON-ready dicts), the reply's FX rate(s)
+    and the count of unpriced rows dropped at the adapter."""
+
+    provider_id: str
+    request: DiscoveryRequest
+    observations: tuple[dict, ...]
+    fx: tuple[dict, ...]
+    unpriced: int
+    retrieved_at: datetime
 
 
 @dataclass(frozen=True, slots=True)

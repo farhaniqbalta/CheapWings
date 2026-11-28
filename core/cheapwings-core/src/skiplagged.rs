@@ -88,6 +88,11 @@ impl SkiplaggedError {
 /// `mcp_search`'s order: exact structured content, then a text block holding a JSON object with
 /// `flights`. A tool error or JSON-RPC error is `provider_unavailable`.
 pub fn skiplagged_tool_payload(rpc_json: &str) -> Result<String, SkiplaggedError> {
+    tool_payload(rpc_json, "flights")
+}
+
+/// The tool payload whose top-level object has `key` (`flights` for search, `results` for anywhere).
+pub(crate) fn tool_payload(rpc_json: &str, key: &str) -> Result<String, SkiplaggedError> {
     let message: Value =
         serde_json::from_str(rpc_json).map_err(|_| SkiplaggedError::SchemaChanged)?;
     if message.get("error").is_some() {
@@ -101,7 +106,7 @@ pub fn skiplagged_tool_payload(rpc_json: &str) -> Result<String, SkiplaggedError
     }
     if let Some(structured) = result
         .get("structuredContent")
-        .filter(|v| v.get("flights").is_some())
+        .filter(|v| v.get(key).is_some())
     {
         return serde_json::to_string(structured).map_err(|_| SkiplaggedError::SchemaChanged);
     }
@@ -118,7 +123,7 @@ pub fn skiplagged_tool_payload(rpc_json: &str) -> Result<String, SkiplaggedError
             continue;
         };
         if let Ok(parsed) = serde_json::from_str::<Value>(text) {
-            if parsed.is_object() && parsed.get("flights").is_some() {
+            if parsed.is_object() && parsed.get(key).is_some() {
                 return Ok(text.to_owned());
             }
         }
@@ -239,7 +244,7 @@ fn stable_id(id: &Value) -> String {
 }
 
 /// `urlsplit(link)`: keep only https links whose host is exactly skiplagged.com.
-fn skiplagged_link(value: Option<&Value>) -> Option<String> {
+pub(crate) fn skiplagged_link(value: Option<&Value>) -> Option<String> {
     let link = value?.as_str()?;
     let cleaned = link
         .trim_start_matches(|c: char| c <= ' ')

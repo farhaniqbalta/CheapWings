@@ -12,6 +12,8 @@ final class ThrowingStore: SearchPersistence, @unchecked Sendable {
     func clearStopped(searchId: Int64) throws { throw Broken() }
     func latest() throws -> StoredSearch? { throw Broken() }
     func pending(searchId: Int64) throws -> [StoredCombo] { throw Broken() }
+    func createDiscovery(request: StoredRequest, nowMs: Int64) throws -> Int64 { throw Broken() }
+    func commitDiscovery(searchId: Int64, snapshot: DiscoverySnapshot, items: [WorkItem], nowMs: Int64) throws { throw Broken() }
 }
 
 @MainActor

@@ -20,6 +20,27 @@ public enum EmptyOutcome: Equatable, Sendable {
     case noFlights
     case formatChanged
     case searchesFailed(Int)
+    /// Discover: every discovery call failed or the source stopped before any lead arrived.
+    case sourceUnavailable
+    /// Discover: the source answered but no lead was usable (unpriced, out of window, no FX).
+    case noPrices
+    /// Discover: leads arrived but all were over the budget.
+    case noneUnderBudget
+}
+
+/// Discover's discovery stage, for coverage ("N found, M checked") and provisional leads.
+public struct DiscoverySummary: Equatable, Sendable {
+    public var callsPlanned = 0
+    public var callsDone = 0
+    public var callsFailed = 0
+    public var unpriced = 0
+    /// Selection counts once the snapshot is committed (recomputed from it on restore).
+    public var counts: DiscoveryCounts?
+    /// The shortlist in plan order, with comparable (display-currency) discovery prices.
+    public var selected: [SelectedLead] = []
+    public var leads: [DiscoveryObservation] = []
+    /// False while discovering or after a stop before the snapshot was saved: Resume re-runs discovery.
+    public var committed = false
 }
 
 /// A stored search that stopped before every work item finished.
@@ -62,9 +83,13 @@ public final class SearchSession {
     public private(set) var finished: Set<WorkItem> = []
     /// Sources that stopped on their own in the search being shown, with when.
     public private(set) var providerStops: [String: (reason: StopReason, at: Date)] = [:]
+    /// P7.4: set for a Discover search.
+    public private(set) var discovery: DiscoverySummary?
 
     private let engine: SearchEngine
     private let store: SearchPersistence?
+    private let discoveryProvider: DiscoveryProvider?
+    private let discoverySleep: @Sendable (Duration) async throws -> Void
     private let now: @Sendable () -> Date
     private var task: Task<Void, Never>?
     private var generation = 0
@@ -87,9 +112,13 @@ public final class SearchSession {
     /// Called once whenever a search stops for any reason (app uses it to end background work).
     public var onStop: (() -> Void)?
 
-    public init(engine: SearchEngine, store: SearchPersistence? = nil, now: @escaping @Sendable () -> Date = { Date() }) {
+    public init(engine: SearchEngine, store: SearchPersistence? = nil, discovery: DiscoveryProvider? = nil,
+                discoverySleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) },
+                now: @escaping @Sendable () -> Date = { Date() }) {
         self.engine = engine
         self.store = store
+        discoveryProvider = discovery
+        self.discoverySleep = discoverySleep
         self.now = now
     }
 
@@ -97,6 +126,12 @@ public final class SearchSession {
 
     public var emptyOutcome: EmptyOutcome? {
         guard phase == .stopped(.finished), offers.isEmpty else { return nil }
+        if let found = discovery, found.committed {
+            if found.callsPlanned > 0 && found.callsFailed == found.callsPlanned { return .sourceUnavailable }
+            // Leads were selected but every checking source had stopped us: not "no flights".
+            if (found.counts?.selected ?? 0) > 0 && planned.isEmpty { return .sourceUnavailable }
+            if let counts = found.counts, counts.selected == 0 { return counts.overBudget > 0 ? .noneUnderBudget : .noPrices }
+        }
         if failures.isEmpty { return .noFlights }
         let decodeCodes: Set<String> = ["schema_changed", "partial_payload", "decode"]
         return failures.allSatisfy { decodeCodes.contains($0.code) } ? .formatChanged : .searchesFailed(failures.count)
@@ -121,6 +156,10 @@ public final class SearchSession {
 
     public var canResume: Bool {
         guard resumable != nil, !isRunning else { return false }
+        if let found = discovery, !found.committed {
+            guard let provider = discoveryProvider else { return false }
+            return cooldownEnd(provider.id) == nil
+        }
         return pendingItems.contains { cooldownEnd($0.provider) == nil }
     }
 
@@ -128,17 +167,148 @@ public final class SearchSession {
 
     public func start(_ request: SearchRequest, combos: [RouteDate]) {
         let items = request.items(combos)
+        reset()
+        planned = items
+        if let store {
+            do { searchID = try store.createSearch(request: request.stored, items: items, nowMs: now().milliseconds) }
+            catch { record(error) }
+        }
+        launch(request, run: items.enumerated().map { (UInt32($0.offset), $0.element) }, total: items.count, doneBefore: 0)
+    }
+
+    /// P7.4 Discover: discovery calls (paced, one at a time), then one stored snapshot + plan, then
+    /// the ordinary paced checks of the selected route/dates. Throws for an invalid query.
+    public func startDiscover(_ request: SearchRequest) throws {
+        let calls = try discoveryCalls(query: request.discoveryQuery)
+        reset()
+        if let store {
+            do { searchID = try store.createDiscovery(request: request.stored, nowMs: now().milliseconds) }
+            catch { record(error) }
+        }
+        runDiscovery(request, calls: calls)
+    }
+
+    private func reset() {
+        task?.cancel()
         offers = []
         failures = []
         hiddenOffers = [:]
         resumable = nil
         searchID = nil
-        planned = items
+        planned = []
         finished = []
         providerStops = [:]
-        if let store {
-            do { searchID = try store.createSearch(request: request.stored, items: items, nowMs: now().milliseconds) }
+        discovery = nil
+    }
+
+    // shortcut: one discovery call in flight (≤31 calls × 3 s), raise to the provider's maxInFlight if discovery feels slow.
+    private func runDiscovery(_ request: SearchRequest, calls: [DiscoveryCall]) {
+        task?.cancel()
+        generation += 1
+        let current = generation
+        self.request = request
+        currency = request.currency
+        pauseRequested = false
+        total = calls.count
+        doneBefore = 0
+        run = []
+        discovery = DiscoverySummary(callsPlanned: calls.count)
+        phase = .running(done: 0, total: calls.count)
+        guard let provider = discoveryProvider else {
+            discovery?.callsFailed = calls.count
+            return commitDiscovery(request, observations: [], fx: [])
+        }
+        let sleep = discoverySleep
+        task = Task {
+            var observations: [DiscoveryObservation] = []
+            var fx: [FxRate] = []
+            for (index, call) in calls.enumerated() {
+                if index > 0 {
+                    do { try await sleep(provider.pacing.interval) } catch { return }
+                }
+                guard current == generation else { return }
+                var attempts = 0
+                var outcome: DiscoveryOutcome
+                while true {
+                    attempts += 1
+                    outcome = await provider.discover(call, currency: request.currency, fetchedAt: now())
+                    guard current == generation else { return }
+                    guard case .retry(let after) = outcome else { break }
+                    if after > PacedRunner.maxRetryWait || attempts >= PacedRunner.maxAttempts {
+                        outcome = .stop(.rateLimited)
+                        break
+                    }
+                    do { try await sleep(after) } catch { return }
+                    guard current == generation else { return }
+                }
+                switch outcome {
+                case .page(let page):
+                    observations += page.observations
+                    if !page.fx.isEmpty { fx = page.fx }  // the last successful call's rate
+                    discovery?.unpriced += Int(page.unpriced)
+                case .failed:
+                    discovery?.callsFailed += 1
+                case .stop(let reason) where reason.isProviderStop:
+                    // The source stopped us: keep what arrived, count the rest as failed, no evasion.
+                    providerStops[provider.id] = (reason, now())
+                    if let store, let id = searchID {
+                        do { try store.setProviderStopped(searchId: id, provider: provider.id, reason: reason.storedText, nowMs: now().milliseconds) }
+                        catch { record(error) }
+                    }
+                    discovery?.callsFailed += calls.count - index
+                    discovery?.callsDone = calls.count
+                    return commitDiscovery(request, observations: observations, fx: fx)
+                case .stop(let reason):
+                    return finish(reason)  // offline/cancel: nothing saved, Resume re-runs discovery
+                case .retry:
+                    break  // unreachable: retries are resolved above
+                }
+                discovery?.callsDone = index + 1
+                phase = .running(done: index + 1, total: calls.count)
+                // After the last call the snapshot is committed first; commitDiscovery honours the pause.
+                if pauseRequested && index + 1 < calls.count { return stopForBackground() }
+            }
+            commitDiscovery(request, observations: observations, fx: fx)
+        }
+    }
+
+    private func commitDiscovery(_ request: SearchRequest, observations: [DiscoveryObservation], fx: [FxRate]) {
+        guard var found = discovery else { return }
+        let plan: DiscoveryPlan
+        do {
+            plan = try selectDiscoveryPlan(observations: observations, query: request.discoveryQuery, fx: fx,
+                                           maxRouteDates: SearchRequest.maxCombinations)
+        } catch {
+            record(error)
+            return finish(.finished)
+        }
+        let combos = plan.selected.map { RouteDate(origin: $0.origin, destination: $0.destination, date: $0.date) }
+        // A source that stopped us during discovery is not asked again in the checks.
+        let items = request.items(combos).filter { providerStops[$0.provider] == nil }
+        found.leads = observations
+        found.counts = plan.counts
+        found.selected = plan.selected
+        found.committed = true
+        discovery = found
+        if let store, let id = searchID {
+            let snapshot = DiscoverySnapshot(observations: observations, fx: fx, callsPlanned: UInt32(found.callsPlanned),
+                                             callsFailed: UInt32(found.callsFailed), unpriced: UInt32(found.unpriced))
+            do { try store.commitDiscovery(searchId: id, snapshot: snapshot, items: items, nowMs: now().milliseconds) }
             catch { record(error) }
+        }
+        planned = items
+        finished = []
+        guard !items.isEmpty else {
+            total = 0
+            phase = .running(done: 0, total: 0)
+            return finish(.finished)
+        }
+        if pauseRequested {
+            // Backgrounded during the last discovery call: saved, checks wait for Resume.
+            total = items.count
+            doneBefore = 0
+            phase = .running(done: 0, total: items.count)
+            return finish(.backgrounded)
         }
         launch(request, run: items.enumerated().map { (UInt32($0.offset), $0.element) }, total: items.count, doneBefore: 0)
     }
@@ -171,7 +341,26 @@ public final class SearchSession {
         }
         hiddenOffers = Dictionary(stored.hidden.map { ($0.reason, Int($0.count)) }, uniquingKeysWith: +)
         let done = stored.combos.filter { $0.status != .pending }.count
-        let reason = stored.stopReason.flatMap(StopReason.init(storedText:)) ?? (done == total ? .finished : .interrupted)
+        let discovering = stored.stage == "discovering"
+        discovery = nil
+        if request.kind == .discover {
+            var found = DiscoverySummary()
+            if let snapshot = stored.discovery {
+                found.callsPlanned = Int(snapshot.callsPlanned)
+                found.callsDone = Int(snapshot.callsPlanned)
+                found.callsFailed = Int(snapshot.callsFailed)
+                found.unpriced = Int(snapshot.unpriced)
+                found.leads = snapshot.observations
+                let plan = try? selectDiscoveryPlan(observations: snapshot.observations, query: request.discoveryQuery,
+                                                    fx: snapshot.fx, maxRouteDates: SearchRequest.maxCombinations)
+                found.counts = plan?.counts
+                found.selected = plan?.selected ?? []
+                found.committed = true
+            }
+            discovery = found
+        }
+        let reason = stored.stopReason.flatMap(StopReason.init(storedText:))
+            ?? (done == total && !discovering ? .finished : .interrupted)
         let stoppedAt = Date(milliseconds: stored.updatedAtMs)
         providerStops = [:]
         for stop in stored.providerStops {
@@ -180,7 +369,7 @@ public final class SearchSession {
         // Searches stored before P5.4 recorded a Google stop only as the overall reason.
         if providerStops.isEmpty, reason.isProviderStop { providerStops["fli"] = (reason, stoppedAt) }
         phase = .stopped(reason)
-        resumable = done < total
+        resumable = done < total || discovering
             ? ResumeInfo(request: request, total: total, done: done, stopReason: reason, stoppedAt: stoppedAt)
             : nil
     }
@@ -188,6 +377,15 @@ public final class SearchSession {
     /// Runs the unfinished work items of sources not in their cooldown, with the stored request.
     public func resume() {
         guard canResume, let info = resumable else { return }
+        if let found = discovery, !found.committed {
+            // Nothing was saved before the stop: discovery runs again from the first call.
+            guard let calls = try? discoveryCalls(query: info.request.discoveryQuery) else { return }
+            if let store, let id = searchID {
+                do { try store.clearStopped(searchId: id) } catch { record(error) }
+            }
+            providerStops = providerStops.filter { cooldownEnd($0.key) != nil }
+            return runDiscovery(info.request, calls: calls)
+        }
         let allowed = { (provider: String) in self.cooldownEnd(provider) == nil }
         let cooling = providerStops.filter { cooldownEnd($0.key) != nil }
         guard let store, let id = searchID else {

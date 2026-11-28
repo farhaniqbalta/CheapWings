@@ -74,7 +74,7 @@ pub fn minor_unit_exponent(currency: &str) -> Result<u32, MoneyError> {
         .ok_or(MoneyError::UnknownCurrency(currency.to_owned()))
 }
 
-fn parse(text: &str) -> Result<Decimal, MoneyError> {
+pub(crate) fn parse(text: &str) -> Result<Decimal, MoneyError> {
     let parsed = if text.contains(['e', 'E']) {
         Decimal::from_scientific(text)
     } else {

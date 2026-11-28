@@ -325,6 +325,220 @@
           }
         }
       }
+    },
+    "/api/v1/discover": {
+      "post": {
+        "summary": "Create Discovery",
+        "operationId": "create_discovery_api_v1_discover_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscoverRequest-Input"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscoverCreated"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid query or no discovery source"
+          },
+          "429": {
+            "description": "Creation budget exceeded"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/discover/{job_id}": {
+      "get": {
+        "summary": "Get Discovery",
+        "operationId": "get_discovery_api_v1_discover__job_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscoverJob"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/discover/{job_id}/results": {
+      "get": {
+        "summary": "Get Discovery Results",
+        "operationId": "get_discovery_results_api_v1_discover__job_id__results_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "best_checked",
+                "lowest_advertised"
+              ],
+              "type": "string",
+              "default": "best_checked",
+              "title": "Sort"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 2048
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Results"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/discover/{job_id}/cancel": {
+      "post": {
+        "summary": "Cancel Discovery",
+        "operationId": "cancel_discovery_api_v1_discover__job_id__cancel_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscoverJob"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -658,6 +872,485 @@
           "job_status_url"
         ],
         "title": "Created"
+      },
+      "DiscoverCreated": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "completed",
+              "partial",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "discovery_calls": {
+            "type": "integer",
+            "title": "Discovery Calls"
+          },
+          "enabled_detailed_providers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Enabled Detailed Providers"
+          },
+          "job_status_url": {
+            "type": "string",
+            "title": "Job Status Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "job_id",
+          "status",
+          "created_at",
+          "discovery_calls",
+          "enabled_detailed_providers",
+          "job_status_url"
+        ],
+        "title": "DiscoverCreated"
+      },
+      "DiscoverJob": {
+        "properties": {
+          "provider_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Provider Ids"
+          },
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          },
+          "query": {
+            "$ref": "#/components/schemas/DiscoverRequest-Output"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "completed",
+              "partial",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status"
+          },
+          "phase": {
+            "type": "string",
+            "enum": [
+              "discovering",
+              "searching",
+              "verifying",
+              "done"
+            ],
+            "title": "Phase"
+          },
+          "cancel_requested": {
+            "type": "boolean",
+            "title": "Cancel Requested"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "discovery": {
+            "$ref": "#/components/schemas/DiscoveryStatus"
+          },
+          "total_checks": {
+            "type": "integer",
+            "title": "Total Checks"
+          },
+          "succeeded_checks": {
+            "type": "integer",
+            "title": "Succeeded Checks"
+          },
+          "failed_checks": {
+            "type": "integer",
+            "title": "Failed Checks"
+          },
+          "checked_route_dates": {
+            "type": "integer",
+            "title": "Checked Route Dates"
+          },
+          "provider_status": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderProgress"
+            },
+            "type": "array",
+            "title": "Provider Status"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "job_id",
+          "query",
+          "status",
+          "phase",
+          "cancel_requested",
+          "created_at",
+          "updated_at",
+          "discovery",
+          "total_checks",
+          "succeeded_checks",
+          "failed_checks",
+          "checked_route_dates",
+          "provider_status",
+          "warnings"
+        ],
+        "title": "DiscoverJob"
+      },
+      "DiscoverRequest-Input": {
+        "properties": {
+          "provider_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 10,
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Ids"
+          },
+          "origins": {
+            "items": {
+              "type": "string",
+              "maxLength": 16
+            },
+            "type": "array",
+            "maxItems": 31,
+            "minItems": 1,
+            "title": "Origins"
+          },
+          "departure_date_from": {
+            "type": "string",
+            "format": "date",
+            "title": "Departure Date From"
+          },
+          "departure_date_through": {
+            "type": "string",
+            "format": "date",
+            "title": "Departure Date Through"
+          },
+          "display_currency": {
+            "type": "string",
+            "enum": [
+              "IDR",
+              "USD",
+              "AUD",
+              "JPY"
+            ],
+            "title": "Display Currency",
+            "default": "IDR"
+          },
+          "budget": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget"
+          },
+          "max_stops": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "enum": [
+                  0,
+                  1,
+                  2
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Stops"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "origins",
+          "departure_date_from",
+          "departure_date_through"
+        ],
+        "title": "DiscoverRequest",
+        "description": "P7.4 Discover: origins and a departure window; a discovery source suggests destinations."
+      },
+      "DiscoverRequest-Output": {
+        "properties": {
+          "provider_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 10,
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Ids"
+          },
+          "origins": {
+            "items": {
+              "type": "string",
+              "maxLength": 16
+            },
+            "type": "array",
+            "maxItems": 31,
+            "minItems": 1,
+            "title": "Origins"
+          },
+          "departure_date_from": {
+            "type": "string",
+            "format": "date",
+            "title": "Departure Date From"
+          },
+          "departure_date_through": {
+            "type": "string",
+            "format": "date",
+            "title": "Departure Date Through"
+          },
+          "display_currency": {
+            "type": "string",
+            "enum": [
+              "IDR",
+              "USD",
+              "AUD",
+              "JPY"
+            ],
+            "title": "Display Currency",
+            "default": "IDR"
+          },
+          "budget": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget"
+          },
+          "max_stops": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "enum": [
+                  0,
+                  1,
+                  2
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Stops"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "origins",
+          "departure_date_from",
+          "departure_date_through"
+        ],
+        "title": "DiscoverRequest",
+        "description": "P7.4 Discover: origins and a departure window; a discovery source suggests destinations."
+      },
+      "DiscoveryLead": {
+        "properties": {
+          "origin": {
+            "type": "string",
+            "title": "Origin"
+          },
+          "destination": {
+            "type": "string",
+            "title": "Destination"
+          },
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "comparable_amount": {
+            "type": "string",
+            "title": "Comparable Amount"
+          },
+          "checked_amount": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checked Amount"
+          },
+          "checked_itinerary_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checked Itinerary Id"
+          },
+          "check_status": {
+            "type": "string",
+            "enum": [
+              "checked",
+              "pending",
+              "no_fare",
+              "failed",
+              "not_checked"
+            ],
+            "title": "Check Status",
+            "default": "not_checked"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "origin",
+          "destination",
+          "date",
+          "comparable_amount"
+        ],
+        "title": "DiscoveryLead",
+        "description": "A shortlisted destination: the discovery price is provisional until a check confirms it."
+      },
+      "DiscoveryStatus": {
+        "properties": {
+          "calls_planned": {
+            "type": "integer",
+            "title": "Calls Planned"
+          },
+          "calls_done": {
+            "type": "integer",
+            "title": "Calls Done"
+          },
+          "calls_failed": {
+            "type": "integer",
+            "title": "Calls Failed"
+          },
+          "unpriced": {
+            "type": "integer",
+            "title": "Unpriced"
+          },
+          "discovered_destinations": {
+            "type": "integer",
+            "title": "Discovered Destinations"
+          },
+          "counts": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Counts"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "planned",
+                  "no_prices",
+                  "none_under_budget",
+                  "unavailable",
+                  "timed_out"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome"
+          },
+          "stopped_providers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Stopped Providers"
+          },
+          "shortlist": {
+            "items": {
+              "$ref": "#/components/schemas/DiscoveryLead"
+            },
+            "type": "array",
+            "title": "Shortlist"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "calls_planned",
+          "calls_done",
+          "calls_failed",
+          "unpriced",
+          "discovered_destinations"
+        ],
+        "title": "DiscoveryStatus"
       },
       "ExpiredObservation": {
         "properties": {
@@ -1099,6 +1792,11 @@
           "has_baggage_details": {
             "type": "boolean",
             "title": "Has Baggage Details"
+          },
+          "destination_discovery": {
+            "type": "boolean",
+            "title": "Destination Discovery",
+            "default": false
           },
           "permitted_to_aggregate": {
             "type": "boolean",

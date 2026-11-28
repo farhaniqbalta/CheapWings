@@ -11,6 +11,9 @@ public protocol SearchPersistence: AnyObject {
     func clearStopped(searchId: Int64) throws
     func latest() throws -> StoredSearch?
     func pending(searchId: Int64) throws -> [StoredCombo]
+    /// P7.4 Discover: a search in its discovery stage, then the snapshot + work items in one transaction.
+    func createDiscovery(request: StoredRequest, nowMs: Int64) throws -> Int64
+    func commitDiscovery(searchId: Int64, snapshot: DiscoverySnapshot, items: [WorkItem], nowMs: Int64) throws
 }
 
 extension SearchStore: SearchPersistence {}
@@ -56,14 +59,15 @@ extension SearchRequest {
     var stored: StoredRequest {
         StoredRequest(origins: origins, destinations: destinations, dateFrom: dateFrom, dateThrough: dateThrough,
                       currency: currency, maxStops: maxStops, originMajors: originMajorIDs, destinationMajors: destinationMajorIDs,
-                      providers: providers)
+                      providers: providers, kind: kind == .discover ? "discover" : "", budget: budget)
     }
 
     init(stored: StoredRequest) {
         self.init(origins: stored.origins, destinations: stored.destinations, dateFrom: stored.dateFrom,
                   dateThrough: stored.dateThrough, currency: stored.currency, maxStops: stored.maxStops,
                   originMajorIDs: stored.originMajors, destinationMajorIDs: stored.destinationMajors,
-                  providers: stored.providers)
+                  providers: stored.providers, kind: stored.kind == "discover" ? .discover : .search,
+                  budget: stored.budget)
     }
 }
 

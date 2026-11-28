@@ -54,7 +54,7 @@ impl fmt::Display for PlanError {
 impl std::error::Error for PlanError {}
 
 /// Trim, uppercase, require `^[A-Z]{3}$`, de-duplicate keeping first occurrence.
-fn normalize(codes: &[String]) -> Result<Vec<String>, PlanError> {
+pub(crate) fn normalize(codes: &[String]) -> Result<Vec<String>, PlanError> {
     if codes.is_empty() {
         return Err(PlanError::NoAirports);
     }
@@ -81,7 +81,7 @@ fn days_from_civil(y: i64, m: i64, d: i64) -> i64 {
     era * 146_097 + doe - 719_468
 }
 
-fn civil_from_days(z: i64) -> (i64, i64, i64) {
+pub(crate) fn civil_from_days(z: i64) -> (i64, i64, i64) {
     let z = z + 719_468;
     let era = z.div_euclid(146_097);
     let doe = z - era * 146_097;
@@ -94,7 +94,7 @@ fn civil_from_days(z: i64) -> (i64, i64, i64) {
 }
 
 /// Strict `YYYY-MM-DD` → day number; rejects impossible dates (e.g. 2027-02-29).
-fn parse_date(text: &str) -> Result<i64, PlanError> {
+pub(crate) fn parse_date(text: &str) -> Result<i64, PlanError> {
     let invalid = || PlanError::InvalidDate(text.to_owned());
     let bytes = text.as_bytes();
     if bytes.len() != 10 || bytes[4] != b'-' || bytes[7] != b'-' {

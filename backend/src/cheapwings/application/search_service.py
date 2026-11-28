@@ -4,6 +4,7 @@ import base64
 import json
 from collections import Counter
 from datetime import UTC, datetime
+from decimal import Decimal
 from urllib.parse import urlsplit
 
 from sqlalchemy import func, select
@@ -25,6 +26,7 @@ from cheapwings.engine.ranking import best_checked_deal, lowest_advertised
 from cheapwings.storage.models import (
     FareQuote,
     ItineraryRow,
+    DiscoveryObservationRow,
     ProviderOperation,
     QuoteRevision,
     SegmentRow,
@@ -47,11 +49,7 @@ def request_snapshot(data):
     return dto.SearchRequest.model_validate(data)
 
 
-def status_projection(repo, job_id):
-    job, items = repo.get_job(job_id)
-    detailed = [i for i in items if i.work_type == "detailed"]
-    reprices = [i for i in items if i.work_type == "reprice"]
-    counts = Counter(i.status for i in detailed)
+def _provider_progress(detailed):
     providers = []
     for provider_id in sorted({i.provider_id for i in detailed}):
         entries = [i for i in detailed if i.provider_id == provider_id]
@@ -72,6 +70,17 @@ def status_projection(repo, job_id):
                 ),
             )
         )
+    return providers
+
+
+def status_projection(repo, job_id):
+    job, items = repo.get_job(job_id)
+    if job.kind != "search":
+        raise KeyError(job_id)
+    detailed = [i for i in items if i.work_type == "detailed"]
+    reprices = [i for i in items if i.work_type == "reprice"]
+    counts = Counter(i.status for i in detailed)
+    providers = _provider_progress(detailed)
     warnings = ["Inventory completeness is unknown; coverage counts provider queries only."]
     if job.status in ("partial", "failed", "cancelled"):
         warnings.append("Search is incomplete; inspect provider coverage and errors.")
@@ -138,6 +147,115 @@ def status_projection(repo, job_id):
             )
             for i in items
         ],
+        warnings=warnings,
+    )
+
+
+def discover_projection(repo, job_id):
+    """P7.4 Discover status: discovery coverage first, then the ordinary checks."""
+    job, items = repo.get_job(job_id)
+    if job.kind != "discover":
+        raise KeyError(job_id)
+    calls = [i for i in items if i.work_type == "discover"]
+    detailed = [i for i in items if i.work_type == "detailed"]
+    counts = Counter(i.status for i in detailed)
+    summary = job.discovery_json or {}
+    with Session(repo.engine) as s:
+        destinations = {
+            r.observation_json["destination"]
+            for r in s.scalars(
+                select(DiscoveryObservationRow).where(DiscoveryObservationRow.job_id == job_id)
+            )
+        }
+    checked = {(i.origin, i.destination, i.departure_date) for i in detailed if i.status in SUCCESS}
+    # Cheapest checked fare per route/date from every stored quote, so a row never says "no checked
+    # fare" just because its itinerary is beyond the first results page.
+    route_of = {i.id: (i.origin, i.destination, i.departure_date) for i in detailed}
+    cheapest = {}
+    with Session(repo.engine) as s:
+        for quote in s.scalars(select(FareQuote).where(FareQuote.job_id == job_id)):
+            key = route_of.get(quote.work_item_id)
+            text = quote.comparable_amount_decimal_text
+            if key is None or text is None or quote.comparable_currency != job.query_json["display_currency"]:
+                continue
+            if key not in cheapest or Decimal(text) < Decimal(cheapest[key][0]):
+                cheapest[key] = (text, quote.itinerary_id)
+    outcome = summary.get("outcome")
+    by_route = {}
+    for i in detailed:
+        by_route.setdefault((i.origin, i.destination, i.departure_date), []).append(i.status)
+
+    def check_status(key):
+        statuses = by_route.get(key, [])
+        if key in cheapest:
+            return "checked"
+        if not statuses:
+            return "not_checked"
+        if any(st in ("pending", "running", "retry_wait") for st in statuses):
+            return "pending"
+        if any(st in SUCCESS for st in statuses):
+            return "no_fare"
+        # Only a real check failure counts; cancelled or skipped checks were never answered.
+        return "failed" if "failed_terminal" in statuses else "not_checked"
+
+    warnings = [
+        f"Lowest fares found among {len(destinations)} discovered destinations; "
+        f"{len({d for _, d, _ in checked})} checked. Not every destination in the world was searched."
+    ]
+    failed_checks = sum(i.status == "failed_terminal" for i in detailed)
+    if failed_checks:
+        warnings.append(
+            f"{failed_checks} checks failed (source errors or limits); those destinations show a "
+            "discovery price only."
+        )
+    if outcome == "unavailable":
+        warnings.append("The destination source could not be reached; no destinations were found.")
+    if any(i.status not in SUCCESS for i in calls if i.status not in ("pending", "running", "retry_wait")):
+        warnings.append("Some discovery calls failed; destinations from those days may be missing.")
+    q = job.query_json
+    return dto.DiscoverJob(
+        provider_ids=job.provider_ids or [],
+        job_id=job.id,
+        query=dto.DiscoverRequest(
+            origins=q["origins"],
+            departure_date_from=q["departure_date_from"],
+            departure_date_through=q["departure_date_through"],
+            display_currency=q["display_currency"],
+            budget=q["budget"],
+            max_stops=None if q["max_stops"] == "any" else int(q["max_stops"]),
+        ),
+        status=job.status,
+        phase=job.phase,
+        cancel_requested=job.cancel_requested,
+        created_at=instant(job.created_at),
+        updated_at=instant(job.updated_at),
+        discovery=dto.DiscoveryStatus(
+            calls_planned=len(calls),
+            calls_done=sum(i.status not in ("pending", "running", "retry_wait") for i in calls),
+            calls_failed=sum(i.status == "failed_terminal" for i in calls),
+            unpriced=sum(i.unpriced_candidate_count for i in calls),
+            discovered_destinations=len(destinations),
+            counts=summary.get("counts"),
+            outcome=outcome,
+            stopped_providers=summary.get("stopped_providers", []),
+            shortlist=[
+                dto.DiscoveryLead(
+                    origin=s["origin"],
+                    destination=s["destination"],
+                    date=s["date"],
+                    comparable_amount=s["comparable_amount"],
+                    checked_amount=cheapest.get((s["origin"], s["destination"], s["date"]), (None,))[0],
+                    checked_itinerary_id=cheapest.get((s["origin"], s["destination"], s["date"]), (None, None))[1],
+                    check_status=check_status((s["origin"], s["destination"], s["date"])),
+                )
+                for s in summary.get("selected", [])
+            ],
+        ),
+        total_checks=len(detailed),
+        succeeded_checks=sum(counts[k] for k in SUCCESS),
+        failed_checks=counts["failed_terminal"],
+        checked_route_dates=len(checked),
+        provider_status=_provider_progress(detailed),
         warnings=warnings,
     )
 

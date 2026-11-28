@@ -465,3 +465,16 @@ button:disabled { cursor: not-allowed; opacity: .62; }
 .sv-pool-list b { color: var(--text); font-weight: 650; }
 @media (max-width: 600px) { .sv-row { grid-template-columns: 1fr auto; } .sv-bar { grid-column: 1 / 3; grid-row: 2; } .sv-note { grid-column: 1 / 3; } }
 @media (prefers-reduced-motion: reduce) { .sv-running { animation: none; } .sv-seg { transition: none; } }
+
+/* P7.5 Discover */
+.p46-mode-toggle { display: inline-flex; gap: 4px; }
+.p46-mode-toggle button[aria-pressed="true"] { outline: 1px solid currentColor; font-weight: 700; }
+.discover-sources { margin: 8px 0; font-size: 0.9em; }
+.discover-rows { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 6px; }
+.discover-row { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; padding: 8px 10px; border: 1px solid rgba(255, 191, 71, 0.25); }
+.discover-row small { opacity: 0.75; }
+.discover-dest { min-width: 9rem; }
+.discover-checked b { font-size: 1.1em; }
+.discover-lead { opacity: 0.8; margin-left: auto; }
+.discover-checked + .discover-lead, .discover-pending + .discover-lead { font-style: italic; }
+.discover-view .p46-job-counts { flex-wrap: wrap; min-width: 0; }

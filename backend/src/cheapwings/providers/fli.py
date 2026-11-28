@@ -239,12 +239,20 @@ class FliProvider:
         now = datetime.now(UTC)
         itineraries, offers, transfers = [], [], []
         unpriced = page["unpriced"]
-        for record in page["offers"]:
+        records = page["offers"]
+        # A page with no offer in the display currency is a currency failure; a page that mixes
+        # currencies keeps its comparable offers and counts the others (P7.7 live: one foreign
+        # offer used to fail the whole route).
+        present = [r for r in records if r is not None]
+        if present and all(r["currency"] != query.display_currency for r in present):
+            raise ProviderFailure("invalid_currency")
+        for record in records:
             if record is None:
                 raise ProviderFailure("schema_changed")
             legs = self._validated_legs(record)
             if record["currency"] != query.display_currency:
-                raise ProviderFailure("invalid_currency")
+                unpriced += 1
+                continue
             original = money(record["price"], record["currency"])
             if original.amount <= 0:
                 raise ProviderFailure("invalid_price")

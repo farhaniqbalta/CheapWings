@@ -40,7 +40,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 | P5.4 Skiplagged on iPad | Done; [PR #19](https://github.com/farhaniqbalta/CheapWings/pull/19) merged `bc4f5b2`; owner device checks passed. OctoTrip on iPad deferred until further notice (owner 2026-11-14) | [P5.4](docs/log/p5.4.md), [plan](docs/log/p5.4-plan.md) |
 | P5.7 Web backend onto the Rust core | Done; all three checkpoints merged | [Plan](docs/log/p5.7-plan.md), [execution](docs/log/p5.7.md) |
 | P6 Release acceptance | Acceptance passed locally | [P6 evidence](docs/log/p6.md). Signed iPad checks and live web Fli fares verified. |
-| P7 Discover (Explore Anywhere / Surprise Me) | **Proposed / Not started** — separate feature beside Search (user chooses); awaits owner approval to start | [P7 plan](docs/06_IMPLEMENTATION_CHECKPOINTS.md#p7--explore-anywhere-proposed--not-started), [spec](docs/01_PRODUCT_REQUIREMENTS_UX.md#proposed-feature-explore-anywhere-and-surprise-me-p7--proposed--not-started) |
+| P7 Discover (Explore Anywhere / Surprise Me) | **P7.7 acceptance**: iPad owner check passed; live web discovery accepted, checks limited by Skiplagged 429 and Fli TLS; P7.2–P7.6 merged into `p7-implementation` (#26–#31) | [P7.7](docs/log/p7.7.md), [P7.6](docs/log/p7.6.md), [P7.5](docs/log/p7.5.md), [P7.4](docs/log/p7.4.md), [P7.1](docs/log/p7.1.md) |
 
 ## Provider decision ledger
 | Provider | Decision | Key limits (details in provider-feasibility-evidence / research logs) |
@@ -56,7 +56,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 - P6 follow-up: assess the 4 MB Fli web body cap. See the [P6 evidence](docs/log/p6.md) for coverage limits and remaining items.
 
 ## Next task
-P6 is ready for owner review. P7 awaits separate approval.
+P7.7 merged (#32). P7.8 fixes from the P7.7 live run in review ([P7.8](docs/log/p7.8.md)); then the p7-implementation → main PR. Open: Fli curl_code=35 live diagnosis (needs approval).
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

@@ -13,6 +13,7 @@ from sqlalchemy import text
 
 from cheapwings.application import contracts as dto
 from cheapwings.application.search_service import (
+    discover_projection,
     instant,
     results_projection,
     status_projection,
@@ -231,6 +232,8 @@ def create_app(settings=None, registry=None, engine=None):
         cursor: str | None = Query(default=None, max_length=2048),
         limit: int = Query(default=50, ge=1, le=100),
     ):
+        if repo.get_job(job_id)[0].kind != "search":
+            raise KeyError(job_id)
         try:
             return results_projection(repo, job_id, sort, cursor, limit)
         except ValueError as exc:
@@ -238,8 +241,85 @@ def create_app(settings=None, registry=None, engine=None):
 
     @secured.post("/searches/{job_id}/cancel", response_model=dto.Job)
     def cancel(job_id: str):
+        if repo.get_job(job_id)[0].kind != "search":
+            raise KeyError(job_id)
         repo.cancel(job_id)
         return status_projection(repo, job_id)
+
+    @secured.post(
+        "/discover",
+        response_model=dto.DiscoverCreated,
+        status_code=202,
+        responses={
+            422: {"description": "Invalid query or no discovery source"},
+            429: {"description": "Creation budget exceeded"},
+        },
+    )
+    def create_discovery(payload: dto.DiscoverRequest, response: Response):
+        try:
+            query = payload.to_domain()
+        except (ValueError, ValidationError) as exc:
+            raise HTTPException(422, str(exc)) from None
+        selected = registry
+        if payload.provider_ids is not None:
+            ids = payload.provider_ids
+            available = {r.provider.provider_id for r in registry if r.unavailable_reason is None}
+            if len(set(ids)) != len(ids) or not set(ids) <= available:
+                raise HTTPException(422, "Choose distinct enabled and approved provider IDs")
+            selected = [r for r in registry if r.provider.provider_id in ids]
+        try:
+            job = repo.create_discovery_job(
+                query,
+                selected,
+                max_active=settings.max_active_jobs,
+                max_hourly=settings.max_hourly_jobs,
+                budget_seconds=settings.job_budget_seconds,
+                max_requests=settings.max_hourly_requests,
+                max_active_requests=settings.max_active_requests,
+                reprice_budget=settings.reprice_budget,
+                max_route_dates=settings.max_combinations,
+            )
+        except CapacityExceeded as exc:
+            raise HTTPException(429, str(exc)) from None
+        except ValueError as exc:
+            if str(exc) == "no_discovery_provider":
+                raise HTTPException(422, "No enabled discovery source for Discover") from None
+            raise
+        url = f"/api/v1/discover/{job.id}"
+        response.headers["Location"] = url
+        return dto.DiscoverCreated(
+            job_id=job.id,
+            status=job.status,
+            created_at=instant(job.created_at),
+            discovery_calls=len(query.calls()),
+            enabled_detailed_providers=job.provider_ids or [],
+            job_status_url=url,
+        )
+
+    @secured.get("/discover/{job_id}", response_model=dto.DiscoverJob)
+    def get_discovery(job_id: str):
+        return discover_projection(repo, job_id)
+
+    @secured.get("/discover/{job_id}/results", response_model=dto.Results)
+    def get_discovery_results(
+        job_id: str,
+        sort: dto.Sort = "best_checked",
+        cursor: str | None = Query(default=None, max_length=2048),
+        limit: int = Query(default=50, ge=1, le=100),
+    ):
+        if repo.get_job(job_id)[0].kind != "discover":
+            raise KeyError(job_id)
+        try:
+            return results_projection(repo, job_id, sort, cursor, limit)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from None
+
+    @secured.post("/discover/{job_id}/cancel", response_model=dto.DiscoverJob)
+    def cancel_discovery(job_id: str):
+        if repo.get_job(job_id)[0].kind != "discover":
+            raise KeyError(job_id)
+        repo.cancel(job_id)
+        return discover_projection(repo, job_id)
 
     router.include_router(secured)
     app.include_router(router)

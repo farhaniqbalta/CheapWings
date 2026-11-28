@@ -1,0 +1,1239 @@
+{
+  "provider_id": "skiplagged",
+  "endpoint": "https://mcp.skiplagged.com/mcp",
+  "mcp_sdk_version": "2.3.0",
+  "probe_run_at": "2026-11-21T06:59:23Z",
+  "tools": [],
+  "calls": [
+    {
+      "tool": "sk_flex_departure_calendar",
+      "args": {
+        "origin": "CGK",
+        "destination": "SIN",
+        "departureDate": "2027-01-26",
+        "sort": "date",
+        "currency": "IDR",
+        "adults": 1
+      },
+      "at": "2026-11-21T06:59:24Z",
+      "is_error": false,
+      "structured": {
+        "searchUrl": "https://skiplagged.com/flights/CGK/SIN/2027-01-26",
+        "origin": "CGK",
+        "destination": "SIN",
+        "mode": "depart",
+        "sort": "date",
+        "chart": {
+          "type": "FlexChart",
+          "id": "depart-cgk-sin-date",
+          "title": "Departure Flex Prices (CGK \u2192 SIN)",
+          "subtitle": "Trip length fixed \u00b7 Sorted by date",
+          "origin": "CGK",
+          "destination": "SIN",
+          "mode": "depart",
+          "sort": "date",
+          "searchUrl": "https://skiplagged.com/flights/CGK/SIN/2027-01-26",
+          "currency": "IDR",
+          "points": [
+            {
+              "departure": "2026-12-30",
+              "price": 3018328.5,
+              "usdPrice": 165
+            },
+            {
+              "departure": "2027-01-20",
+              "price": 2378077,
+              "usdPrice": 130
+            }
+          ]
+        },
+        "pricing": {
+          "currency": "IDR",
+          "requestedCurrency": "IDR",
+          "rate": 18292.9,
+          "rateAsOf": "2026-11-21T06:43:18.096Z",
+          "approximate": true
+        }
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "# Flex price calendar (CGK \u2192 SIN)\n\n- Mode: Flexible departure dates (return optional)\n- Sorted by date\n- Prices: approximate, converted from USD at 1 USD = 18292.9 IDR (rate as of 2026-11-21T06:43:18.096Z). The final charge on the booking site may differ.\n\n[Open flex calendar](https://skiplagged.com/flights/CGK/SIN/2027-01-26)\n\n| Departure | Return | Price |\n| --- | --- | --- |\n| 2026-12-30 | \u2014 | IDR\u00a03,018,329 |\n| 2027-01-20 | \u2014 | IDR\u00a02,378,077 |",
+          "annotations": null,
+          "meta": null
+        }
+      ],
+      "latency_ms": 3965,
+      "response_bytes": 551
+    },
+    {
+      "tool": "sk_flex_departure_calendar",
+      "args": {
+        "origin": "CGK",
+        "destination": "BKK",
+        "departureDate": "2027-01-26",
+        "sort": "date",
+        "currency": "IDR",
+        "adults": 1
+      },
+      "at": "2026-11-21T07:00:28Z",
+      "is_error": false,
+      "structured": {
+        "searchUrl": "https://skiplagged.com/flights/CGK/BKK/2027-01-26",
+        "origin": "CGK",
+        "destination": "BKK",
+        "mode": "depart",
+        "sort": "date",
+        "chart": {
+          "type": "FlexChart",
+          "id": "depart-cgk-bkk-date",
+          "title": "Departure Flex Prices (CGK \u2192 BKK)",
+          "subtitle": "Trip length fixed \u00b7 Sorted by date",
+          "origin": "CGK",
+          "destination": "BKK",
+          "mode": "depart",
+          "sort": "date",
+          "searchUrl": "https://skiplagged.com/flights/CGK/BKK/2027-01-26",
+          "currency": "IDR",
+          "points": []
+        },
+        "pricing": {
+          "currency": "IDR",
+          "requestedCurrency": "IDR",
+          "rate": 18292.9,
+          "rateAsOf": "2026-11-21T06:43:18.096Z",
+          "approximate": true
+        }
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "# Flex price calendar (CGK \u2192 BKK)\n\n- Mode: Flexible departure dates (return optional)\n- Sorted by date\n- Prices: approximate, converted from USD at 1 USD = 18292.9 IDR (rate as of 2026-11-21T06:43:18.096Z). The final charge on the booking site may differ.\n\n[Open flex calendar](https://skiplagged.com/flights/CGK/BKK/2027-01-26)\n\n_No calendar price options found._",
+          "annotations": null,
+          "meta": null
+        }
+      ],
+      "latency_ms": 978,
+      "response_bytes": 442
+    },
+    {
+      "tool": "sk_flex_departure_calendar",
+      "args": {
+        "origin": "SUB",
+        "destination": "DPS",
+        "departureDate": "2026-12-22",
+        "sort": "date",
+        "currency": "IDR",
+        "adults": 1
+      },
+      "at": "2026-11-21T07:01:29Z",
+      "is_error": false,
+      "structured": {
+        "searchUrl": "https://skiplagged.com/flights/SUB/DPS/2026-12-22",
+        "origin": "SUB",
+        "destination": "DPS",
+        "mode": "depart",
+        "sort": "date",
+        "chart": {
+          "type": "FlexChart",
+          "id": "depart-sub-dps-date",
+          "title": "Departure Flex Prices (SUB \u2192 DPS)",
+          "subtitle": "Trip length fixed \u00b7 Sorted by date",
+          "origin": "SUB",
+          "destination": "DPS",
+          "mode": "depart",
+          "sort": "date",
+          "searchUrl": "https://skiplagged.com/flights/SUB/DPS/2026-12-22",
+          "currency": "IDR",
+          "points": [
+            {
+              "departure": "2026-11-22",
+              "price": 695130.2,
+              "usdPrice": 38
+            },
+            {
+              "departure": "2026-11-23",
+              "price": 713423.1,
+              "usdPrice": 39
+            },
+            {
+              "departure": "2026-11-24",
+              "price": 731716,
+              "usdPrice": 40
+            },
+            {
+              "departure": "2026-11-25",
+              "price": 713423.1,
+              "usdPrice": 39
+            },
+            {
+              "departure": "2026-11-26",
+              "price": 731716,
+              "usdPrice": 40
+            },
+            {
+              "departure": "2026-11-27",
+              "price": 768301.8,
+              "usdPrice": 42
+            },
+            {
+              "departure": "2026-11-28",
+              "price": 713423.1,
+              "usdPrice": 39
+            },
+            {
+              "departure": "2026-11-29",
+              "price": 768301.8,
+              "usdPrice": 42
+            },
+            {
+              "departure": "2026-11-30",
+              "price": 731716,
+              "usdPrice": 40
+            },
+            {
+              "departure": "2026-12-01",
+              "price": 786594.7,
+              "usdPrice": 43
+            },
+            {
+              "departure": "2026-12-02",
+              "price": 786594.7,
+              "usdPrice": 43
+            },
+            {
+              "departure": "2026-12-03",
+              "price": 786594.7,
+              "usdPrice": 43
+            },
+            {
+              "departure": "2026-12-04",
+              "price": 823180.5,
+              "usdPrice": 45
+            },
+            {
+              "departure": "2026-12-05",
+              "price": 786594.7,
+              "usdPrice": 43
+            },
+            {
+              "departure": "2026-12-06",
+              "price": 786594.7,
+              "usdPrice": 43
+            },
+            {
+              "departure": "2026-12-07",
+              "price": 786594.7,
+              "usdPrice": 43
+            },
+            {
+              "departure": "2026-12-08",
+              "price": 786594.7,
+              "usdPrice": 43
+            },
+            {
+              "departure": "2026-12-09",
+              "price": 786594.7,
+              "usdPrice": 43
+            },
+            {
+              "departure": "2026-12-10",
+              "price": 786594.7,
+              "usdPrice": 43
+            },
+            {
+              "departure": "2026-12-11",
+              "price": 786594.7,
+              "usdPrice": 43
+            },
+            {
+              "departure": "2026-12-12",
+              "price": 786594.7,
+              "usdPrice": 43
+            },
+            {
+              "departure": "2026-12-13",
+              "price": 823180.5,
+              "usdPrice": 45
+            },
+            {
+              "departure": "2026-12-14",
+              "price": 786594.7,
+              "usdPrice": 43
+            },
+            {
+              "departure": "2026-12-15",
+              "price": 786594.7,
+              "usdPrice": 43
+            },
+            {
+              "departure": "2026-12-16",
+              "price": 786594.7,
+              "usdPrice": 43
+            },
+            {
+              "departure": "2026-12-17",
+              "price": 786594.7,
+              "usdPrice": 43
+            },
+            {
+              "departure": "2026-12-18",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2026-12-19",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2026-12-20",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2026-12-21",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2026-12-22",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2026-12-23",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2026-12-24",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2026-12-25",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2026-12-26",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2026-12-27",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2026-12-28",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2026-12-29",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2026-12-30",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2026-12-31",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2027-01-01",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2027-01-02",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2027-01-03",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2027-01-04",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2027-01-05",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2027-01-06",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2027-01-07",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2027-01-08",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2027-01-09",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2027-01-10",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2027-01-11",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2027-01-12",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2027-01-13",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2027-01-14",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2027-01-15",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2027-01-16",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2027-01-17",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2027-01-18",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2027-01-19",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2027-01-20",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2027-01-21",
+              "price": 969523.7,
+              "usdPrice": 53
+            }
+          ]
+        },
+        "pricing": {
+          "currency": "IDR",
+          "requestedCurrency": "IDR",
+          "rate": 18292.9,
+          "rateAsOf": "2026-11-21T06:43:18.096Z",
+          "approximate": true
+        }
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "# Flex price calendar (SUB \u2192 DPS)\n\n- Mode: Flexible departure dates (return optional)\n- Sorted by date\n- Prices: approximate, converted from USD at 1 USD = 18292.9 IDR (rate as of 2026-11-21T06:43:18.096Z). The final charge on the booking site may differ.\n\n[Open flex calendar](https://skiplagged.com/flights/SUB/DPS/2026-12-22)\n\n| Departure | Return | Price |\n| --- | --- | --- |\n| 2026-11-22 | \u2014 | IDR\u00a0695,130 |\n| 2026-11-23 | \u2014 | IDR\u00a0713,423 |\n| 2026-11-24 | \u2014 | IDR\u00a0731,716 |\n| 2026-11-25 | \u2014 | IDR\u00a0713,423 |\n| 2026-11-26 | \u2014 | IDR\u00a0731,716 |\n| 2026-11-27 | \u2014 | IDR\u00a0768,302 |\n| 2026-11-28 | \u2014 | IDR\u00a0713,423 |\n| 2026-11-29 | \u2014 | IDR\u00a0768,302 |\n| 2026-11-30 | \u2014 | IDR\u00a0731,716 |\n| 2026-12-01 | \u2014 | IDR\u00a0786,595 |\n| 2026-12-02 | \u2014 | IDR\u00a0786,595 |\n| 2026-12-03 | \u2014 | IDR\u00a0786,595 |\n| 2026-12-04 | \u2014 | IDR\u00a0823,181 |\n| 2026-12-05 | \u2014 | IDR\u00a0786,595 |\n| 2026-12-06 | \u2014 | IDR\u00a0786,595 |\n| 2026-12-07 | \u2014 | IDR\u00a0786,595 |\n| 2026-12-08 | \u2014 | IDR\u00a0786,595 |\n| 2026-12-09 | \u2014 | IDR\u00a0786,595 |\n| 2026-12-10 | \u2014 | IDR\u00a0786,595 |\n| 2026-12-11 | \u2014 | IDR\u00a0786,595 |\n| Departure | Return | Price |\n| --- | --- | --- |\n| 2026-12-12 | \u2014 | IDR\u00a0786,595 |\n| 2026-12-13 | \u2014 | IDR\u00a0823,181 |\n| 2026-12-14 | \u2014 | IDR\u00a0786,595 |\n| 2026-12-15 | \u2014 | IDR\u00a0786,595 |\n| 2026-12-16 | \u2014 | IDR\u00a0786,595 |\n| 2026-12-17 | \u2014 | IDR\u00a0786,595 |\n| 2026-12-18 | \u2014 | IDR\u00a0969,524 |\n| 2026-12-19 | \u2014 | IDR\u00a0969,524 |\n| 2026-12-20 | \u2014 | IDR\u00a0969,524 |\n| 2026-12-21 | \u2014 | IDR\u00a0969,524 |\n| 2026-12-22 | \u2014 | IDR\u00a0841,473 |\n| 2026-12-23 | \u2014 | IDR\u00a0841,473 |\n| 2026-12-24 | \u2014 | IDR\u00a0841,473 |\n| 2026-12-25 | \u2014 | IDR\u00a0841,473 |\n| 2026-12-26 | \u2014 | IDR\u00a0841,473 |\n| 2026-12-27 | \u2014 | IDR\u00a0841,473 |\n| 2026-12-28 | \u2014 | IDR\u00a0841,473 |\n| 2026-12-29 | \u2014 | IDR\u00a0841,473 |\n| 2026-12-30 | \u2014 | IDR\u00a0841,473 |\n| 2026-12-31 | \u2014 | IDR\u00a0841,473 |\n| Departure | Return | Price |\n| --- | --- | --- |\n| 2027-01-01 | \u2014 | IDR\u00a0841,473 |\n| 2027-01-02 | \u2014 | IDR\u00a0841,473 |\n| 2027-01-03 | \u2014 | IDR\u00a0841,473 |\n| 2027-01-04 | \u2014 | IDR\u00a0841,473 |\n| 2027-01-05 | \u2014 | IDR\u00a0841,473 |\n| 2027-01-06 | \u2014 | IDR\u00a0841,473 |\n| 2027-01-07 | \u2014 | IDR\u00a0841,473 |\n| 2027-01-08 | \u2014 | IDR\u00a0841,473 |\n| 2027-01-09 | \u2014 | IDR\u00a0841,473 |\n| 2027-01-10 | \u2014 | IDR\u00a0841,473 |\n| 2027-01-11 | \u2014 | IDR\u00a0969,524 |\n| 2027-01-12 | \u2014 | IDR\u00a0969,524 |\n| 2027-01-13 | \u2014 | IDR\u00a0969,524 |\n| 2027-01-14 | \u2014 | IDR\u00a0969,524 |\n| 2027-01-15 | \u2014 | IDR\u00a0969,524 |\n| 2027-01-16 | \u2014 | IDR\u00a0969,524 |\n| 2027-01-17 | \u2014 | IDR\u00a0969,524 |\n| 2027-01-18 | \u2014 | IDR\u00a0969,524 |\n| 2027-01-19 | \u2014 | IDR\u00a0969,524 |\n| 2027-01-20 | \u2014 | IDR\u00a0969,524 |\n| Departure | Return | Price |\n| --- | --- | --- |\n| 2027-01-21 | \u2014 | IDR\u00a0969,524 |",
+          "annotations": null,
+          "meta": null
+        }
+      ],
+      "latency_ms": 3260,
+      "response_bytes": 3302
+    },
+    {
+      "tool": "sk_flex_departure_calendar",
+      "args": {
+        "origin": "SUB",
+        "destination": "LBJ",
+        "departureDate": "2026-12-22",
+        "sort": "date",
+        "currency": "IDR",
+        "adults": 1
+      },
+      "at": "2026-11-21T07:02:32Z",
+      "is_error": false,
+      "structured": {
+        "searchUrl": "https://skiplagged.com/flights/SUB/LBJ/2026-12-22",
+        "origin": "SUB",
+        "destination": "LBJ",
+        "mode": "depart",
+        "sort": "date",
+        "chart": {
+          "type": "FlexChart",
+          "id": "depart-sub-lbj-date",
+          "title": "Departure Flex Prices (SUB \u2192 LBJ)",
+          "subtitle": "Trip length fixed \u00b7 Sorted by date",
+          "origin": "SUB",
+          "destination": "LBJ",
+          "mode": "depart",
+          "sort": "date",
+          "searchUrl": "https://skiplagged.com/flights/SUB/LBJ/2026-12-22",
+          "currency": "IDR",
+          "points": [
+            {
+              "departure": "2026-11-22",
+              "price": 1774411.3,
+              "usdPrice": 97
+            },
+            {
+              "departure": "2026-11-23",
+              "price": 1591482.3,
+              "usdPrice": 87
+            },
+            {
+              "departure": "2026-11-24",
+              "price": 1920754.5,
+              "usdPrice": 105
+            },
+            {
+              "departure": "2026-11-25",
+              "price": 1536603.6,
+              "usdPrice": 84
+            },
+            {
+              "departure": "2026-11-26",
+              "price": 1902461.6,
+              "usdPrice": 104
+            },
+            {
+              "departure": "2026-11-27",
+              "price": 1628068.1,
+              "usdPrice": 89
+            },
+            {
+              "departure": "2026-11-28",
+              "price": 1664653.9,
+              "usdPrice": 91
+            },
+            {
+              "departure": "2026-11-29",
+              "price": 1664653.9,
+              "usdPrice": 91
+            },
+            {
+              "departure": "2026-11-30",
+              "price": 1609775.2,
+              "usdPrice": 88
+            },
+            {
+              "departure": "2026-12-01",
+              "price": 1737825.5,
+              "usdPrice": 95
+            },
+            {
+              "departure": "2026-12-02",
+              "price": 1701239.7,
+              "usdPrice": 93
+            },
+            {
+              "departure": "2026-12-03",
+              "price": 1902461.6,
+              "usdPrice": 104
+            },
+            {
+              "departure": "2026-12-04",
+              "price": 1701239.7,
+              "usdPrice": 93
+            },
+            {
+              "departure": "2026-12-05",
+              "price": 1737825.5,
+              "usdPrice": 95
+            },
+            {
+              "departure": "2026-12-06",
+              "price": 1701239.7,
+              "usdPrice": 93
+            },
+            {
+              "departure": "2026-12-07",
+              "price": 1701239.7,
+              "usdPrice": 93
+            },
+            {
+              "departure": "2026-12-08",
+              "price": 1847582.9,
+              "usdPrice": 101
+            },
+            {
+              "departure": "2026-12-09",
+              "price": 1701239.7,
+              "usdPrice": 93
+            },
+            {
+              "departure": "2026-12-10",
+              "price": 1792704.2,
+              "usdPrice": 98
+            },
+            {
+              "departure": "2026-12-11",
+              "price": 1701239.7,
+              "usdPrice": 93
+            },
+            {
+              "departure": "2026-12-12",
+              "price": 1810997.1,
+              "usdPrice": 99
+            },
+            {
+              "departure": "2026-12-13",
+              "price": 1701239.7,
+              "usdPrice": 93
+            },
+            {
+              "departure": "2026-12-14",
+              "price": 1701239.7,
+              "usdPrice": 93
+            },
+            {
+              "departure": "2026-12-15",
+              "price": 1792704.2,
+              "usdPrice": 98
+            },
+            {
+              "departure": "2026-12-16",
+              "price": 1701239.7,
+              "usdPrice": 93
+            },
+            {
+              "departure": "2026-12-17",
+              "price": 2378077,
+              "usdPrice": 130
+            },
+            {
+              "departure": "2026-12-18",
+              "price": 1701239.7,
+              "usdPrice": 93
+            },
+            {
+              "departure": "2026-12-19",
+              "price": 2158562.2,
+              "usdPrice": 118
+            },
+            {
+              "departure": "2026-12-20",
+              "price": 1957340.3,
+              "usdPrice": 107
+            },
+            {
+              "departure": "2026-12-21",
+              "price": 1829290,
+              "usdPrice": 100
+            },
+            {
+              "departure": "2026-12-22",
+              "price": 2012219,
+              "usdPrice": 110
+            },
+            {
+              "departure": "2026-12-23",
+              "price": 1719532.6,
+              "usdPrice": 94
+            },
+            {
+              "departure": "2026-12-24",
+              "price": 2012219,
+              "usdPrice": 110
+            },
+            {
+              "departure": "2026-12-25",
+              "price": 1719532.6,
+              "usdPrice": 94
+            },
+            {
+              "departure": "2026-12-26",
+              "price": 2213440.9,
+              "usdPrice": 121
+            },
+            {
+              "departure": "2026-12-27",
+              "price": 1719532.6,
+              "usdPrice": 94
+            },
+            {
+              "departure": "2026-12-28",
+              "price": 1609775.2,
+              "usdPrice": 88
+            },
+            {
+              "departure": "2026-12-29",
+              "price": 2213440.9,
+              "usdPrice": 121
+            },
+            {
+              "departure": "2026-12-30",
+              "price": 1664653.9,
+              "usdPrice": 91
+            },
+            {
+              "departure": "2026-12-31",
+              "price": 2012219,
+              "usdPrice": 110
+            },
+            {
+              "departure": "2027-01-01",
+              "price": 1554896.5,
+              "usdPrice": 85
+            },
+            {
+              "departure": "2027-01-02",
+              "price": 2250026.7,
+              "usdPrice": 123
+            },
+            {
+              "departure": "2027-01-03",
+              "price": 1664653.9,
+              "usdPrice": 91
+            },
+            {
+              "departure": "2027-01-04",
+              "price": 1719532.6,
+              "usdPrice": 94
+            },
+            {
+              "departure": "2027-01-05",
+              "price": 2103683.5,
+              "usdPrice": 115
+            },
+            {
+              "departure": "2027-01-06",
+              "price": 1481724.9,
+              "usdPrice": 81
+            },
+            {
+              "departure": "2027-01-07",
+              "price": 2048804.8,
+              "usdPrice": 112
+            },
+            {
+              "departure": "2027-01-08",
+              "price": 1481724.9,
+              "usdPrice": 81
+            },
+            {
+              "departure": "2027-01-09",
+              "price": 2048804.8,
+              "usdPrice": 112
+            },
+            {
+              "departure": "2027-01-10",
+              "price": 1481724.9,
+              "usdPrice": 81
+            },
+            {
+              "departure": "2027-01-11",
+              "price": 1701239.7,
+              "usdPrice": 93
+            },
+            {
+              "departure": "2027-01-12",
+              "price": 2396369.9,
+              "usdPrice": 131
+            },
+            {
+              "departure": "2027-01-13",
+              "price": 1701239.7,
+              "usdPrice": 93
+            },
+            {
+              "departure": "2027-01-14",
+              "price": 2451248.6,
+              "usdPrice": 134
+            },
+            {
+              "departure": "2027-01-15",
+              "price": 1701239.7,
+              "usdPrice": 93
+            },
+            {
+              "departure": "2027-01-16",
+              "price": 2396369.9,
+              "usdPrice": 131
+            },
+            {
+              "departure": "2027-01-17",
+              "price": 1701239.7,
+              "usdPrice": 93
+            },
+            {
+              "departure": "2027-01-18",
+              "price": 1701239.7,
+              "usdPrice": 93
+            },
+            {
+              "departure": "2027-01-19",
+              "price": 2506127.3,
+              "usdPrice": 137
+            },
+            {
+              "departure": "2027-01-20",
+              "price": 1701239.7,
+              "usdPrice": 93
+            },
+            {
+              "departure": "2027-01-21",
+              "price": 2451248.6,
+              "usdPrice": 134
+            }
+          ]
+        },
+        "pricing": {
+          "currency": "IDR",
+          "requestedCurrency": "IDR",
+          "rate": 18292.9,
+          "rateAsOf": "2026-11-21T06:43:18.096Z",
+          "approximate": true
+        }
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "# Flex price calendar (SUB \u2192 LBJ)\n\n- Mode: Flexible departure dates (return optional)\n- Sorted by date\n- Prices: approximate, converted from USD at 1 USD = 18292.9 IDR (rate as of 2026-11-21T06:43:18.096Z). The final charge on the booking site may differ.\n\n[Open flex calendar](https://skiplagged.com/flights/SUB/LBJ/2026-12-22)\n\n| Departure | Return | Price |\n| --- | --- | --- |\n| 2026-11-22 | \u2014 | IDR\u00a01,774,411 |\n| 2026-11-23 | \u2014 | IDR\u00a01,591,482 |\n| 2026-11-24 | \u2014 | IDR\u00a01,920,755 |\n| 2026-11-25 | \u2014 | IDR\u00a01,536,604 |\n| 2026-11-26 | \u2014 | IDR\u00a01,902,462 |\n| 2026-11-27 | \u2014 | IDR\u00a01,628,068 |\n| 2026-11-28 | \u2014 | IDR\u00a01,664,654 |\n| 2026-11-29 | \u2014 | IDR\u00a01,664,654 |\n| 2026-11-30 | \u2014 | IDR\u00a01,609,775 |\n| 2026-12-01 | \u2014 | IDR\u00a01,737,826 |\n| 2026-12-02 | \u2014 | IDR\u00a01,701,240 |\n| 2026-12-03 | \u2014 | IDR\u00a01,902,462 |\n| 2026-12-04 | \u2014 | IDR\u00a01,701,240 |\n| 2026-12-05 | \u2014 | IDR\u00a01,737,826 |\n| 2026-12-06 | \u2014 | IDR\u00a01,701,240 |\n| 2026-12-07 | \u2014 | IDR\u00a01,701,240 |\n| 2026-12-08 | \u2014 | IDR\u00a01,847,583 |\n| 2026-12-09 | \u2014 | IDR\u00a01,701,240 |\n| 2026-12-10 | \u2014 | IDR\u00a01,792,704 |\n| 2026-12-11 | \u2014 | IDR\u00a01,701,240 |\n| Departure | Return | Price |\n| --- | --- | --- |\n| 2026-12-12 | \u2014 | IDR\u00a01,810,997 |\n| 2026-12-13 | \u2014 | IDR\u00a01,701,240 |\n| 2026-12-14 | \u2014 | IDR\u00a01,701,240 |\n| 2026-12-15 | \u2014 | IDR\u00a01,792,704 |\n| 2026-12-16 | \u2014 | IDR\u00a01,701,240 |\n| 2026-12-17 | \u2014 | IDR\u00a02,378,077 |\n| 2026-12-18 | \u2014 | IDR\u00a01,701,240 |\n| 2026-12-19 | \u2014 | IDR\u00a02,158,562 |\n| 2026-12-20 | \u2014 | IDR\u00a01,957,340 |\n| 2026-12-21 | \u2014 | IDR\u00a01,829,290 |\n| 2026-12-22 | \u2014 | IDR\u00a02,012,219 |\n| 2026-12-23 | \u2014 | IDR\u00a01,719,533 |\n| 2026-12-24 | \u2014 | IDR\u00a02,012,219 |\n| 2026-12-25 | \u2014 | IDR\u00a01,719,533 |\n| 2026-12-26 | \u2014 | IDR\u00a02,213,441 |\n| 2026-12-27 | \u2014 | IDR\u00a01,719,533 |\n| 2026-12-28 | \u2014 | IDR\u00a01,609,775 |\n| 2026-12-29 | \u2014 | IDR\u00a02,213,441 |\n| 2026-12-30 | \u2014 | IDR\u00a01,664,654 |\n| 2026-12-31 | \u2014 | IDR\u00a02,012,219 |\n| Departure | Return | Price |\n| --- | --- | --- |\n| 2027-01-01 | \u2014 | IDR\u00a01,554,897 |\n| 2027-01-02 | \u2014 | IDR\u00a02,250,027 |\n| 2027-01-03 | \u2014 | IDR\u00a01,664,654 |\n| 2027-01-04 | \u2014 | IDR\u00a01,719,533 |\n| 2027-01-05 | \u2014 | IDR\u00a02,103,684 |\n| 2027-01-06 | \u2014 | IDR\u00a01,481,725 |\n| 2027-01-07 | \u2014 | IDR\u00a02,048,805 |\n| 2027-01-08 | \u2014 | IDR\u00a01,481,725 |\n| 2027-01-09 | \u2014 | IDR\u00a02,048,805 |\n| 2027-01-10 | \u2014 | IDR\u00a01,481,725 |\n| 2027-01-11 | \u2014 | IDR\u00a01,701,240 |\n| 2027-01-12 | \u2014 | IDR\u00a02,396,370 |\n| 2027-01-13 | \u2014 | IDR\u00a01,701,240 |\n| 2027-01-14 | \u2014 | IDR\u00a02,451,249 |\n| 2027-01-15 | \u2014 | IDR\u00a01,701,240 |\n| 2027-01-16 | \u2014 | IDR\u00a02,396,370 |\n| 2027-01-17 | \u2014 | IDR\u00a01,701,240 |\n| 2027-01-18 | \u2014 | IDR\u00a01,701,240 |\n| 2027-01-19 | \u2014 | IDR\u00a02,506,127 |\n| 2027-01-20 | \u2014 | IDR\u00a01,701,240 |\n| Departure | Return | Price |\n| --- | --- | --- |\n| 2027-01-21 | \u2014 | IDR\u00a02,451,249 |",
+          "annotations": null,
+          "meta": null
+        }
+      ],
+      "latency_ms": 1631,
+      "response_bytes": 3424
+    },
+    {
+      "tool": "sk_flex_departure_calendar",
+      "args": {
+        "origin": "DPS",
+        "destination": "SUB",
+        "departureDate": "2026-12-22",
+        "sort": "date",
+        "currency": "IDR",
+        "adults": 1
+      },
+      "at": "2026-11-21T07:03:33Z",
+      "is_error": false,
+      "structured": {
+        "searchUrl": "https://skiplagged.com/flights/DPS/SUB/2026-12-22",
+        "origin": "DPS",
+        "destination": "SUB",
+        "mode": "depart",
+        "sort": "date",
+        "chart": {
+          "type": "FlexChart",
+          "id": "depart-dps-sub-date",
+          "title": "Departure Flex Prices (DPS \u2192 SUB)",
+          "subtitle": "Trip length fixed \u00b7 Sorted by date",
+          "origin": "DPS",
+          "destination": "SUB",
+          "mode": "depart",
+          "sort": "date",
+          "searchUrl": "https://skiplagged.com/flights/DPS/SUB/2026-12-22",
+          "currency": "IDR",
+          "points": [
+            {
+              "departure": "2026-11-22",
+              "price": 823180.5,
+              "usdPrice": 45
+            },
+            {
+              "departure": "2026-11-23",
+              "price": 695130.2,
+              "usdPrice": 38
+            },
+            {
+              "departure": "2026-11-24",
+              "price": 713423.1,
+              "usdPrice": 39
+            },
+            {
+              "departure": "2026-11-25",
+              "price": 713423.1,
+              "usdPrice": 39
+            },
+            {
+              "departure": "2026-11-26",
+              "price": 713423.1,
+              "usdPrice": 39
+            },
+            {
+              "departure": "2026-11-27",
+              "price": 731716,
+              "usdPrice": 40
+            },
+            {
+              "departure": "2026-11-28",
+              "price": 713423.1,
+              "usdPrice": 39
+            },
+            {
+              "departure": "2026-11-29",
+              "price": 859766.3,
+              "usdPrice": 47
+            },
+            {
+              "departure": "2026-11-30",
+              "price": 713423.1,
+              "usdPrice": 39
+            },
+            {
+              "departure": "2026-12-01",
+              "price": 768301.8,
+              "usdPrice": 42
+            },
+            {
+              "departure": "2026-12-02",
+              "price": 804887.6,
+              "usdPrice": 44
+            },
+            {
+              "departure": "2026-12-03",
+              "price": 804887.6,
+              "usdPrice": 44
+            },
+            {
+              "departure": "2026-12-04",
+              "price": 804887.6,
+              "usdPrice": 44
+            },
+            {
+              "departure": "2026-12-05",
+              "price": 804887.6,
+              "usdPrice": 44
+            },
+            {
+              "departure": "2026-12-06",
+              "price": 823180.5,
+              "usdPrice": 45
+            },
+            {
+              "departure": "2026-12-07",
+              "price": 804887.6,
+              "usdPrice": 44
+            },
+            {
+              "departure": "2026-12-08",
+              "price": 804887.6,
+              "usdPrice": 44
+            },
+            {
+              "departure": "2026-12-09",
+              "price": 804887.6,
+              "usdPrice": 44
+            },
+            {
+              "departure": "2026-12-10",
+              "price": 804887.6,
+              "usdPrice": 44
+            },
+            {
+              "departure": "2026-12-11",
+              "price": 804887.6,
+              "usdPrice": 44
+            },
+            {
+              "departure": "2026-12-12",
+              "price": 804887.6,
+              "usdPrice": 44
+            },
+            {
+              "departure": "2026-12-13",
+              "price": 823180.5,
+              "usdPrice": 45
+            },
+            {
+              "departure": "2026-12-14",
+              "price": 804887.6,
+              "usdPrice": 44
+            },
+            {
+              "departure": "2026-12-15",
+              "price": 804887.6,
+              "usdPrice": 44
+            },
+            {
+              "departure": "2026-12-16",
+              "price": 804887.6,
+              "usdPrice": 44
+            },
+            {
+              "departure": "2026-12-17",
+              "price": 804887.6,
+              "usdPrice": 44
+            },
+            {
+              "departure": "2026-12-18",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2026-12-19",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2026-12-20",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2026-12-21",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2026-12-22",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2026-12-23",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2026-12-24",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2026-12-25",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2026-12-26",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2026-12-27",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2026-12-28",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2026-12-29",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2026-12-30",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2026-12-31",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2027-01-01",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2027-01-02",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2027-01-03",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2027-01-04",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2027-01-05",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2027-01-06",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2027-01-07",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2027-01-08",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2027-01-09",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2027-01-10",
+              "price": 841473.4,
+              "usdPrice": 46
+            },
+            {
+              "departure": "2027-01-11",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2027-01-12",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2027-01-13",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2027-01-14",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2027-01-15",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2027-01-16",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2027-01-17",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2027-01-18",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2027-01-19",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2027-01-20",
+              "price": 969523.7,
+              "usdPrice": 53
+            },
+            {
+              "departure": "2027-01-21",
+              "price": 969523.7,
+              "usdPrice": 53
+            }
+          ]
+        },
+        "pricing": {
+          "currency": "IDR",
+          "requestedCurrency": "IDR",
+          "rate": 18292.9,
+          "rateAsOf": "2026-11-21T06:43:18.096Z",
+          "approximate": true
+        }
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "# Flex price calendar (DPS \u2192 SUB)\n\n- Mode: Flexible departure dates (return optional)\n- Sorted by date\n- Prices: approximate, converted from USD at 1 USD = 18292.9 IDR (rate as of 2026-11-21T06:43:18.096Z). The final charge on the booking site may differ.\n\n[Open flex calendar](https://skiplagged.com/flights/DPS/SUB/2026-12-22)\n\n| Departure | Return | Price |\n| --- | --- | --- |\n| 2026-11-22 | \u2014 | IDR\u00a0823,181 |\n| 2026-11-23 | \u2014 | IDR\u00a0695,130 |\n| 2026-11-24 | \u2014 | IDR\u00a0713,423 |\n| 2026-11-25 | \u2014 | IDR\u00a0713,423 |\n| 2026-11-26 | \u2014 | IDR\u00a0713,423 |\n| 2026-11-27 | \u2014 | IDR\u00a0731,716 |\n| 2026-11-28 | \u2014 | IDR\u00a0713,423 |\n| 2026-11-29 | \u2014 | IDR\u00a0859,766 |\n| 2026-11-30 | \u2014 | IDR\u00a0713,423 |\n| 2026-12-01 | \u2014 | IDR\u00a0768,302 |\n| 2026-12-02 | \u2014 | IDR\u00a0804,888 |\n| 2026-12-03 | \u2014 | IDR\u00a0804,888 |\n| 2026-12-04 | \u2014 | IDR\u00a0804,888 |\n| 2026-12-05 | \u2014 | IDR\u00a0804,888 |\n| 2026-12-06 | \u2014 | IDR\u00a0823,181 |\n| 2026-12-07 | \u2014 | IDR\u00a0804,888 |\n| 2026-12-08 | \u2014 | IDR\u00a0804,888 |\n| 2026-12-09 | \u2014 | IDR\u00a0804,888 |\n| 2026-12-10 | \u2014 | IDR\u00a0804,888 |\n| 2026-12-11 | \u2014 | IDR\u00a0804,888 |\n| Departure | Return | Price |\n| --- | --- | --- |\n| 2026-12-12 | \u2014 | IDR\u00a0804,888 |\n| 2026-12-13 | \u2014 | IDR\u00a0823,181 |\n| 2026-12-14 | \u2014 | IDR\u00a0804,888 |\n| 2026-12-15 | \u2014 | IDR\u00a0804,888 |\n| 2026-12-16 | \u2014 | IDR\u00a0804,888 |\n| 2026-12-17 | \u2014 | IDR\u00a0804,888 |\n| 2026-12-18 | \u2014 | IDR\u00a0969,524 |\n| 2026-12-19 | \u2014 | IDR\u00a0969,524 |\n| 2026-12-20 | \u2014 | IDR\u00a0969,524 |\n| 2026-12-21 | \u2014 | IDR\u00a0969,524 |\n| 2026-12-22 | \u2014 | IDR\u00a0841,473 |\n| 2026-12-23 | \u2014 | IDR\u00a0841,473 |\n| 2026-12-24 | \u2014 | IDR\u00a0841,473 |\n| 2026-12-25 | \u2014 | IDR\u00a0841,473 |\n| 2026-12-26 | \u2014 | IDR\u00a0841,473 |\n| 2026-12-27 | \u2014 | IDR\u00a0841,473 |\n| 2026-12-28 | \u2014 | IDR\u00a0841,473 |\n| 2026-12-29 | \u2014 | IDR\u00a0841,473 |\n| 2026-12-30 | \u2014 | IDR\u00a0841,473 |\n| 2026-12-31 | \u2014 | IDR\u00a0841,473 |\n| Departure | Return | Price |\n| --- | --- | --- |\n| 2027-01-01 | \u2014 | IDR\u00a0841,473 |\n| 2027-01-02 | \u2014 | IDR\u00a0841,473 |\n| 2027-01-03 | \u2014 | IDR\u00a0841,473 |\n| 2027-01-04 | \u2014 | IDR\u00a0841,473 |\n| 2027-01-05 | \u2014 | IDR\u00a0841,473 |\n| 2027-01-06 | \u2014 | IDR\u00a0841,473 |\n| 2027-01-07 | \u2014 | IDR\u00a0841,473 |\n| 2027-01-08 | \u2014 | IDR\u00a0841,473 |\n| 2027-01-09 | \u2014 | IDR\u00a0841,473 |\n| 2027-01-10 | \u2014 | IDR\u00a0841,473 |\n| 2027-01-11 | \u2014 | IDR\u00a0969,524 |\n| 2027-01-12 | \u2014 | IDR\u00a0969,524 |\n| 2027-01-13 | \u2014 | IDR\u00a0969,524 |\n| 2027-01-14 | \u2014 | IDR\u00a0969,524 |\n| 2027-01-15 | \u2014 | IDR\u00a0969,524 |\n| 2027-01-16 | \u2014 | IDR\u00a0969,524 |\n| 2027-01-17 | \u2014 | IDR\u00a0969,524 |\n| 2027-01-18 | \u2014 | IDR\u00a0969,524 |\n| 2027-01-19 | \u2014 | IDR\u00a0969,524 |\n| 2027-01-20 | \u2014 | IDR\u00a0969,524 |\n| Departure | Return | Price |\n| --- | --- | --- |\n| 2027-01-21 | \u2014 | IDR\u00a0969,524 |",
+          "annotations": null,
+          "meta": null
+        }
+      ],
+      "latency_ms": 3730,
+      "response_bytes": 3302
+    },
+    {
+      "tool": "sk_flex_departure_calendar",
+      "args": {
+        "origin": "DPS",
+        "destination": "LBJ",
+        "departureDate": "2026-12-22",
+        "sort": "date",
+        "currency": "IDR",
+        "adults": 1
+      },
+      "at": "2026-11-21T07:04:37Z",
+      "is_error": false,
+      "structured": {
+        "searchUrl": "https://skiplagged.com/flights/DPS/LBJ/2026-12-22",
+        "origin": "DPS",
+        "destination": "LBJ",
+        "mode": "depart",
+        "sort": "date",
+        "chart": {
+          "type": "FlexChart",
+          "id": "depart-dps-lbj-date",
+          "title": "Departure Flex Prices (DPS \u2192 LBJ)",
+          "subtitle": "Trip length fixed \u00b7 Sorted by date",
+          "origin": "DPS",
+          "destination": "LBJ",
+          "mode": "depart",
+          "sort": "date",
+          "searchUrl": "https://skiplagged.com/flights/DPS/LBJ/2026-12-22",
+          "currency": "IDR",
+          "points": []
+        },
+        "pricing": {
+          "currency": "IDR",
+          "requestedCurrency": "IDR",
+          "rate": 18292.9,
+          "rateAsOf": "2026-11-21T06:43:18.096Z",
+          "approximate": true
+        }
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "# Flex price calendar (DPS \u2192 LBJ)\n\n- Mode: Flexible departure dates (return optional)\n- Sorted by date\n- Prices: approximate, converted from USD at 1 USD = 18292.9 IDR (rate as of 2026-11-21T06:43:18.096Z). The final charge on the booking site may differ.\n\n[Open flex calendar](https://skiplagged.com/flights/DPS/LBJ/2026-12-22)\n\n_No calendar price options found._",
+          "annotations": null,
+          "meta": null
+        }
+      ],
+      "latency_ms": 2255,
+      "response_bytes": 442
+    }
+  ],
+  "stopped": null
+}

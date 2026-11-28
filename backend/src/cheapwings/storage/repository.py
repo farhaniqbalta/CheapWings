@@ -7,17 +7,22 @@ from uuid import uuid4
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
-from cheapwings.domain.query import SearchQuery
+import json
+
+from cheapwings.domain.query import DiscoverQuery, SearchQuery
 from cheapwings.engine.expansion import expand_routes_and_dates
 from cheapwings.storage.cache import CacheRepository
 from cheapwings.storage.db import write_session
-from cheapwings.storage.models import SearchJob, WorkItem
+from cheapwings.storage.models import DiscoveryObservationRow, SearchJob, WorkItem
 from cheapwings.storage.verification import VerificationRepository
 from cheapwings.typeadapters import adapter
 
 ACTIVE = ("pending", "retry_wait", "running")
 SUCCESS = ("succeeded_results", "succeeded_empty")
 JOB_ACTIVE = ("queued", "running")
+# P7.4: a discovery source that asks for a longer wait than this stops for the job, like the
+# iPad's PacedRunner.maxRetryWait; leads that already arrived are still planned and checked.
+DISCOVERY_MAX_RETRY_WAIT_MS = 120_000
 
 
 def now_ms():
@@ -65,11 +70,7 @@ class Repository(CacheRepository, VerificationRepository):
         now = now_ms()
         with write_session(self.engine) as s:
             jobs = s.scalars(select(SearchJob)).all()
-            if (
-                sum(j.created_at > now - 3_600_000 for j in jobs) >= max_requests
-                or sum(j.status in JOB_ACTIVE for j in jobs) >= max_active_requests
-            ):
-                raise CapacityExceeded("Search request limit exceeded; wait for capacity")
+            self._check_request_limit(jobs, now, max_requests, max_active_requests)
             job = SearchJob(
                 id=str(uuid4()),
                 # New arrivals join the current round instead of repeatedly
@@ -125,13 +126,93 @@ class Repository(CacheRepository, VerificationRepository):
                 ).all()
                 reserved = reserved or created or bool(pending)
             job.upstream_work_reserved = reserved
-            if reserved and (
-                sum(j.status in JOB_ACTIVE and j.upstream_work_reserved for j in jobs) >= max_active
-                or sum(j.created_at > now - 3_600_000 and j.upstream_work_reserved for j in jobs)
-                >= max_hourly
-            ):
-                raise CapacityExceeded("Search creation budget exceeded; wait for capacity")
+            if reserved:
+                self._check_creation_budget(jobs, now, max_active, max_hourly)
             self.finalize(s, job, now)
+            return job
+
+    @staticmethod
+    def _check_request_limit(jobs, now, max_requests, max_active_requests):
+        if (
+            sum(j.created_at > now - 3_600_000 for j in jobs) >= max_requests
+            or sum(j.status in JOB_ACTIVE for j in jobs) >= max_active_requests
+        ):
+            raise CapacityExceeded("Search request limit exceeded; wait for capacity")
+
+    @staticmethod
+    def _check_creation_budget(jobs, now, max_active, max_hourly):
+        if (
+            sum(j.status in JOB_ACTIVE and j.upstream_work_reserved for j in jobs) >= max_active
+            or sum(j.created_at > now - 3_600_000 and j.upstream_work_reserved for j in jobs)
+            >= max_hourly
+        ):
+            raise CapacityExceeded("Search creation budget exceeded; wait for capacity")
+
+    def create_discovery_job(
+        self,
+        query,
+        registry,
+        *,
+        max_active=2,
+        max_hourly=20,
+        budget_seconds=1800,
+        reprice_budget=0,
+        retention_seconds=None,
+        cache_mode="prefer_cache",
+        max_requests=100,
+        max_active_requests=20,
+        max_route_dates=120,
+    ):
+        """P7.4: a Discover job in `discovering`, one `discover` item per call per discovery source.
+        Detailed items are added by `finalize` once every discovery item has finished."""
+        available = [r for r in registry if not r.unavailable_reason]
+        discoverers = [r for r in available if r.provider.capabilities.destination_discovery]
+        if not discoverers:
+            raise ValueError("no_discovery_provider")
+        calls = query.calls()
+        now = now_ms()
+        with write_session(self.engine) as s:
+            jobs = s.scalars(select(SearchJob)).all()
+            self._check_request_limit(jobs, now, max_requests, max_active_requests)
+            self._check_creation_budget(jobs, now, max_active, max_hourly)
+            job = SearchJob(
+                id=str(uuid4()),
+                kind="discover",
+                phase="discovering",
+                dispatch_sequence=s.scalar(select(func.max(SearchJob.dispatch_sequence))) or 0,
+                # The sources that check the shortlist (detailed search), in registry order.
+                provider_ids=[
+                    r.provider.provider_id for r in available if r.provider.capabilities.detailed_search
+                ],
+                cache_mode=cache_mode,
+                query_json={**query.model_dump(mode="json"), "max_route_dates": max_route_dates},
+                created_at=now,
+                updated_at=now,
+                deadline_at=now + budget_seconds * 1000,
+                data_expires_at=now + retention_seconds * 1000 if retention_seconds else None,
+                reprice_budget=reprice_budget,
+                reprice_providers=[
+                    r.provider.provider_id for r in available if r.provider.capabilities.exact_reprice
+                ],
+                upstream_work_reserved=True,
+            )
+            s.add(job)
+            s.flush()
+            for registration in discoverers:
+                for call in calls:
+                    s.add(
+                        WorkItem(
+                            id=str(uuid4()),
+                            job_id=job.id,
+                            provider_id=registration.provider.provider_id,
+                            origin=call["origin"],
+                            destination="*",
+                            departure_date=call["date"],
+                            work_type="discover",
+                            status="pending",
+                        )
+                    )
+            s.flush()
             return job
 
     def get_job(self, job_id):
@@ -163,6 +244,13 @@ class Repository(CacheRepository, VerificationRepository):
             .limit(1)
         ):
             return
+        if (
+            job.kind == "discover"
+            and job.phase == "discovering"
+            and not job.cancel_requested
+            and Repository._plan_discovery(s, job, now)
+        ):
+            return  # detailed checks enqueued in this same transaction
         if job.deadline_at <= now:
             job.verification_planned = True
         if (
@@ -195,6 +283,107 @@ class Repository(CacheRepository, VerificationRepository):
             job.status = "failed"
         job.phase = "done"
         job.completed_at = now
+
+    @staticmethod
+    def _stop_discovery_source(s, job, item, error_code, now):
+        """The source refused or asked for too long a wait: no more discovery calls to it in this
+        job (no evasion) and no checks from it; what already arrived is still planned."""
+        item.status = "failed_terminal"
+        for other in s.scalars(
+            select(WorkItem).where(
+                WorkItem.job_id == job.id,
+                WorkItem.provider_id == item.provider_id,
+                WorkItem.work_type == "discover",
+                WorkItem.id != item.id,
+                WorkItem.status.in_(("pending", "retry_wait")),
+            )
+        ):
+            other.status = "failed_terminal"
+            other.last_error_code = "provider_stopped"
+            other.last_error_detail = error_code
+            other.finished_at = now
+        stopped = (job.discovery_json or {}).get("stopped_providers", [])
+        job.discovery_json = {  # reassigned: plain JSON columns do not track in-place changes
+            **(job.discovery_json or {}),
+            "stopped_providers": sorted({*stopped, item.provider_id}),
+        }
+
+    @staticmethod
+    def _plan_discovery(s, job, now):
+        """P7.4, inside the caller's write session: snapshot → `select_discovery_plan` → detailed
+        items, then phase `searching`. The phase guard makes it run once; returns True when checks
+        were enqueued. The snapshot rows were written as each discover item finished."""
+        from cheapwings._core import core
+
+        calls = s.scalars(
+            select(WorkItem).where(WorkItem.job_id == job.id, WorkItem.work_type == "discover")
+        ).all()
+        succeeded = [i for i in calls if i.status in SUCCESS]
+        stopped = (job.discovery_json or {}).get("stopped_providers", [])
+        summary = {
+            "calls_planned": len(calls),
+            "calls_failed": len(calls) - len(succeeded),
+            "unpriced": sum(i.unpriced_candidate_count for i in succeeded),
+            "counts": None,
+            "stopped_providers": stopped,
+        }
+        job.phase = "searching"
+        if not succeeded:
+            job.discovery_json = {**summary, "outcome": "unavailable"}
+            return False
+        rows = s.scalars(
+            select(DiscoveryObservationRow)
+            .where(DiscoveryObservationRow.job_id == job.id)
+            .order_by(DiscoveryObservationRow.id)
+        ).all()
+        # Rows are written in finish order: the last call that gave a rate (like the iPad) wins.
+        fx = next((r.fx_json for r in reversed(rows) if r.fx_json), [])
+        query = DiscoverQuery.model_validate(job.query_json)
+        plan = json.loads(
+            core.select_discovery_plan(
+                json.dumps(
+                    {
+                        "observations": [r.observation_json for r in rows],
+                        "query": query.core_query(),
+                        "fx": fx,
+                        "max_route_dates": job.query_json.get("max_route_dates", 120),
+                    }
+                )
+            )
+        )
+        counts = plan["counts"]
+        if job.deadline_at <= now:
+            # The job budget ended during discovery: report what arrived, check nothing.
+            job.discovery_json = {**summary, "counts": counts, "outcome": "timed_out"}
+            return False
+        if counts["selected"]:
+            outcome = "planned"
+        else:
+            outcome = "none_under_budget" if counts["over_budget"] else "no_prices"
+        job.discovery_json = {
+            **summary,
+            "counts": counts,
+            "outcome": outcome,
+            "selected": plan["selected"],
+        }
+        checkers = [p for p in job.provider_ids or [] if p not in stopped]
+        # shortcut: checks run as direct work items (no shared provider cache: finalize has no
+        # registry); route them through prepare_cached_work if Discover checks should hit the cache.
+        for lead in plan["selected"]:
+            for provider_id in checkers:
+                s.add(
+                    WorkItem(
+                        id=str(uuid4()),
+                        job_id=job.id,
+                        provider_id=provider_id,
+                        origin=lead["origin"],
+                        destination=lead["destination"],
+                        departure_date=lead["date"],
+                        status="pending",
+                    )
+                )
+        s.flush()
+        return bool(plan["selected"] and checkers)
 
     def cancel(self, job_id):
         from cheapwings.storage.models import WorkAttempt
@@ -356,7 +545,8 @@ class Repository(CacheRepository, VerificationRepository):
             job.status = "running"
             job.updated_at = now
             item.dispatch_reserved_until = state.next_request_at
-            return item, SearchQuery.model_validate(job.query_json)
+            model = DiscoverQuery if job.kind == "discover" else SearchQuery
+            return item, model.model_validate(job.query_json)
 
     @staticmethod
     def provider_feedback(s, provider_id, error_code, retry_after_seconds, now):
@@ -542,23 +732,50 @@ class Repository(CacheRepository, VerificationRepository):
                     state = s.get(ProviderState, item.provider_id)
                     state.next_request_at = max(state.next_request_at, now + delay_ms)
                 attempt.error_code = error_code
+                if item.work_type == "discover" and (
+                    error_code == "auth_denied"
+                    or (
+                        error_code == "http_rate_limited"
+                        and (delay_ms > DISCOVERY_MAX_RETRY_WAIT_MS or now + delay_ms >= job.deadline_at)
+                    )
+                ):
+                    self._stop_discovery_source(s, job, item, error_code, now)
                 if item.work_type == "reprice" and item.status == "failed_terminal":
                     job.verification_planned = False
             else:
                 if item.work_type == "reprice":
                     self._store_reprice(s, job, item, result, now)
                     item.status = "succeeded_results" if result.available else "succeeded_empty"
+                elif item.work_type == "discover":
+                    # Same session as the status change; the lease token fenced late duplicates above.
+                    for idx, observation in enumerate(result.observations):
+                        s.add(
+                            DiscoveryObservationRow(
+                                job_id=job.id,
+                                work_item_id=item.id,
+                                idx=idx,
+                                observation_json=observation,
+                                fx_json=list(result.fx),
+                            )
+                        )
+                    item.observation_retrieved_at = int(result.retrieved_at.timestamp() * 1000)
+                    item.status = "succeeded_results" if result.observations else "succeeded_empty"
                 else:
                     item.observation_retrieved_at = int(result.retrieved_at.timestamp() * 1000)
                     self._store_results(s, job, item, result, now)
                     item.status = result.status.value
                 item.provider_complete = getattr(result, "provider_complete", None)
-                item.result_count = (
-                    len(result.offers)
-                    if item.work_type == "reprice"
-                    else sum(len(o) for o in result.offers_by_itinerary_index)
+                if item.work_type == "reprice":
+                    item.result_count = len(result.offers)
+                elif item.work_type == "discover":
+                    item.result_count = len(result.observations)
+                else:
+                    item.result_count = sum(len(o) for o in result.offers_by_itinerary_index)
+                item.unpriced_candidate_count = (
+                    result.unpriced
+                    if item.work_type == "discover"
+                    else getattr(result, "unpriced_candidate_count", 0)
                 )
-                item.unpriced_candidate_count = getattr(result, "unpriced_candidate_count", 0)
                 item.last_error_code = None
                 item.last_error_detail = None
             attempt.outcome = item.status

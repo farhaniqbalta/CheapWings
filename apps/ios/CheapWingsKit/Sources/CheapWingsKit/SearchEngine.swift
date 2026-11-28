@@ -13,14 +13,20 @@ public struct SearchRequest: Sendable, Equatable {
     /// Catalog location ids when a side used "Major airports" (for display and persistence).
     public var originMajorIDs: [String]
     public var destinationMajorIDs: [String]
-    /// Sources to search (P5.4): "fli", "skiplagged".
+    /// Sources to search (P5.4): "fli", "skiplagged". For Discover: the sources that check leads.
     public var providers: [String]
+    /// P7.4: Search (route × date grid) or Discover (destinations found by a discovery source).
+    public var kind: Kind
+    /// P7.4 Discover budget in `currency`; nil means none.
+    public var budget: String?
+
+    public enum Kind: String, Sendable { case search, discover }
 
     public static let maxCombinations: UInt32 = 120
 
     public init(origins: [String], destinations: [String], dateFrom: String, dateThrough: String, currency: String,
                 maxStops: UInt32? = nil, originMajorIDs: [String] = [], destinationMajorIDs: [String] = [],
-                providers: [String] = ["fli"]) {
+                providers: [String] = ["fli"], kind: Kind = .search, budget: String? = nil) {
         self.origins = origins
         self.destinations = destinations
         self.dateFrom = dateFrom
@@ -30,6 +36,14 @@ public struct SearchRequest: Sendable, Equatable {
         self.originMajorIDs = originMajorIDs
         self.destinationMajorIDs = destinationMajorIDs
         self.providers = providers.isEmpty ? ["fli"] : providers
+        self.kind = kind
+        self.budget = budget
+    }
+
+    /// The Discover query the Rust core validates and plans from (hidden-city excluded, as in Search).
+    public var discoveryQuery: DiscoveryQuery {
+        DiscoveryQuery(origins: origins, dateFrom: dateFrom, dateThrough: dateThrough, displayCurrency: currency,
+                       budget: budget, includeHiddenCity: false)
     }
 
     /// Point-of-sale country as `providers/fli.py` maps it.

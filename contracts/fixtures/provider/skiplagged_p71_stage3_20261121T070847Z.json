@@ -1,0 +1,523 @@
+{
+  "provider_id": "skiplagged",
+  "endpoint": "https://mcp.skiplagged.com/mcp",
+  "mcp_sdk_version": "2.3.0",
+  "probe_run_at": "2026-11-21T07:05:16Z",
+  "tools": [],
+  "calls": [
+    {
+      "tool": "sk_flights_search",
+      "args": {
+        "origin": "SUB",
+        "destination": "DPS",
+        "departureDate": "2026-12-22",
+        "sort": "price",
+        "limit": 5,
+        "currency": "IDR",
+        "adults": 1,
+        "fareClass": "economy",
+        "includeHiddenCity": true,
+        "includeVirtualInterlining": true
+      },
+      "at": "2026-11-21T07:05:17Z",
+      "is_error": false,
+      "structured": {
+        "searchUrl": "https://skiplagged.com/flights/SUB/DPS/2026-12-22",
+        "flights": [
+          {
+            "type": "FlightCard",
+            "id": "SUB-DPS-2026-12-22-trip=JT990",
+            "airlines": "Lion Air",
+            "departure": {
+              "airport": "SUB",
+              "dateTime": "2026-12-22T07:55:00+07:00"
+            },
+            "arrival": {
+              "airport": "DPS",
+              "dateTime": "2026-12-22T09:55:00+08:00"
+            },
+            "duration": "1h 0m",
+            "layovers": 0,
+            "price": {
+              "amount": 841473.4,
+              "currency": "IDR",
+              "usdAmount": 46
+            },
+            "deepLink": "https://skiplagged.com/flights/SUB/DPS/2026-12-22",
+            "attributes": [
+              "standard",
+              "nonstop"
+            ]
+          },
+          {
+            "type": "FlightCard",
+            "id": "SUB-DPS-2026-12-22-trip=JT804",
+            "airlines": "Lion Air",
+            "departure": {
+              "airport": "SUB",
+              "dateTime": "2026-12-22T11:15:00+07:00"
+            },
+            "arrival": {
+              "airport": "DPS",
+              "dateTime": "2026-12-22T13:15:00+08:00"
+            },
+            "duration": "1h 0m",
+            "layovers": 0,
+            "price": {
+              "amount": 841473.4,
+              "currency": "IDR",
+              "usdAmount": 46
+            },
+            "deepLink": "https://skiplagged.com/flights/SUB/DPS/2026-12-22",
+            "attributes": [
+              "standard",
+              "nonstop"
+            ]
+          },
+          {
+            "type": "FlightCard",
+            "id": "SUB-DPS-2026-12-22-trip=JT802",
+            "airlines": "Lion Air",
+            "departure": {
+              "airport": "SUB",
+              "dateTime": "2026-12-22T16:20:00+07:00"
+            },
+            "arrival": {
+              "airport": "DPS",
+              "dateTime": "2026-12-22T18:20:00+08:00"
+            },
+            "duration": "1h 0m",
+            "layovers": 0,
+            "price": {
+              "amount": 841473.4,
+              "currency": "IDR",
+              "usdAmount": 46
+            },
+            "deepLink": "https://skiplagged.com/flights/SUB/DPS/2026-12-22",
+            "attributes": [
+              "standard",
+              "nonstop"
+            ]
+          },
+          {
+            "type": "FlightCard",
+            "id": "SUB-DPS-2026-12-22-trip=JT910",
+            "airlines": "Lion Air",
+            "departure": {
+              "airport": "SUB",
+              "dateTime": "2026-12-22T17:15:00+07:00"
+            },
+            "arrival": {
+              "airport": "DPS",
+              "dateTime": "2026-12-22T19:15:00+08:00"
+            },
+            "duration": "1h 0m",
+            "layovers": 0,
+            "price": {
+              "amount": 841473.4,
+              "currency": "IDR",
+              "usdAmount": 46
+            },
+            "deepLink": "https://skiplagged.com/flights/SUB/DPS/2026-12-22",
+            "attributes": [
+              "standard",
+              "nonstop"
+            ]
+          },
+          {
+            "type": "FlightCard",
+            "id": "SUB-DPS-2026-12-22-trip=IU704",
+            "airlines": "Super Air Jet",
+            "departure": {
+              "airport": "SUB",
+              "dateTime": "2026-12-22T12:20:00+07:00"
+            },
+            "arrival": {
+              "airport": "DPS",
+              "dateTime": "2026-12-22T14:20:00+08:00"
+            },
+            "duration": "1h 0m",
+            "layovers": 0,
+            "price": {
+              "amount": 859766.3,
+              "currency": "IDR",
+              "usdAmount": 47
+            },
+            "deepLink": "https://skiplagged.com/flights/SUB/DPS/2026-12-22",
+            "attributes": [
+              "standard",
+              "nonstop"
+            ]
+          }
+        ],
+        "pagination": {
+          "totalAvailable": 89,
+          "currentlyShowing": 5,
+          "offset": 0,
+          "limit": 5,
+          "hasMoreResults": true
+        },
+        "pricing": {
+          "currency": "IDR",
+          "requestedCurrency": "IDR",
+          "rate": 18292.9,
+          "rateAsOf": "2026-11-21T06:43:18.096Z",
+          "approximate": true
+        }
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "# Flight search results (SUB \u2192 DPS)\n\n- Departure: 2026-12-22\n- Sorted by: Lowest price first\n- Showing 5 of 89 results (more available)\n- Prices: approximate, converted from USD at 1 USD = 18292.9 IDR (rate as of 2026-11-21T06:43:18.096Z). The final charge on the booking site may differ.\n\n[Open search on Skiplagged](https://skiplagged.com/flights/SUB/DPS/2026-12-22)\n\n| Price | Duration | Stops | Type | Airlines | Segments | Booking |\n| --- | --- | --- | --- | --- | --- | --- |\n| IDR\u00a0841,473 | 1h | Nonstop | \u2014 | Lion Air | Outbound:<br/>SUB \u2192 DPS (2026-12-22 07:55:00+07:00 \u2192 2026-12-22 09:55:00+08:00) | [Book](https://skiplagged.com/flights/SUB/DPS/2026-12-22) |\n| IDR\u00a0841,473 | 1h | Nonstop | \u2014 | Lion Air | Outbound:<br/>SUB \u2192 DPS (2026-12-22 11:15:00+07:00 \u2192 2026-12-22 13:15:00+08:00) | [Book](https://skiplagged.com/flights/SUB/DPS/2026-12-22) |\n| IDR\u00a0841,473 | 1h | Nonstop | \u2014 | Lion Air | Outbound:<br/>SUB \u2192 DPS (2026-12-22 16:20:00+07:00 \u2192 2026-12-22 18:20:00+08:00) | [Book](https://skiplagged.com/flights/SUB/DPS/2026-12-22) |\n| IDR\u00a0841,473 | 1h | Nonstop | \u2014 | Lion Air | Outbound:<br/>SUB \u2192 DPS (2026-12-22 17:15:00+07:00 \u2192 2026-12-22 19:15:00+08:00) | [Book](https://skiplagged.com/flights/SUB/DPS/2026-12-22) |\n| IDR\u00a0859,766 | 1h | Nonstop | \u2014 | Super Air Jet | Outbound:<br/>SUB \u2192 DPS (2026-12-22 12:20:00+07:00 \u2192 2026-12-22 14:20:00+08:00) | [Book](https://skiplagged.com/flights/SUB/DPS/2026-12-22) |",
+          "annotations": null,
+          "meta": null
+        }
+      ],
+      "latency_ms": 9370,
+      "response_bytes": 1611
+    },
+    {
+      "tool": "sk_flights_search",
+      "args": {
+        "origin": "DPS",
+        "destination": "LBJ",
+        "departureDate": "2026-12-22",
+        "sort": "price",
+        "limit": 5,
+        "currency": "IDR",
+        "adults": 1,
+        "fareClass": "economy",
+        "includeHiddenCity": true,
+        "includeVirtualInterlining": true
+      },
+      "at": "2026-11-21T07:06:26Z",
+      "is_error": false,
+      "structured": {
+        "searchUrl": "https://skiplagged.com/flights/DPS/LBJ/2026-12-22",
+        "flights": [
+          {
+            "type": "FlightCard",
+            "id": "DPS-LBJ-2026-12-22-trip=ID6333",
+            "airlines": "Batik Air",
+            "departure": {
+              "airport": "DPS",
+              "dateTime": "2026-12-22T07:55:00+08:00"
+            },
+            "arrival": {
+              "airport": "LBJ",
+              "dateTime": "2026-12-22T09:10:00+08:00"
+            },
+            "duration": "1h 15m",
+            "layovers": 0,
+            "price": {
+              "amount": 1243917.2,
+              "currency": "IDR",
+              "usdAmount": 68
+            },
+            "deepLink": "https://skiplagged.com/flights/DPS/LBJ/2026-12-22",
+            "attributes": [
+              "standard",
+              "nonstop"
+            ]
+          },
+          {
+            "type": "FlightCard",
+            "id": "DPS-LBJ-2026-12-22-trip=ID6331",
+            "airlines": "Batik Air",
+            "departure": {
+              "airport": "DPS",
+              "dateTime": "2026-12-22T11:45:00+08:00"
+            },
+            "arrival": {
+              "airport": "LBJ",
+              "dateTime": "2026-12-22T13:00:00+08:00"
+            },
+            "duration": "1h 15m",
+            "layovers": 0,
+            "price": {
+              "amount": 1243917.2,
+              "currency": "IDR",
+              "usdAmount": 68
+            },
+            "deepLink": "https://skiplagged.com/flights/DPS/LBJ/2026-12-22",
+            "attributes": [
+              "standard",
+              "nonstop"
+            ]
+          },
+          {
+            "type": "FlightCard",
+            "id": "DPS-LBJ-2026-12-22-trip=QZ644",
+            "airlines": "Indonesia AirAsia",
+            "departure": {
+              "airport": "DPS",
+              "dateTime": "2026-12-22T07:05:00+08:00"
+            },
+            "arrival": {
+              "airport": "LBJ",
+              "dateTime": "2026-12-22T08:20:00+08:00"
+            },
+            "duration": "1h 15m",
+            "layovers": 0,
+            "price": {
+              "amount": 1280503,
+              "currency": "IDR",
+              "usdAmount": 70
+            },
+            "deepLink": "https://skiplagged.com/flights/DPS/LBJ/2026-12-22",
+            "attributes": [
+              "standard",
+              "nonstop"
+            ]
+          },
+          {
+            "type": "FlightCard",
+            "id": "DPS-LBJ-2026-12-22-trip=QZ646",
+            "airlines": "Indonesia AirAsia",
+            "departure": {
+              "airport": "DPS",
+              "dateTime": "2026-12-22T11:25:00+08:00"
+            },
+            "arrival": {
+              "airport": "LBJ",
+              "dateTime": "2026-12-22T12:45:00+08:00"
+            },
+            "duration": "1h 20m",
+            "layovers": 0,
+            "price": {
+              "amount": 1280503,
+              "currency": "IDR",
+              "usdAmount": 70
+            },
+            "deepLink": "https://skiplagged.com/flights/DPS/LBJ/2026-12-22",
+            "attributes": [
+              "standard",
+              "nonstop"
+            ]
+          },
+          {
+            "type": "FlightCard",
+            "id": "DPS-LBJ-2026-12-22-trip=ID6335",
+            "airlines": "Batik Air",
+            "departure": {
+              "airport": "DPS",
+              "dateTime": "2026-12-22T16:45:00+08:00"
+            },
+            "arrival": {
+              "airport": "LBJ",
+              "dateTime": "2026-12-22T18:00:00+08:00"
+            },
+            "duration": "1h 15m",
+            "layovers": 0,
+            "price": {
+              "amount": 1445139.1,
+              "currency": "IDR",
+              "usdAmount": 79
+            },
+            "deepLink": "https://skiplagged.com/flights/DPS/LBJ/2026-12-22",
+            "attributes": [
+              "standard",
+              "nonstop"
+            ]
+          }
+        ],
+        "pagination": {
+          "totalAvailable": 56,
+          "currentlyShowing": 5,
+          "offset": 0,
+          "limit": 5,
+          "hasMoreResults": true
+        },
+        "pricing": {
+          "currency": "IDR",
+          "requestedCurrency": "IDR",
+          "rate": 18292.9,
+          "rateAsOf": "2026-11-21T06:43:18.096Z",
+          "approximate": true
+        }
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "# Flight search results (DPS \u2192 LBJ)\n\n- Departure: 2026-12-22\n- Sorted by: Lowest price first\n- Showing 5 of 56 results (more available)\n- Prices: approximate, converted from USD at 1 USD = 18292.9 IDR (rate as of 2026-11-21T06:43:18.096Z). The final charge on the booking site may differ.\n\n[Open search on Skiplagged](https://skiplagged.com/flights/DPS/LBJ/2026-12-22)\n\n| Price | Duration | Stops | Type | Airlines | Segments | Booking |\n| --- | --- | --- | --- | --- | --- | --- |\n| IDR\u00a01,243,917 | 1h 15m | Nonstop | \u2014 | Batik Air | Outbound:<br/>DPS \u2192 LBJ (2026-12-22 07:55:00+08:00 \u2192 2026-12-22 09:10:00+08:00) | [Book](https://skiplagged.com/flights/DPS/LBJ/2026-12-22) |\n| IDR\u00a01,243,917 | 1h 15m | Nonstop | \u2014 | Batik Air | Outbound:<br/>DPS \u2192 LBJ (2026-12-22 11:45:00+08:00 \u2192 2026-12-22 13:00:00+08:00) | [Book](https://skiplagged.com/flights/DPS/LBJ/2026-12-22) |\n| IDR\u00a01,280,503 | 1h 15m | Nonstop | \u2014 | Indonesia AirAsia | Outbound:<br/>DPS \u2192 LBJ (2026-12-22 07:05:00+08:00 \u2192 2026-12-22 08:20:00+08:00) | [Book](https://skiplagged.com/flights/DPS/LBJ/2026-12-22) |\n| IDR\u00a01,280,503 | 1h 20m | Nonstop | \u2014 | Indonesia AirAsia | Outbound:<br/>DPS \u2192 LBJ (2026-12-22 11:25:00+08:00 \u2192 2026-12-22 12:45:00+08:00) | [Book](https://skiplagged.com/flights/DPS/LBJ/2026-12-22) |\n| IDR\u00a01,445,139 | 1h 15m | Nonstop | \u2014 | Batik Air | Outbound:<br/>DPS \u2192 LBJ (2026-12-22 16:45:00+08:00 \u2192 2026-12-22 18:00:00+08:00) | [Book](https://skiplagged.com/flights/DPS/LBJ/2026-12-22) |",
+          "annotations": null,
+          "meta": null
+        }
+      ],
+      "latency_ms": 9096,
+      "response_bytes": 1657
+    },
+    {
+      "tool": "sk_flights_search",
+      "args": {
+        "origin": "CGK",
+        "destination": "SIN",
+        "departureDate": "2027-01-26",
+        "sort": "price",
+        "limit": 5,
+        "currency": "IDR",
+        "adults": 1,
+        "fareClass": "economy",
+        "includeHiddenCity": true,
+        "includeVirtualInterlining": true
+      },
+      "at": "2026-11-21T07:08:37Z",
+      "is_error": false,
+      "structured": {
+        "searchUrl": "https://skiplagged.com/flights/CGK/SIN/2027-01-26",
+        "flights": [
+          {
+            "type": "FlightCard",
+            "id": "CGK-SIN-2027-01-26-trip=QG522",
+            "airlines": "Citilink",
+            "departure": {
+              "airport": "CGK",
+              "dateTime": "2027-01-26T06:20:00+07:00"
+            },
+            "arrival": {
+              "airport": "SIN",
+              "dateTime": "2027-01-26T09:10:00+08:00"
+            },
+            "duration": "1h 50m",
+            "layovers": 0,
+            "price": {
+              "amount": 896352.1,
+              "currency": "IDR",
+              "usdAmount": 49
+            },
+            "deepLink": "https://skiplagged.com/flights/CGK/SIN/2027-01-26",
+            "attributes": [
+              "standard",
+              "nonstop"
+            ]
+          },
+          {
+            "type": "FlightCard",
+            "id": "CGK-SIN-2027-01-26-trip=QG526",
+            "airlines": "Citilink",
+            "departure": {
+              "airport": "CGK",
+              "dateTime": "2027-01-26T17:10:00+07:00"
+            },
+            "arrival": {
+              "airport": "SIN",
+              "dateTime": "2027-01-26T20:00:00+08:00"
+            },
+            "duration": "1h 50m",
+            "layovers": 0,
+            "price": {
+              "amount": 896352.1,
+              "currency": "IDR",
+              "usdAmount": 49
+            },
+            "deepLink": "https://skiplagged.com/flights/CGK/SIN/2027-01-26",
+            "attributes": [
+              "standard",
+              "nonstop"
+            ]
+          },
+          {
+            "type": "FlightCard",
+            "id": "CGK-SIN-2027-01-26-trip=IP988",
+            "airlines": "Island Spirit",
+            "departure": {
+              "airport": "CGK",
+              "dateTime": "2027-01-26T07:55:00+07:00"
+            },
+            "arrival": {
+              "airport": "SIN",
+              "dateTime": "2027-01-26T10:45:00+08:00"
+            },
+            "duration": "1h 50m",
+            "layovers": 0,
+            "price": {
+              "amount": 1006109.5,
+              "currency": "IDR",
+              "usdAmount": 55
+            },
+            "deepLink": "https://skiplagged.com/flights/CGK/SIN/2027-01-26",
+            "attributes": [
+              "standard",
+              "nonstop"
+            ]
+          },
+          {
+            "type": "FlightCard",
+            "id": "CGK-SIN-2027-01-26-trip=ID7153",
+            "airlines": "Batik Air",
+            "departure": {
+              "airport": "CGK",
+              "dateTime": "2027-01-26T07:45:00+07:00"
+            },
+            "arrival": {
+              "airport": "SIN",
+              "dateTime": "2027-01-26T10:30:00+08:00"
+            },
+            "duration": "1h 45m",
+            "layovers": 0,
+            "price": {
+              "amount": 1042695.3,
+              "currency": "IDR",
+              "usdAmount": 57
+            },
+            "deepLink": "https://skiplagged.com/flights/CGK/SIN/2027-01-26",
+            "attributes": [
+              "standard",
+              "nonstop"
+            ]
+          },
+          {
+            "type": "FlightCard",
+            "id": "CGK-SIN-2027-01-26-trip=ID7157",
+            "airlines": "Batik Air",
+            "departure": {
+              "airport": "CGK",
+              "dateTime": "2027-01-26T09:00:00+07:00"
+            },
+            "arrival": {
+              "airport": "SIN",
+              "dateTime": "2027-01-26T11:45:00+08:00"
+            },
+            "duration": "1h 45m",
+            "layovers": 0,
+            "price": {
+              "amount": 1042695.3,
+              "currency": "IDR",
+              "usdAmount": 57
+            },
+            "deepLink": "https://skiplagged.com/flights/CGK/SIN/2027-01-26",
+            "attributes": [
+              "standard",
+              "nonstop"
+            ]
+          }
+        ],
+        "pagination": {
+          "totalAvailable": 270,
+          "currentlyShowing": 5,
+          "offset": 0,
+          "limit": 5,
+          "hasMoreResults": true
+        },
+        "pricing": {
+          "currency": "IDR",
+          "requestedCurrency": "IDR",
+          "rate": 18292.9,
+          "rateAsOf": "2026-11-21T06:43:18.096Z",
+          "approximate": true
+        }
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "# Flight search results (CGK \u2192 SIN)\n\n- Departure: 2027-01-26\n- Sorted by: Lowest price first\n- Showing 5 of 270 results (more available)\n- Prices: approximate, converted from USD at 1 USD = 18292.9 IDR (rate as of 2026-11-21T06:43:18.096Z). The final charge on the booking site may differ.\n\n[Open search on Skiplagged](https://skiplagged.com/flights/CGK/SIN/2027-01-26)\n\n| Price | Duration | Stops | Type | Airlines | Segments | Booking |\n| --- | --- | --- | --- | --- | --- | --- |\n| IDR\u00a0896,352 | 1h 50m | Nonstop | \u2014 | Citilink | Outbound:<br/>CGK \u2192 SIN (2027-01-26 06:20:00+07:00 \u2192 2027-01-26 09:10:00+08:00) | [Book](https://skiplagged.com/flights/CGK/SIN/2027-01-26) |\n| IDR\u00a0896,352 | 1h 50m | Nonstop | \u2014 | Citilink | Outbound:<br/>CGK \u2192 SIN (2027-01-26 17:10:00+07:00 \u2192 2027-01-26 20:00:00+08:00) | [Book](https://skiplagged.com/flights/CGK/SIN/2027-01-26) |\n| IDR\u00a01,006,110 | 1h 50m | Nonstop | \u2014 | Island Spirit | Outbound:<br/>CGK \u2192 SIN (2027-01-26 07:55:00+07:00 \u2192 2027-01-26 10:45:00+08:00) | [Book](https://skiplagged.com/flights/CGK/SIN/2027-01-26) |\n| IDR\u00a01,042,695 | 1h 45m | Nonstop | \u2014 | Batik Air | Outbound:<br/>CGK \u2192 SIN (2027-01-26 07:45:00+07:00 \u2192 2027-01-26 10:30:00+08:00) | [Book](https://skiplagged.com/flights/CGK/SIN/2027-01-26) |\n| IDR\u00a01,042,695 | 1h 45m | Nonstop | \u2014 | Batik Air | Outbound:<br/>CGK \u2192 SIN (2027-01-26 09:00:00+07:00 \u2192 2027-01-26 11:45:00+08:00) | [Book](https://skiplagged.com/flights/CGK/SIN/2027-01-26) |",
+          "annotations": null,
+          "meta": null
+        }
+      ],
+      "latency_ms": 10247,
+      "response_bytes": 1640
+    }
+  ],
+  "stopped": null
+}

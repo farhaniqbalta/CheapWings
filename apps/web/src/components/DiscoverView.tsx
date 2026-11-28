@@ -36,11 +36,11 @@ export function DiscoverView({ job, onCancel, cancelling }: {
           <span>DISCOVERY CALLS <b>{d.calls_done}/{d.calls_planned}</b></span>
           <span>DESTINATIONS FOUND <b>{d.discovered_destinations}</b></span>
           <span>CHECKS <b>{job.succeeded_checks}/{job.total_checks}</b></span>
+          {job.failed_checks > 0 && <span className="p46-job-caution">FAILED <b>{job.failed_checks}</b></span>}
         </div>
       </div>
       <div className="p46-job-foot">
         {job.warnings.map((w, i) => <span key={i}>{w}</span>)}
-        {d.calls_failed > 0 && <span className="p46-job-caution">{d.calls_failed} discovery calls failed</span>}
         {d.unpriced > 0 && <span>{d.unpriced} destinations had no price and were left out</span>}
         {d.stopped_providers.length > 0 && <span className="p46-job-caution">Stopped by the source: {d.stopped_providers.join(", ")}</span>}
       </div>
@@ -50,7 +50,7 @@ export function DiscoverView({ job, onCancel, cancelling }: {
           <span className="discover-dest"><b>{row.destination}</b> <small>from {row.origin} · {row.date}</small></span>
           {row.checkedAmount
             ? <span className="discover-checked"><small>Checked fare</small> <b>{formatMoney(row.checkedAmount, currency)}</b></span>
-            : <span className="discover-pending"><small>{row.state === "checking" ? "Checking…" : "No checked fare"}</small></span>}
+            : <span className="discover-pending"><small>{row.state === "checking" ? "Checking…" : row.state === "check_failed" ? "Check failed" : "No checked fare"}</small></span>}
           <span className="discover-lead"><small>Discovery price (provisional)</small> {formatMoney(row.leadAmount, currency)}</span>
         </li>)}
       </ol>}

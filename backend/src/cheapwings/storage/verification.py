@@ -286,6 +286,31 @@ class VerificationRepository:
             q.get("point_of_sale_country"),
         )
 
+    @staticmethod
+    def _purge_discovery(s, now):
+        """P7.8: discovered leads (prices, deep links) expire with their discover call's data,
+        and the job's shortlist prices once none of its leads remain. Coverage counts stay."""
+        from cheapwings.storage.models import DiscoveryObservationRow
+
+        expired = s.scalars(
+            select(DiscoveryObservationRow)
+            .join(WorkItem, DiscoveryObservationRow.work_item_id == WorkItem.id)
+            .join(SearchJob, WorkItem.job_id == SearchJob.id)
+            .where(or_(WorkItem.data_expires_at <= now, SearchJob.data_expires_at <= now))
+        ).all()
+        for job_id in {row.job_id for row in expired}:
+            s.execute(
+                delete(DiscoveryObservationRow).where(
+                    DiscoveryObservationRow.id.in_([r.id for r in expired if r.job_id == job_id])
+                )
+            )
+            job = s.get(SearchJob, job_id)
+            left = s.scalar(
+                select(DiscoveryObservationRow.id).where(DiscoveryObservationRow.job_id == job_id).limit(1)
+            )
+            if left is None and job.discovery_json and "selected" in job.discovery_json:
+                job.discovery_json = {k: v for k, v in job.discovery_json.items() if k != "selected"}
+
     def purge_expired(self, now=None):
         from cheapwings.storage.repository import now_ms
 
@@ -303,6 +328,7 @@ class VerificationRepository:
             ).all()
             ids = [q.id for q in quotes]
             fx_ids = [q.fx_snapshot_id for q in quotes if q.fx_snapshot_id is not None]
+            self._purge_discovery(s, now)
             s.execute(delete(QuoteRevision).where(QuoteRevision.quote_id.in_(ids)))
             s.execute(delete(FareQuote).where(FareQuote.id.in_(ids)))
             s.execute(delete(FXRow).where(FXRow.id.in_(fx_ids)))

@@ -56,7 +56,7 @@ Source of truth for **current** phase status, approvals, and the exact next task
 - P6 follow-up: assess the 4 MB Fli web body cap. See the [P6 evidence](docs/log/p6.md) for coverage limits and remaining items.
 
 ## Next task
-P7.7: owner iPad check passed; live web run: discovery accepted, checks limited upstream ([P7.7](docs/log/p7.7.md)). Owner: decide follow-ups (failed-check UI, Skiplagged check pacing, Fli TLS) and the p7-implementation → main PR.
+P7.7 merged (#32). P7.8 fixes from the P7.7 live run in review ([P7.8](docs/log/p7.8.md)); then the p7-implementation → main PR. Open: Fli curl_code=35 live diagnosis (needs approval).
 
 ## Deviation log (approved design changes)
 | Date | Change | Reason | Owner decision? |

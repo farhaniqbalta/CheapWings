@@ -315,6 +315,7 @@ export interface DiscoveryLead {
   comparable_amount: string; // provisional discovery price, display currency
   checked_amount?: string | null; // cheapest checked fare for this route/date (server-computed)
   checked_itinerary_id?: string | null;
+  check_status?: "checked" | "pending" | "no_fare" | "failed" | "not_checked";
 }
 
 export interface DiscoveryStatus {

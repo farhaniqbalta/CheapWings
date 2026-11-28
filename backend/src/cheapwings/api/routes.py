@@ -232,6 +232,8 @@ def create_app(settings=None, registry=None, engine=None):
         cursor: str | None = Query(default=None, max_length=2048),
         limit: int = Query(default=50, ge=1, le=100),
     ):
+        if repo.get_job(job_id)[0].kind != "search":
+            raise KeyError(job_id)
         try:
             return results_projection(repo, job_id, sort, cursor, limit)
         except ValueError as exc:

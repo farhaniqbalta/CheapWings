@@ -27,14 +27,15 @@ test("decimal comparison never goes through floats", () => {
   assert.equal(compareDecimal("1.50", "1.5"), 0);
 });
 
-const job = (status: DiscoverJob["status"], shortlist: [string, string, string, string?][]): DiscoverJob => ({
+const job = (status: DiscoverJob["status"], shortlist: [string, string, string, string?, string?][]): DiscoverJob => ({
   job_id: "d1", provider_ids: ["fli"], status, phase: status === "running" ? "searching" : "done", cancel_requested: false,
   created_at: "2027-02-20T00:00:00Z", updated_at: "2027-02-20T00:00:00Z",
   query: { origins: ["CGK"], departure_date_from: "2027-03-01", departure_date_through: "2027-03-02", display_currency: "IDR", budget: null, max_stops: null },
   discovery: { calls_planned: 2, calls_done: 2, calls_failed: 0, unpriced: 0, discovered_destinations: shortlist.length, counts: null,
                outcome: "planned", stopped_providers: [],
-               shortlist: shortlist.map(([destination, date, comparable_amount, checked]) => ({ origin: "CGK", destination, date, comparable_amount,
-                 checked_amount: checked ?? null, checked_itinerary_id: checked ? `${destination}-it` : null })) },
+               shortlist: shortlist.map(([destination, date, comparable_amount, checked, check_status]) => ({ origin: "CGK", destination, date, comparable_amount,
+                 checked_amount: checked ?? null, checked_itinerary_id: checked ? `${destination}-it` : null,
+                 check_status: (check_status ?? (checked ? "checked" : undefined)) as never })) },
   total_checks: 2, succeeded_checks: 1, failed_checks: 0, checked_route_dates: 1, provider_status: [], warnings: [],
 });
 
@@ -54,4 +55,10 @@ test("checked fares (server-computed, every page) rank first by checked price", 
 test("odd decimal text never crashes ordering", () => {
   assert.equal(compareDecimal("1E+3", "5"), 1);
   assert.equal(compareDecimal("abc", "5"), 1);
+});
+
+test("a destination whose checks all failed says so (P7.7 live)", () => {
+  const rows = discoverRows(job("partial", [["SIN", "2027-01-26", "917700", undefined, "failed"], ["BOM", "2027-01-26", "3872694", "3652446"]]));
+  assert.deepEqual(rows.map(r => [r.destination, r.state]), [["BOM", "checked"], ["SIN", "check_failed"]]);
+  assert.equal(discoverRows(job("running", [["SIN", "2027-01-26", "917700", undefined, "failed"]]))[0].state, "check_failed");
 });

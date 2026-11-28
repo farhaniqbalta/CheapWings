@@ -68,6 +68,7 @@ export default function App() {
     setDiscoverError(null);
     try {
       const created = await api.createDiscovery(request);
+      // Keep the run reachable (Discover shows it); never force the view back if the owner switched away.
       setDiscoverId(created.job_id);
     } catch (err) {
       setDiscoverError(err instanceof Error ? err : new Error(String(err)));
@@ -164,6 +165,7 @@ export default function App() {
           error={discoverError}
           providers={capabilities?.providers ?? []}
           supportedCurrencies={capabilities?.supported_currencies ?? ["IDR", "USD", "AUD", "JPY"]}
+          sourcesKnown={capabilities !== null}
         />
       )}
 
